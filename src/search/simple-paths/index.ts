@@ -1,7 +1,7 @@
 import type { LiquiditySnapshot } from '../../domain/index.ts';
 import type { DirectionalRouteHop } from '../../replay/exact-input-route/index.ts';
 import {
-  createSimplePathTraversal,
+  createSimplePathTraversalFromBuckets,
   expandSimplePathTraversal,
   normalizeSimplePathTraversal,
 } from './traversal.ts';
@@ -209,7 +209,16 @@ export function enumerateSimplePaths(
   const requestFailure = validateRequest(index, request, knownAssets);
   if (requestFailure !== undefined) return requestFailure;
 
-  const traversal = createSimplePathTraversal(index, request);
+  const value = enumerateValidatedSimplePaths(index, bucketsByAsset, request);
+  return Object.freeze({ ok: true, value });
+}
+
+export function enumerateValidatedSimplePaths(
+  index: DeterministicAdjacencyIndex,
+  bucketsByAsset: ReadonlyMap<string, AdjacencyBucket>,
+  request: SimplePathEnumerationRequest,
+): SimplePathEnumerationValue {
+  const traversal = createSimplePathTraversalFromBuckets(bucketsByAsset, request);
   let termination: 'complete' | 'work-limit' = 'complete';
 
   while (!normalizeSimplePathTraversal(traversal)) {
@@ -222,13 +231,13 @@ export function enumerateSimplePaths(
 
   const paths = Object.freeze([...traversal.completePaths].sort(comparePaths));
   const value: SimplePathEnumerationValue = Object.freeze({
-    snapshotId: request.snapshotId,
-    snapshotChecksum: request.snapshotChecksum,
+    snapshotId: index.snapshotId,
+    snapshotChecksum: index.snapshotChecksum,
     assetIn: request.assetIn,
     assetOut: request.assetOut,
     paths,
     expansions: traversal.expansions,
     termination,
   });
-  return Object.freeze({ ok: true, value });
+  return value;
 }

@@ -68,6 +68,13 @@ export function createSimplePathTraversal(
   request: TraversalRequest,
 ): SimplePathTraversalState {
   const bucketsByAsset = new Map(index.buckets.map((bucket) => [bucket.assetIn, bucket]));
+  return createSimplePathTraversalFromBuckets(bucketsByAsset, request);
+}
+
+export function createSimplePathTraversalFromBuckets(
+  bucketsByAsset: ReadonlyMap<string, TraversalAdjacencyBucket>,
+  request: TraversalRequest,
+): SimplePathTraversalState {
   const initialBucket = bucketsByAsset.get(request.assetIn);
   if (initialBucket === undefined) {
     throw new Error('Validated traversal requires a known input asset.');

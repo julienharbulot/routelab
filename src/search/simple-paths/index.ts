@@ -1,5 +1,10 @@
 import type { LiquiditySnapshot } from '../../domain/index.ts';
 import type { DirectionalRouteHop } from '../../replay/exact-input-route/index.ts';
+import {
+  createSimplePathTraversal,
+  expandSimplePathTraversal,
+  normalizeSimplePathTraversal,
+} from './traversal.ts';
 
 export interface AdjacencyBucket {
   readonly assetIn: string;
@@ -56,14 +61,6 @@ export type SimplePathEnumerationResult =
   | { readonly ok: true; readonly value: SimplePathEnumerationValue }
   | { readonly ok: false; readonly error: SimplePathEnumerationError };
 
-interface TraversalFrame {
-  readonly path: readonly DirectionalRouteHop[];
-  readonly visitedAssets: ReadonlySet<string>;
-  readonly visitedPools: ReadonlySet<string>;
-  readonly edges: readonly DirectionalRouteHop[];
-  nextEdgeIndex: number;
-}
-
 function compareRawUtf16(left: string, right: string): number {
   if (left < right) return -1;
   if (left > right) return 1;
@@ -101,12 +98,6 @@ function frozenEdge(
   assetOut: string,
 ): DirectionalRouteHop {
   return Object.freeze({ assetIn, poolId, assetOut });
-}
-
-function frozenPath(path: readonly DirectionalRouteHop[]): readonly DirectionalRouteHop[] {
-  return Object.freeze(
-    path.map((edge) => frozenEdge(edge.assetIn, edge.poolId, edge.assetOut)),
-  );
 }
 
 function failure(
@@ -218,77 +209,25 @@ export function enumerateSimplePaths(
   const requestFailure = validateRequest(index, request, knownAssets);
   if (requestFailure !== undefined) return requestFailure;
 
-  const initialBucket = bucketsByAsset.get(request.assetIn);
-  if (initialBucket === undefined) {
-    return failure('unknown-asset', 'assetIn', 'request.assetIn must exist in the adjacency index.');
-  }
-
-  const stack: TraversalFrame[] = [
-    {
-      path: [],
-      visitedAssets: new Set([request.assetIn]),
-      visitedPools: new Set(),
-      edges: initialBucket.edges,
-      nextEdgeIndex: 0,
-    },
-  ];
-  const completePaths: (readonly DirectionalRouteHop[])[] = [];
-  let expansions = 0;
+  const traversal = createSimplePathTraversal(index, request);
   let termination: 'complete' | 'work-limit' = 'complete';
 
-  while (stack.length > 0) {
-    const frame = stack[stack.length - 1];
-    if (frame === undefined) break;
-
-    if (frame.path.length >= request.maxHops || frame.nextEdgeIndex >= frame.edges.length) {
-      stack.pop();
-      continue;
-    }
-
-    if (expansions === request.maxExpansions) {
+  while (!normalizeSimplePathTraversal(traversal)) {
+    if (traversal.expansions === request.maxExpansions) {
       termination = 'work-limit';
       break;
     }
-
-    const edge = frame.edges[frame.nextEdgeIndex];
-    frame.nextEdgeIndex += 1;
-    expansions += 1;
-    if (edge === undefined) {
-      throw new Error('Traversal reached an unavailable canonical edge.');
-    }
-
-    if (frame.visitedPools.has(edge.poolId) || frame.visitedAssets.has(edge.assetOut)) {
-      continue;
-    }
-
-    const nextPath = [...frame.path, edge];
-    if (edge.assetOut === request.assetOut) {
-      completePaths.push(frozenPath(nextPath));
-      continue;
-    }
-
-    const nextBucket = bucketsByAsset.get(edge.assetOut);
-    if (nextBucket === undefined) {
-      continue;
-    }
-
-    stack.push({
-      path: nextPath,
-      visitedAssets: new Set([...frame.visitedAssets, edge.assetOut]),
-      visitedPools: new Set([...frame.visitedPools, edge.poolId]),
-      edges: nextBucket.edges,
-      nextEdgeIndex: 0,
-    });
+    expandSimplePathTraversal(traversal);
   }
 
-  const paths = Object.freeze([...completePaths].sort(comparePaths));
+  const paths = Object.freeze([...traversal.completePaths].sort(comparePaths));
   const value: SimplePathEnumerationValue = Object.freeze({
     snapshotId: request.snapshotId,
     snapshotChecksum: request.snapshotChecksum,
     assetIn: request.assetIn,
     assetOut: request.assetOut,
     paths,
-    expansions,
+    expansions: traversal.expansions,
     termination,
   });
   return Object.freeze({ ok: true, value });

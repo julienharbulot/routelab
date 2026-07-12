@@ -11,6 +11,7 @@ export const walkingSkeletonStatus = {
   canonicalRouterRunReader: 'exact-replay-verified-in-memory',
   canonicalRouterCases: 'v1-three-offline-fixtures',
   offlineBenchmarkHarness: 'v1-single-observation-no-performance-claim',
+  deterministicInterruption: 'validated-incumbents-only',
 } as const;
 
 export function renderWalkingSkeletonStatus(): string {

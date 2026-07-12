@@ -1,4 +1,4 @@
-import type { LiquiditySnapshot } from '../../domain/index.ts';
+import type { ConstantProductPool, LiquiditySnapshot } from '../../domain/index.ts';
 import {
   replayExactInputRoute,
   type ExactInputRouteReplayReceipt,
@@ -8,6 +8,11 @@ import {
   enumerateSimplePaths,
   type SimplePathEnumerationError,
 } from '../../search/simple-paths/index.ts';
+import {
+  createSimplePathTraversal,
+  expandSimplePathTraversal,
+  normalizeSimplePathTraversal,
+} from '../../search/simple-paths/traversal.ts';
 
 export interface ExactInputSinglePathRouterRequest {
   readonly snapshotId: string;
@@ -30,6 +35,37 @@ export interface ExactInputSinglePathSearchSummary {
 export interface ExactInputSinglePathPlan {
   readonly receipt: ExactInputRouteReplayReceipt;
   readonly search: ExactInputSinglePathSearchSummary;
+}
+
+export interface ExactInputSinglePathInterruptibleSearchSummary {
+  readonly expansions: number;
+  readonly enumeratedCandidates: number;
+  readonly replayedCandidates: number;
+  readonly rejectedCandidates: number;
+  readonly termination: 'complete' | 'work-limit' | 'interrupted';
+}
+
+export interface ExactInputSinglePathInterruptiblePlan {
+  readonly receipt: ExactInputRouteReplayReceipt;
+  readonly search: ExactInputSinglePathInterruptibleSearchSummary;
+}
+
+export interface ExactInputSinglePathInterruptionCheckpoint {
+  readonly expansions: number;
+  readonly enumeratedCandidates: number;
+  readonly replayedCandidates: number;
+  readonly rejectedCandidates: number;
+  readonly incumbent: ExactInputRouteReplayReceipt | null;
+}
+
+export interface ExactInputSinglePathInterruptionControl {
+  readonly shouldInterrupt: (
+    checkpoint: ExactInputSinglePathInterruptionCheckpoint,
+  ) => boolean;
+}
+
+export interface ExactInputSinglePathInterruptionControlError {
+  readonly code: 'interruption-check-failed';
 }
 
 export type ExactInputSinglePathRouterValidationErrorCode =
@@ -75,11 +111,40 @@ export type ExactInputSinglePathRouterResult =
       readonly error: ExactInputSinglePathRouterValidationError;
     };
 
+export type ExactInputSinglePathInterruptibleResult =
+  | {
+      readonly status: 'success';
+      readonly plan: ExactInputSinglePathInterruptiblePlan;
+    }
+  | {
+      readonly status: 'no-route';
+      readonly reason: 'no-candidate' | 'all-candidates-rejected';
+      readonly search: ExactInputSinglePathInterruptibleSearchSummary;
+    }
+  | {
+      readonly status: 'no-plan';
+      readonly reason: 'work-limit' | 'interrupted';
+      readonly search: ExactInputSinglePathInterruptibleSearchSummary;
+    }
+  | {
+      readonly status: 'invalid-request';
+      readonly error: ExactInputSinglePathRouterValidationError;
+    }
+  | {
+      readonly status: 'control-error';
+      readonly error: ExactInputSinglePathInterruptionControlError;
+    };
+
+type ExactInputSinglePathInvalidRequestResult = Extract<
+  ExactInputSinglePathRouterResult,
+  { readonly status: 'invalid-request' }
+>;
+
 function validationFailure(
   code: ExactInputSinglePathRouterValidationErrorCode,
   field: ExactInputSinglePathRouterValidationErrorField,
   message: string,
-): ExactInputSinglePathRouterResult {
+): ExactInputSinglePathInvalidRequestResult {
   const error: ExactInputSinglePathRouterValidationError = Object.freeze({
     code,
     field,
@@ -92,7 +157,7 @@ function validateRequest(
   snapshot: LiquiditySnapshot,
   request: ExactInputSinglePathRouterRequest,
   knownAssets: ReadonlySet<string>,
-): ExactInputSinglePathRouterResult | undefined {
+): ExactInputSinglePathInvalidRequestResult | undefined {
   if (
     request.snapshotId !== snapshot.snapshotId ||
     request.snapshotChecksum !== snapshot.snapshotChecksum
@@ -224,6 +289,63 @@ function frozenSearchSummary(
   });
 }
 
+function frozenInterruptibleSearchSummary(
+  expansions: number,
+  enumeratedCandidates: number,
+  replayedCandidates: number,
+  rejectedCandidates: number,
+  termination: 'complete' | 'work-limit' | 'interrupted',
+): ExactInputSinglePathInterruptibleSearchSummary {
+  return Object.freeze({
+    expansions,
+    enumeratedCandidates,
+    replayedCandidates,
+    rejectedCandidates,
+    termination,
+  });
+}
+
+function interruptionControlFailure(): ExactInputSinglePathInterruptibleResult {
+  const error: ExactInputSinglePathInterruptionControlError = Object.freeze({
+    code: 'interruption-check-failed',
+  });
+  return Object.freeze({ status: 'control-error', error });
+}
+
+function captureInterruptiblePool(pool: ConstantProductPool): ConstantProductPool {
+  return Object.freeze({
+    poolId: pool.poolId,
+    asset0: pool.asset0,
+    reserve0: pool.reserve0,
+    asset1: pool.asset1,
+    reserve1: pool.reserve1,
+    feeChargedNumerator: pool.feeChargedNumerator,
+    feeDenominator: pool.feeDenominator,
+  });
+}
+
+function captureInterruptibleSnapshot(snapshot: LiquiditySnapshot): LiquiditySnapshot {
+  const snapshotId = snapshot.snapshotId;
+  const snapshotChecksum = snapshot.snapshotChecksum;
+  const sourcePools = snapshot.pools;
+  const pools = Object.freeze(Array.from(sourcePools, captureInterruptiblePool));
+  return Object.freeze({ snapshotId, snapshotChecksum, pools });
+}
+
+function captureInterruptibleRequest(
+  request: ExactInputSinglePathRouterRequest,
+): ExactInputSinglePathRouterRequest {
+  return Object.freeze({
+    snapshotId: request.snapshotId,
+    snapshotChecksum: request.snapshotChecksum,
+    assetIn: request.assetIn,
+    assetOut: request.assetOut,
+    amountIn: request.amountIn,
+    maxHops: request.maxHops,
+    maxExpansions: request.maxExpansions,
+  });
+}
+
 export function routeExactInputSinglePath(
   snapshot: LiquiditySnapshot,
   request: ExactInputSinglePathRouterRequest,
@@ -289,4 +411,104 @@ export function routeExactInputSinglePath(
       ? ('no-candidate' as const)
       : ('all-candidates-rejected' as const);
   return Object.freeze({ status: 'no-route', reason, search });
+}
+
+export function routeExactInputSinglePathInterruptible(
+  snapshot: LiquiditySnapshot,
+  request: ExactInputSinglePathRouterRequest,
+  control: ExactInputSinglePathInterruptionControl,
+): ExactInputSinglePathInterruptibleResult {
+  const capturedSnapshot = captureInterruptibleSnapshot(snapshot);
+  const capturedRequest = captureInterruptibleRequest(request);
+  const adjacency = buildDeterministicAdjacency(capturedSnapshot);
+  const knownAssets = new Set(adjacency.buckets.map((bucket) => bucket.assetIn));
+  const requestFailure = validateRequest(capturedSnapshot, capturedRequest, knownAssets);
+  if (requestFailure !== undefined) return requestFailure;
+
+  let shouldInterrupt: ExactInputSinglePathInterruptionControl['shouldInterrupt'];
+  try {
+    const capturedControl = control.shouldInterrupt;
+    if (typeof capturedControl !== 'function') return interruptionControlFailure();
+    shouldInterrupt = capturedControl;
+  } catch {
+    return interruptionControlFailure();
+  }
+
+  const traversal = createSimplePathTraversal(adjacency, {
+    assetIn: capturedRequest.assetIn,
+    assetOut: capturedRequest.assetOut,
+    maxHops: capturedRequest.maxHops,
+  });
+  let incumbent: ExactInputRouteReplayReceipt | undefined;
+  let enumeratedCandidates = 0;
+  let replayedCandidates = 0;
+  let rejectedCandidates = 0;
+
+  const finish = (
+    termination: 'complete' | 'work-limit' | 'interrupted',
+  ): ExactInputSinglePathInterruptibleResult => {
+    const search = frozenInterruptibleSearchSummary(
+      traversal.expansions,
+      enumeratedCandidates,
+      replayedCandidates,
+      rejectedCandidates,
+      termination,
+    );
+    if (incumbent !== undefined) {
+      const plan: ExactInputSinglePathInterruptiblePlan = Object.freeze({
+        receipt: incumbent,
+        search,
+      });
+      return Object.freeze({ status: 'success', plan });
+    }
+    if (termination !== 'complete') {
+      return Object.freeze({ status: 'no-plan', reason: termination, search });
+    }
+    const reason =
+      enumeratedCandidates === 0
+        ? ('no-candidate' as const)
+        : ('all-candidates-rejected' as const);
+    return Object.freeze({ status: 'no-route', reason, search });
+  };
+
+  while (true) {
+    if (normalizeSimplePathTraversal(traversal)) return finish('complete');
+    if (traversal.expansions === capturedRequest.maxExpansions) {
+      return finish('work-limit');
+    }
+
+    const checkpoint: ExactInputSinglePathInterruptionCheckpoint = Object.freeze({
+      expansions: traversal.expansions,
+      enumeratedCandidates,
+      replayedCandidates,
+      rejectedCandidates,
+      incumbent: incumbent ?? null,
+    });
+    try {
+      if (shouldInterrupt(checkpoint)) return finish('interrupted');
+    } catch {
+      return interruptionControlFailure();
+    }
+
+    const completedPath = expandSimplePathTraversal(traversal);
+    if (completedPath === undefined) continue;
+
+    enumeratedCandidates += 1;
+    const replay = replayExactInputRoute(capturedSnapshot, {
+      snapshotId: capturedRequest.snapshotId,
+      snapshotChecksum: capturedRequest.snapshotChecksum,
+      assetIn: capturedRequest.assetIn,
+      assetOut: capturedRequest.assetOut,
+      amountIn: capturedRequest.amountIn,
+      hops: completedPath,
+    });
+    replayedCandidates += 1;
+    if (!replay.ok) {
+      rejectedCandidates += 1;
+      continue;
+    }
+    if (incumbent === undefined || isStrictlyBetter(replay.value, incumbent)) {
+      incumbent = replay.value;
+    }
+  }
 }

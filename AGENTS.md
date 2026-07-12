@@ -42,7 +42,7 @@ When authorities conflict, stop the affected work and identify the conflict. Tes
 
 ## Release-gate discipline
 
-Build the smallest verified vertical slice and do not skip prerequisites. Exact execution precedes search; a deterministic bounded baseline precedes acceleration; replay precedes benchmark claims; measured bottlenecks precede performance architecture; model-disabled correctness precedes learned ordering. A later milestone cannot disguise a failed current gate.
+Build the smallest verified vertical slice and do not skip prerequisites. Exact execution precedes search; a deterministic bounded baseline precedes acceleration; replay precedes benchmark claims; measured bottlenecks precede performance architecture; model-disabled correctness precedes learned ordering. A later milestone cannot disguise a failed current gate. Milestone completion remains scoped to its accepted component gate. If a later review shows that independently correct components are not yet composed into the product path that the next milestone would measure or expose, add an explicit integration gate without rewriting archived completion evidence; benchmark, service, and portfolio claims remain blocked until that gate closes.
 
 Before the first task from a later milestone becomes ready or active, the lead must commission a read-only milestone completion review of the cumulative integrated state—not only the final task diff. The reviewer maps every outcome and gate clause in `IMPLEMENTATION_PLAN.md` to code and independent evidence, reconciles `STATUS.md` limitations, and reports the milestone as complete or incomplete. The lead records that result in the closing task. Any missing scope keeps the current milestone open, requires a same-milestone follow-up packet, and blocks later-milestone selection; already-integrated later work cannot waive or satisfy the missing gate.
 
@@ -94,6 +94,7 @@ Private work moves through `draft -> ready -> active -> review -> integrated -> 
 | Graph search | tiny exhaustive oracle, cycle/reuse cases, deterministic ties |
 | Serialization/hash | round trips and repeated identical hashes |
 | Deadline/anytime | forced deterministic interruption; validated incumbents only |
+| Runtime composition | one verified request context; shared discovery; non-recharged request caps; forced stops across every eligible stage; monotonic exact incumbent |
 | Allocation | exact-sum reconstruction, fallbacks, tiny exhaustive comparison |
 | Performance | identical base/head inputs, raw results, environment, quality tradeoff |
 | Data or learning | provenance and offline replay; model-disabled baseline and downstream metrics |

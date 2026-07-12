@@ -36,7 +36,7 @@ Last updated: 2026-07-13
 
 ## Current release gate
 
-Milestones 0–5 are integrated and cumulatively reviewed complete. Milestone 5 includes structural pool-disjoint candidates, exact split replay, safe no-split/equal baselines, bounded exact greedy proposals, and independent tiny exhaustive allocation comparisons. Milestone 6 historical data and credible evaluation is eligible to start through a new task packet. No serialized checkpoint, cross-process resume, default router clock, general statistical performance conclusion, historical dataset, service, protocol adapter, or learned ordering exists.
+Milestones 0–5 remain integrated and cumulatively reviewed complete for their accepted component gates. A newly added pre-Milestone 6 integration gate is now active: the Milestone 4 anytime controls and Milestone 5 split components must be composed under one canonically verified prepared context, shared discovery, non-recharged request controls, canonical split evidence, and an executable split demo. Milestone 6 historical data and credible evaluation is blocked until that gate closes. No serialized split checkpoint, cross-process resume, default router clock, general statistical performance conclusion, historical dataset, service, protocol adapter, numerical allocator, or learned ordering exists.
 
 ## Public evidence
 
@@ -48,11 +48,13 @@ Milestones 0–5 are integrated and cumulatively reviewed complete. Milestone 5 
 
 ## Next technical milestone
 
-Milestone 6 historical data and credible evaluation is next. It must select a source through a documented decision, import one canonical snapshot with clear provenance and licensing, preserve offline primary replay, and keep versioned dataset changes separate from identical-input algorithm comparisons and raw environment-qualified results.
+The pre-Milestone 6 composed-runtime gate is next. It must add a canonically verified prepared snapshot context, shared path and candidate-set discovery, non-recharged request controls spanning split allocation, exact incumbent preservation under interruption/deadline, canonical split run/case evidence, and an executable offline split demo. Historical source selection may be researched privately, but no M6 benchmark or data-integration claim is eligible until this gate closes.
 
 ## Known limitations
 
 - The demo reports repository capability only; it does not execute a snapshot, quote, transition, replay, or route.
+- The Milestone 4 anytime runtime and Milestone 5 split routers are exact but not yet composed. The split entry points independently rebuild/discover structural work, use stage-local caps that can be charged again by a caller chain, and expose no single request-wide deadline, cancellation control, or incumbent progression.
+- Canonical router-run/case v1 and `pnpm replay:cases` remain single-path-only; no split plan currently has a canonical determinism record.
 - A work-limited success is best only among already-complete explored candidates; it makes no completeness or unrestricted optimality claim.
 - Split routing is limited to pool-disjoint routes and configured no-split/equal/chunk-greedy policies. Greedy parts and evaluation work are explicitly bounded; integer flooring and zero-output eligibility can make unit chunks miss the tiny exhaustive optimum. No global allocation or route optimality is claimed, and RouteLab does not submit transactions, hold funds, or model a deployed protocol.
 - Fixture JSON is hand-auditable evidence, not a public snapshot or replay schema.

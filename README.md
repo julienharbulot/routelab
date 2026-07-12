@@ -71,10 +71,11 @@ CI uses the same pinned pnpm version, performs a frozen install, and runs `pnpm 
 - Non-interruptible routing and canonical router-run/case v1 retain their existing zero-expansion behavior and hashes; immediate establishment is exposed by the interruptible, resumable, and deadline runtime APIs.
 - `pnpm replay:cases` remains a single-observation verification harness. `pnpm measure:anytime` uses one fixed offline input, warmups, alternating repeated samples, environment metadata, and raw observations, but performs no statistical inference and supports no speedup, threshold, scaling, or production-latency claim.
 - The offline demo reports capability status only; use replay cases and tests for executable financial evidence.
+- The exact split APIs are currently standalone Milestone 5 components rather than one composed Milestone 4 anytime runtime: they do not yet share a prepared verified context, one discovery pass, one request-wide control/ledger, or split-aware canonical run records.
 
 ## Roadmap
 
-The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 are integrated and cumulatively reviewed complete. Milestone 6 historical data and credible evaluation is eligible next through a documented source decision and one provenance-checked canonical snapshot. Acceleration, services, protocol adapters, and learned ordering remain later gated work.
+The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 remain integrated and cumulatively reviewed complete for their accepted component gates. A pre-Milestone 6 integration gate is next: compose anytime controls and split allocation under one verified request context, shared discovery, non-recharged controls, canonical split evidence, and an executable split demo. Historical data follows that gate; path-level numerical allocation is now explicit after data setup and before acceleration. Services, protocol adapters, and learned ordering remain later gated work.
 
 See the [technical roadmap](IMPLEMENTATION_PLAN.md), [current release gate](STATUS.md), [accepted invariants](docs/invariants.md), [Milestone 0 fixture derivations](fixtures/m0/README.md), and [research references](docs/references.md).
 

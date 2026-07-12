@@ -74,7 +74,7 @@ CI uses the same pinned pnpm version, performs a frozen install, and runs `pnpm 
 
 ## Roadmap
 
-The current release target is deterministic offline exact-input routing over immutable snapshots. Milestone 4 is complete. Milestone 5 implementation now includes exact split replay, no-split/equal/greedy policies, and independent tiny exhaustive allocation comparisons; its mandatory cumulative completion review still gates Milestone 6. Acceleration, services, protocol adapters, and learned ordering remain later gated work.
+The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 are integrated and cumulatively reviewed complete. Milestone 6 historical data and credible evaluation is eligible next through a documented source decision and one provenance-checked canonical snapshot. Acceleration, services, protocol adapters, and learned ordering remain later gated work.
 
 See the [technical roadmap](IMPLEMENTATION_PLAN.md), [current release gate](STATUS.md), [accepted invariants](docs/invariants.md), [Milestone 0 fixture derivations](fixtures/m0/README.md), and [research references](docs/references.md).
 

@@ -36,7 +36,7 @@ Last updated: 2026-07-13
 
 ## Current release gate
 
-Milestones 0–4 are complete. Milestone 5 implementation now includes structural pool-disjoint candidates, exact split replay, safe no-split/equal baselines, bounded exact greedy proposals, and independent tiny exhaustive allocation comparisons. The Milestone 5 gate remains open only for its mandatory cumulative completion review; Milestone 6 selection is blocked until that review returns complete. No serialized checkpoint, cross-process resume, default router clock, general statistical performance conclusion, historical dataset, service, protocol adapter, or learned ordering exists.
+Milestones 0–5 are integrated and cumulatively reviewed complete. Milestone 5 includes structural pool-disjoint candidates, exact split replay, safe no-split/equal baselines, bounded exact greedy proposals, and independent tiny exhaustive allocation comparisons. Milestone 6 historical data and credible evaluation is eligible to start through a new task packet. No serialized checkpoint, cross-process resume, default router clock, general statistical performance conclusion, historical dataset, service, protocol adapter, or learned ordering exists.
 
 ## Public evidence
 
@@ -48,7 +48,7 @@ Milestones 0–4 are complete. Milestone 5 implementation now includes structura
 
 ## Next technical milestone
 
-Commission the cumulative read-only Milestone 5 completion review. It must map every split-allocation outcome and gate clause to integrated code and independent evidence, reconcile these limitations, and return `MILESTONE COMPLETE` before Milestone 6 historical-data work becomes eligible.
+Milestone 6 historical data and credible evaluation is next. It must select a source through a documented decision, import one canonical snapshot with clear provenance and licensing, preserve offline primary replay, and keep versioned dataset changes separate from identical-input algorithm comparisons and raw environment-qualified results.
 
 ## Known limitations
 

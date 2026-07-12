@@ -234,82 +234,6 @@ function frozenCandidateSet(
   return Object.freeze({ routes: Object.freeze([...routes]) });
 }
 
-export interface PoolDisjointCandidateSetsFromPathsValue {
-  readonly candidateSets: readonly PoolDisjointRouteCandidateSet[];
-  readonly expansions: number;
-  readonly termination: 'complete' | 'work-limit';
-}
-
-export function enumeratePoolDisjointCandidateSetsFromPaths(
-  paths: readonly PoolDisjointRoute[],
-  maxRoutes: number,
-  maxCandidateSetExpansions: number,
-  minimumCardinality: 1 | 2,
-): PoolDisjointCandidateSetsFromPathsValue {
-  const candidateSets: PoolDisjointRouteCandidateSet[] = [];
-  let expansions = 0;
-  let termination: 'complete' | 'work-limit' = 'complete';
-  const maximumCardinality = Math.min(maxRoutes, paths.length);
-
-  cardinalities: for (
-    let targetCardinality = minimumCardinality;
-    targetCardinality <= maximumCardinality;
-    targetCardinality += 1
-  ) {
-    const selectedRoutes: PoolDisjointRoute[] = [];
-    const usedPoolIds = new Set<string>();
-    const stack: CombinationFrame[] = [
-      { nextRouteIndex: 0, addedRouteIndex: undefined },
-    ];
-
-    while (stack.length > 0) {
-      while (stack.at(-1)?.nextRouteIndex === paths.length) {
-        const exhausted = stack.pop();
-        if (exhausted?.addedRouteIndex === undefined) continue;
-        const removedRoute = selectedRoutes.pop();
-        if (removedRoute === undefined) {
-          throw new Error('Combination frontier lost its selected route.');
-        }
-        removeRoutePools(removedRoute, usedPoolIds);
-      }
-      const frame = stack.at(-1);
-      if (frame === undefined) break;
-      if (expansions === maxCandidateSetExpansions) {
-        termination = 'work-limit';
-        break cardinalities;
-      }
-
-      const routeIndex = frame.nextRouteIndex;
-      frame.nextRouteIndex += 1;
-      expansions += 1;
-      const route = paths[routeIndex];
-      if (route === undefined) {
-        throw new Error('Combination frontier reached an unavailable route.');
-      }
-      if (!routeIsPoolDisjoint(route, usedPoolIds)) continue;
-
-      selectedRoutes.push(route);
-      addRoutePools(route, usedPoolIds);
-      if (selectedRoutes.length === targetCardinality) {
-        candidateSets.push(frozenCandidateSet(selectedRoutes));
-        selectedRoutes.pop();
-        removeRoutePools(route, usedPoolIds);
-        continue;
-      }
-      stack.push({
-        nextRouteIndex: routeIndex + 1,
-        addedRouteIndex: routeIndex,
-      });
-    }
-  }
-
-  return Object.freeze({
-    candidateSets: Object.freeze(candidateSets),
-    expansions,
-    termination,
-  });
-}
-
 export function enumeratePoolDisjointRouteSets(
   index: DeterministicAdjacencyIndex,
   request: PoolDisjointRouteSetEnumerationRequest,
@@ -342,27 +266,80 @@ export function enumeratePoolDisjointRouteSets(
   }
 
   const paths = pathResult.value.paths;
-  const setResult = enumeratePoolDisjointCandidateSetsFromPaths(
-    paths,
-    capturedRequest.maxRoutes,
-    capturedRequest.maxCandidateSetExpansions,
-    1,
-  );
+  const candidateSets: PoolDisjointRouteCandidateSet[] = [];
+  let candidateSetExpansions = 0;
+  let candidateSetTermination: 'complete' | 'work-limit' = 'complete';
+  const maximumCardinality = Math.min(capturedRequest.maxRoutes, paths.length);
+
+  cardinalities: for (
+    let targetCardinality = 1;
+    targetCardinality <= maximumCardinality;
+    targetCardinality += 1
+  ) {
+    const selectedRoutes: PoolDisjointRoute[] = [];
+    const usedPoolIds = new Set<string>();
+    const stack: CombinationFrame[] = [
+      { nextRouteIndex: 0, addedRouteIndex: undefined },
+    ];
+
+    while (stack.length > 0) {
+      while (stack.at(-1)?.nextRouteIndex === paths.length) {
+        const exhausted = stack.pop();
+        if (exhausted?.addedRouteIndex === undefined) continue;
+        const removedRoute = selectedRoutes.pop();
+        if (removedRoute === undefined) {
+          throw new Error('Combination frontier lost its selected route.');
+        }
+        removeRoutePools(removedRoute, usedPoolIds);
+      }
+      const frame = stack.at(-1);
+      if (frame === undefined) break;
+      if (
+        candidateSetExpansions ===
+        capturedRequest.maxCandidateSetExpansions
+      ) {
+        candidateSetTermination = 'work-limit';
+        break cardinalities;
+      }
+
+      const routeIndex = frame.nextRouteIndex;
+      frame.nextRouteIndex += 1;
+      candidateSetExpansions += 1;
+      const route = paths[routeIndex];
+      if (route === undefined) {
+        throw new Error('Combination frontier reached an unavailable route.');
+      }
+      if (!routeIsPoolDisjoint(route, usedPoolIds)) continue;
+
+      selectedRoutes.push(route);
+      addRoutePools(route, usedPoolIds);
+      if (selectedRoutes.length === targetCardinality) {
+        candidateSets.push(frozenCandidateSet(selectedRoutes));
+        selectedRoutes.pop();
+        removeRoutePools(route, usedPoolIds);
+        continue;
+      }
+      stack.push({
+        nextRouteIndex: routeIndex + 1,
+        addedRouteIndex: routeIndex,
+      });
+    }
+  }
 
   const search: PoolDisjointRouteSetSearchSummary = Object.freeze({
     pathExpansions: pathResult.value.expansions,
     enumeratedPaths: paths.length,
     pathTermination: pathResult.value.termination,
-    candidateSetExpansions: setResult.expansions,
-    enumeratedCandidateSets: setResult.candidateSets.length,
-    candidateSetTermination: setResult.termination,
+    candidateSetExpansions,
+    enumeratedCandidateSets: candidateSets.length,
+    candidateSetTermination,
   });
   const value: PoolDisjointRouteSetEnumerationValue = Object.freeze({
     snapshotId: capturedRequest.snapshotId,
     snapshotChecksum: capturedRequest.snapshotChecksum,
     assetIn: capturedRequest.assetIn,
     assetOut: capturedRequest.assetOut,
-    candidateSets: setResult.candidateSets,
+    candidateSets: Object.freeze(candidateSets),
     search,
   });
   return Object.freeze({ ok: true, value });

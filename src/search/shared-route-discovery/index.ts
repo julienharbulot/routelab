@@ -7,7 +7,6 @@ import {
   type PreparedRoutingContext,
 } from '../../runtime/prepared-routing-context/index.ts';
 import {
-  enumeratePoolDisjointCandidateSetsFromPaths,
   type PoolDisjointRouteCandidateSet,
 } from '../pool-disjoint-route-sets/index.ts';
 
@@ -59,6 +58,113 @@ function captureRequest(
   });
 }
 
+type SharedRoute = PreparedSimplePathList[number];
+
+interface CandidateSetCombinationFrame {
+  nextRouteIndex: number;
+  readonly addedRouteIndex: number | undefined;
+}
+
+interface SharedCandidateSetEnumerationValue {
+  readonly candidateSets: readonly PoolDisjointRouteCandidateSet[];
+  readonly expansions: number;
+  readonly termination: 'complete' | 'work-limit';
+}
+
+function routeIsPoolDisjoint(
+  route: SharedRoute,
+  usedPoolIds: ReadonlySet<string>,
+): boolean {
+  return route.every(({ poolId }) => !usedPoolIds.has(poolId));
+}
+
+function addRoutePools(route: SharedRoute, usedPoolIds: Set<string>): void {
+  for (const { poolId } of route) usedPoolIds.add(poolId);
+}
+
+function removeRoutePools(route: SharedRoute, usedPoolIds: Set<string>): void {
+  for (const { poolId } of route) usedPoolIds.delete(poolId);
+}
+
+function frozenCandidateSet(
+  routes: readonly SharedRoute[],
+): PoolDisjointRouteCandidateSet {
+  return Object.freeze({ routes: Object.freeze([...routes]) });
+}
+
+function enumerateSharedSplitCandidateSets(
+  paths: PreparedSimplePathList,
+  maxRoutes: number,
+  maxCandidateSetExpansions: number,
+): SharedCandidateSetEnumerationValue {
+  const candidateSets: PoolDisjointRouteCandidateSet[] = [];
+  let expansions = 0;
+  let termination: 'complete' | 'work-limit' = 'complete';
+  const maximumCardinality = Math.min(maxRoutes, paths.length);
+
+  cardinalities: for (
+    let targetCardinality = 2;
+    targetCardinality <= maximumCardinality;
+    targetCardinality += 1
+  ) {
+    const selectedRoutes: SharedRoute[] = [];
+    const usedPoolIds = new Set<string>();
+    const stack: CandidateSetCombinationFrame[] = [
+      { nextRouteIndex: 0, addedRouteIndex: undefined },
+    ];
+
+    while (stack.length > 0) {
+      while (stack.at(-1)?.nextRouteIndex === paths.length) {
+        const exhausted = stack.pop();
+        if (exhausted?.addedRouteIndex === undefined) continue;
+        const removedRoute = selectedRoutes.pop();
+        if (removedRoute === undefined) {
+          throw new Error('Combination frontier lost its selected route.');
+        }
+        removeRoutePools(removedRoute, usedPoolIds);
+      }
+      const frame = stack.at(-1);
+      if (frame === undefined) break;
+      if (expansions === maxCandidateSetExpansions) {
+        termination = 'work-limit';
+        break cardinalities;
+      }
+
+      const routeIndex = frame.nextRouteIndex;
+      frame.nextRouteIndex += 1;
+      expansions += 1;
+      const route = paths[routeIndex];
+      if (route === undefined) {
+        throw new Error('Combination frontier reached an unavailable route.');
+      }
+      if (!routeIsPoolDisjoint(route, usedPoolIds)) continue;
+
+      selectedRoutes.push(route);
+      addRoutePools(route, usedPoolIds);
+      if (selectedRoutes.length === targetCardinality) {
+        candidateSets.push(frozenCandidateSet(selectedRoutes));
+        selectedRoutes.pop();
+        removeRoutePools(route, usedPoolIds);
+        continue;
+      }
+      stack.push({
+        nextRouteIndex: routeIndex + 1,
+        addedRouteIndex: routeIndex,
+      });
+    }
+  }
+
+  return Object.freeze({
+    candidateSets: Object.freeze(candidateSets),
+    expansions,
+    termination,
+  });
+}
+
+/**
+ * Capability-guarded shared structural discovery for composed routing stages.
+ * @internal
+ */
 export function discoverSharedRoutes(
   context: PreparedRoutingContext,
   request: SharedRouteDiscoveryRequest,
@@ -68,11 +174,10 @@ export function discoverSharedRoutes(
   if (!pathResult.ok) return pathResult;
 
   const paths = pathResult.value.paths;
-  const setResult = enumeratePoolDisjointCandidateSetsFromPaths(
+  const setResult = enumerateSharedSplitCandidateSets(
     paths,
     capturedRequest.maxRoutes,
     capturedRequest.maxCandidateSetExpansions,
-    2,
   );
   const search: SharedRouteDiscoverySearchSummary = Object.freeze({
     pathExpansions: pathResult.value.expansions,

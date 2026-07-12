@@ -103,6 +103,27 @@ void test('verifies the canonical checksum and returns an opaque frozen handle',
   assert.equal('value' in failure, false);
 });
 
+void test('rejects forged capabilities and keeps validation-free helpers unexported', async () => {
+  const snapshot = checksummedSnapshot(GRAPH_POOLS);
+  const forged = Object.freeze({}) as PreparedRoutingContext;
+  assert.throws(
+    () => discoverSharedRoutes(forged, request(snapshot)),
+    {
+      name: 'TypeError',
+      message: 'PreparedRoutingContext was not created by prepareRoutingContext.',
+    },
+  );
+
+  const simplePathsModule = await import('../src/search/simple-paths/index.ts');
+  const traversalModule = await import('../src/search/simple-paths/traversal.ts');
+  const routeSetsModule = await import(
+    '../src/search/pool-disjoint-route-sets/index.ts'
+  );
+  assert.equal('enumerateValidatedSimplePaths' in simplePathsModule, false);
+  assert.equal('createSimplePathTraversalFromBuckets' in traversalModule, false);
+  assert.equal('enumeratePoolDisjointCandidateSetsFromPaths' in routeSetsModule, false);
+});
+
 void test('captures caller fields once and retains no caller-owned snapshot or pool alias', () => {
   const canonical = checksummedSnapshot(GRAPH_POOLS);
   const reads = new Map<string, number>();

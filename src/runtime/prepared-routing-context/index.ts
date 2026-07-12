@@ -5,10 +5,14 @@ import type {
 import type { DirectionalRouteHop } from '../../replay/exact-input-route/index.ts';
 import {
   buildDeterministicAdjacency,
-  enumerateValidatedSimplePaths,
   type AdjacencyBucket,
   type DeterministicAdjacencyIndex,
 } from '../../search/simple-paths/index.ts';
+import {
+  expandSimplePathTraversal,
+  normalizeSimplePathTraversal,
+  type SimplePathTraversalState,
+} from '../../search/simple-paths/traversal.ts';
 import {
   verifyCanonicalSnapshotChecksum,
   type CanonicalSnapshotChecksumMismatchError,
@@ -121,6 +125,37 @@ function discoveryFailure(
 ): PreparedSimplePathDiscoveryResult {
   const error: PreparedRouteDiscoveryError = Object.freeze({ code, field, message });
   return Object.freeze({ ok: false, error });
+}
+
+function compareRawUtf16(left: string, right: string): number {
+  if (left < right) return -1;
+  if (left > right) return 1;
+  return 0;
+}
+
+function compareEdges(left: DirectionalRouteHop, right: DirectionalRouteHop): number {
+  return (
+    compareRawUtf16(left.assetIn, right.assetIn) ||
+    compareRawUtf16(left.poolId, right.poolId) ||
+    compareRawUtf16(left.assetOut, right.assetOut)
+  );
+}
+
+function comparePaths(
+  left: readonly DirectionalRouteHop[],
+  right: readonly DirectionalRouteHop[],
+): number {
+  const sharedLength = Math.min(left.length, right.length);
+  for (let index = 0; index < sharedLength; index += 1) {
+    const leftEdge = left[index];
+    const rightEdge = right[index];
+    if (leftEdge === undefined || rightEdge === undefined) {
+      throw new Error('Path comparison reached an unavailable edge.');
+    }
+    const comparison = compareEdges(leftEdge, rightEdge);
+    if (comparison !== 0) return comparison;
+  }
+  return left.length - right.length;
 }
 
 function validateDiscoveryRequest(
@@ -238,7 +273,10 @@ export function prepareRoutingContext(
   return Object.freeze({ ok: true, value: context });
 }
 
-/** @internal Shared lower-level operation; it exposes no prepared state. */
+/**
+ * Capability-guarded shared lower-level operation that exposes no prepared state.
+ * @internal
+ */
 export function discoverPreparedSimplePaths(
   context: PreparedRoutingContext,
   request: PreparedRouteDiscoveryRequest,
@@ -250,17 +288,46 @@ export function discoverPreparedSimplePaths(
   const requestFailure = validateDiscoveryRequest(state, request);
   if (requestFailure !== undefined) return requestFailure;
 
-  const value = enumerateValidatedSimplePaths(
-    state.adjacency,
-    state.adjacencyLookup,
-    Object.freeze({
-      snapshotId: request.snapshotId,
-      snapshotChecksum: request.snapshotChecksum,
+  const initialBucket = state.adjacencyLookup.get(request.assetIn);
+  if (initialBucket === undefined) {
+    throw new Error('Validated prepared traversal requires a known input asset.');
+  }
+  const traversal: SimplePathTraversalState = {
+    request: Object.freeze({
       assetIn: request.assetIn,
       assetOut: request.assetOut,
       maxHops: request.maxHops,
-      maxExpansions: request.maxPathExpansions,
     }),
-  );
+    bucketsByAsset: state.adjacencyLookup,
+    stack: [
+      {
+        path: [],
+        visitedAssets: new Set([request.assetIn]),
+        visitedPools: new Set(),
+        edges: initialBucket.edges,
+        nextEdgeIndex: 0,
+      },
+    ],
+    completePaths: [],
+    expansions: 0,
+  };
+  let termination: 'complete' | 'work-limit' = 'complete';
+  while (!normalizeSimplePathTraversal(traversal)) {
+    if (traversal.expansions === request.maxPathExpansions) {
+      termination = 'work-limit';
+      break;
+    }
+    expandSimplePathTraversal(traversal);
+  }
+  const paths = Object.freeze([...traversal.completePaths].sort(comparePaths));
+  const value: PreparedSimplePathDiscoveryValue = Object.freeze({
+    snapshotId: state.snapshot.snapshotId,
+    snapshotChecksum: state.snapshot.snapshotChecksum,
+    assetIn: request.assetIn,
+    assetOut: request.assetOut,
+    paths,
+    expansions: traversal.expansions,
+    termination,
+  });
   return Object.freeze({ ok: true, value });
 }

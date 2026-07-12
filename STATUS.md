@@ -19,11 +19,12 @@ Last updated: 2026-07-13
 - Canonical `routelab.snapshot.v1` financial-content serialization with pool-order independence and `sha256:` checksum computation/verification.
 - Canonical `routelab.router-run.v1` in-memory bounded-router execution records with checksum verification, exact semantic result/counter projection, observation exclusion, and a prefixed determinism hash.
 - Strict in-memory canonical-run parsing that reconstructs snapshot/request inputs and accepts supplied result bytes and hashes only after fresh exact bounded-router replay reproduces them.
+- Canonical `routelab.router-case.v1` in-memory create/parse verification and three fixed offline success/no-route/no-plan case files with documented byte counts, file hashes, and run hashes.
 - Machine-checked public/private trace boundary and manifest-only engineering-log promotion.
 
 ## Current release gate
 
-Milestones 0–2 are integrated, and the first three Milestone 3 slices now define canonical snapshot financial-content bytes/checksums, an in-memory checksum-verified bounded-router run/determinism hash, and an exact-replay-verifying reader. The general router still treats supplied checksums as pinned opaque identity; the canonical-run boundary performs verification. No persisted case format or file I/O, benchmark CLI, split allocation, service, adapter, or learned ordering exists.
+Milestones 0–2 are integrated, and the first four Milestone 3 slices now define canonical snapshot financial-content bytes/checksums, an in-memory checksum-verified bounded-router run/determinism hash, an exact-replay-verifying reader, and versioned offline case wrappers/files. The general router still treats supplied checksums as pinned opaque identity; the canonical-run boundary performs verification. No production file discovery or benchmark CLI, split allocation, service, adapter, or learned ordering exists.
 
 ## Public evidence
 
@@ -35,7 +36,7 @@ Milestones 0–2 are integrated, and the first three Milestone 3 slices now defi
 
 ## Next technical milestone
 
-Milestone 3 continues with a versioned persisted offline case wrapper and fixtures before benchmark tooling is added.
+Milestone 3 continues with deterministic offline case discovery and a benchmark CLI that separates semantic results from timing/environment observations.
 
 ## Known limitations
 
@@ -45,4 +46,4 @@ Milestone 3 continues with a versioned persisted offline case wrapper and fixtur
 - Fixture JSON is hand-auditable evidence, not a public snapshot or replay schema.
 - Domain parsing and general routing still accept caller-supplied opaque checksum identity; canonical computation/verification is explicit and never silently rewrites it. Canonical run creation is the narrower verified execution boundary.
 - Research references describe possible later directions and do not imply implementation or equivalence.
-- Canonical router-run writing and replay verification are in-memory only; no persisted case compatibility, file discovery, benchmark execution, timing/environment record, migration, or JSON resource-limit policy exists yet.
+- Case files are fixed repository fixtures only; no production discovery, benchmark execution, timing/environment record, migration, or JSON resource-limit policy exists yet.

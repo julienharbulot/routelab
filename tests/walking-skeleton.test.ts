@@ -18,10 +18,11 @@ void test('reports deterministic bounded-router capability status', () => {
     canonicalSnapshotChecksum: 'sha256-v1-available-unenforced',
     canonicalRouterRun: 'sha256-v1-in-memory-writer',
     canonicalRouterRunReader: 'exact-replay-verified-in-memory',
+    canonicalRouterCases: 'v1-three-offline-fixtures',
   });
 
   assert.equal(
     renderWalkingSkeletonStatus(),
-    '{\n  "project": "RouteLab TS",\n  "stage": "bounded-single-path-router",\n  "mode": "offline-deterministic",\n  "financialQuoting": "exact-constant-product",\n  "routeReplay": "exact-explicit-simple-route",\n  "pathEnumeration": "deterministic-bounded-simple-paths",\n  "singlePathRouting": "exact-bounded",\n  "canonicalSnapshotChecksum": "sha256-v1-available-unenforced",\n  "canonicalRouterRun": "sha256-v1-in-memory-writer",\n  "canonicalRouterRunReader": "exact-replay-verified-in-memory"\n}',
+    '{\n  "project": "RouteLab TS",\n  "stage": "bounded-single-path-router",\n  "mode": "offline-deterministic",\n  "financialQuoting": "exact-constant-product",\n  "routeReplay": "exact-explicit-simple-route",\n  "pathEnumeration": "deterministic-bounded-simple-paths",\n  "singlePathRouting": "exact-bounded",\n  "canonicalSnapshotChecksum": "sha256-v1-available-unenforced",\n  "canonicalRouterRun": "sha256-v1-in-memory-writer",\n  "canonicalRouterRunReader": "exact-replay-verified-in-memory",\n  "canonicalRouterCases": "v1-three-offline-fixtures"\n}',
   );
 });

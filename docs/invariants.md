@@ -159,7 +159,7 @@ A snapshot is an immutable collection of validated pool states and is identified
 
 Both fields are nonempty opaque strings. A plan, replay request, snapshot-derived cache, or index that refers only to `snapshotId` is insufficient. The exact pair must match the requested snapshot.
 
-The checksum semantically binds a schema version and the canonical validated financial content, independent of input collection order. It excludes wall-clock observations, derived caches/indexes, decision traces, and the human-readable snapshot ID. The canonical serialization and hash algorithm are deferred to the replay-schema task; until then, RLT-010 treats the checksum as supplied opaque identity and must not claim to recompute or verify it.
+The checksum semantically binds the `routelab.snapshot.v1` schema version and canonical validated financial content, independent of input collection order. It excludes wall-clock observations, derived caches/indexes, decision traces, and the human-readable snapshot ID. Canonical verification recomputes the accepted `sha256:` checksum from that content and compares it exactly with the declared checksum; it never silently rewrites a mismatch.
 
 Immutability is semantic, not merely a TypeScript `readonly` annotation:
 
@@ -168,11 +168,13 @@ Immutability is semantic, not merely a TypeScript `readonly` annotation:
 - a failed operation exposes no partial changes;
 - later runtime-freezing or defensive-copy choices may strengthen enforcement without changing results.
 
+A prepared routing context first defensively captures caller-owned snapshot data and verifies the declared checksum against its canonical financial content. A mismatch creates no context or snapshot-derived lookup or adjacency. After verification, the context exclusively owns deep-frozen captured snapshot, pool, and adjacency values plus hidden pool and known-asset lookups that are never mutated. It exposes no caller-owned or mutable collection reference.
+
 ### Alternatives and rationale
 
 - Snapshot ID alone was rejected because the same label could otherwise refer to different liquidity.
 - Including timing, cache state, or insertion order in the checksum was rejected because those do not change the executable financial state and would break deterministic identity.
-- Choosing a hash algorithm now was rejected because Milestone 0 has no public replay schema; that choice belongs with canonical replay serialization.
+- Treating preparation as an opaque-checksum boundary was rejected because a snapshot-derived lookup or adjacency must not be created from unverified financial content.
 
 Milestone 0 fixture files are hand-auditable semantic evidence, not yet valid serialized domain snapshots. They may use scenario IDs and ordered pool descriptions without pretending to carry a verified snapshot checksum.
 
@@ -206,6 +208,8 @@ A route candidate is eligible for exact replay only when it:
 - completes every hop using the latest transitioned state.
 
 Any failure rejects the whole candidate without changing the incumbent or snapshot.
+
+In the composed split runtime, one request branch owns one simple-path traversal and one deeply frozen canonical path list ordered by the raw UTF-16 directional route key. Pool-disjoint candidate sets derive only from that list, without rediscovery or reordering, and split-only set enumeration starts at cardinality two. A discovered path remains a structural proposal until an applicable exact replay succeeds.
 
 ### Pool-disjoint split replay
 
@@ -267,6 +271,8 @@ A bounded greedy allocation policy may propose allocations by dividing the exact
 
 The greedy policy starts from the validated no-split/equal incumbent and can only replace it under the complete split objective above. Evaluation work is bounded explicitly; a cap reached during a route-option step exposes no partial allocation or receipt. Exact scoring or final replay failure preserves the incumbent. Chunk allocation is a bounded heuristic, not a global-optimality claim; tiny exhaustive allocation evidence bounds only the named configured cases.
 
+In the composed split runtime, equal proposal receipts are also non-authorizing. Every equal or greedy incumbent replacement requires a distinct metered fresh full-input exact authorization replay against the prepared snapshot. Only that authorization receipt may replace the incumbent under the complete split objective; failure or a cooperative stop preserves the prior incumbent.
+
 ### Alternatives and rationale
 
 - “First discovered wins” was rejected because refactoring traversal order could silently change equal-output results.
@@ -288,7 +294,17 @@ All iteration over assets, pools, routes, errors, and serialized fields that can
 
 Work-budget counters and stop checkpoints must be defined by the task that introduces them. Replays and regression tests use those deterministic checkpoints. A wall-clock deadline is a service/latency behavior only: deadline-driven termination is not assigned a determinism hash unless the deterministic work budget independently fixes the same termination point. Timing fields are always excluded from determinism hashes.
 
+The composed split runtime replays every canonical eligible direct candidate through uncapped fresh exact execution and establishes the best valid direct incumbent before its first interruption callback or clock sample. Direct candidate, replay, and rejection counters are separate from discretionary work. One request-scoped cumulative safe-integer ledger then keeps distinct non-recharged caps and counters for path expansions, best-single candidate replays, candidate-set expansions, equal proposal replays, greedy option replays, and final authorization replays, with replay rejection counters where applicable. No graph expansion is counted as an exact replay or exchanged with it through a universal work scalar.
+
+At each discretionary unit, the runtime first determines unit availability or stage completion, then applies that work kind's cumulative cap, checks interruption, samples the absolute monotonic deadline, and finally executes the unit atomically. This boundary applies before every path expansion, best-single replay, set expansion, equal proposal replay, greedy option replay, and final authorization replay. A per-kind cap closes only its stage; interruption or deadline stops the request. No stop exposes a partial replay or plan.
+
+An interruption callback or deadline clock failure returns a typed control or deadline error rather than throwing through the runtime, executes and accounts no pending unit, and preserves the prior fully authorized incumbent and pre-unit counters.
+
+Discovery materializes its canonical structural path list before best-single evaluation. The best-single stage processes that list in order and charges each attempted exact replay; all discovered paths are replayed only if the stage completes without exhausting its own cap. Unreplayed paths remain structural proposals available to pool-disjoint set enumeration, whose later exact proposal and authorization replays remain mandatory.
+
 Repeated runs with identical deterministic inputs must select the same plan, exact output, termination reason, counters, and stable trace content. Observed elapsed time may differ.
+
+Canonical split evidence is additive under `routelab.split-router-run.v1` and `routelab.split-router-case.v1`. It canonicalizes only deterministic `complete` or `work-limit` executions fixed by typed caps, and its semantic hash includes deterministic request, configuration, caps, counters, termination, and exact result. Interruption- or deadline-driven outcomes and their termination labels remain operational and receive no split-v1 determinism hash; omitting timing, clock samples, or stop observations does not make them semantic. Existing canonical single-path v1 JSON, bytes, hashes, fixtures, and zero-expansion behavior are unchanged.
 
 ### Alternatives and rationale
 

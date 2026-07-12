@@ -64,7 +64,7 @@ Gate: zero-work and already-expired forced cases return the established exact-re
 
 Start with deterministic pool-disjoint candidates and no-split/equal-split/greedy baselines. Add a tiny exhaustive allocation oracle before approximate models or numerical allocation. Reconstruct exact integer allocations whose nonnegative sum is the requested input, then exact-replay every plan. Preserve a safe baseline fallback.
 
-An independently integrated structural candidate-set slice does not satisfy or bypass the open Milestone 4b gate. Further split-routing claims remain gated by immediate incumbent establishment and measured progression.
+The independently integrated structural candidate-set slice did not itself satisfy or bypass Milestone 4b. Further split-routing claims require the now-integrated immediate-incumbent and measured-progression prerequisites and must still satisfy this milestone's allocation/replay gate.
 
 Gate: exact-sum reconstruction, fallback, large integer, and exhaustive tiny comparisons pass. Approximate failures cannot corrupt the incumbent. No global-optimality claim exceeds the implemented candidate and allocation space.
 

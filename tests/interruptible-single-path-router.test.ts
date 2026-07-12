@@ -120,7 +120,7 @@ function permutations<T>(values: readonly T[]): readonly (readonly T[])[] {
   return result;
 }
 
-void test('presents every reachable boundary with legacy budget-N counters and incumbents', () => {
+void test('presents every reachable boundary with separate establishment and search accounting', () => {
   const inputSnapshot = routingGraph();
   const checkpoints: ExactInputSinglePathInterruptionCheckpoint[] = [];
   const complete = routeExactInputSinglePathInterruptible(
@@ -143,13 +143,42 @@ void test('presents every reachable boundary with legacy budget-N counters and i
   assert.equal(complete.plan.search.termination, 'complete');
   assert.equal(complete.plan.search.expansions, 4);
   assert.equal(complete.plan.receipt.amountOut, 165n);
+  assert.deepEqual(complete.plan.search.establishment, {
+    enumeratedCandidates: 1,
+    replayedCandidates: 1,
+    rejectedCandidates: 0,
+  });
 
   for (const checkpoint of checkpoints) {
     const legacy = routeExactInputSinglePath(
       inputSnapshot,
       request({ maxExpansions: checkpoint.expansions }),
     );
-    assert.deepEqual(checkpoint, legacyCheckpoint(legacy));
+    const legacyValue = legacyCheckpoint(legacy);
+    assert.deepEqual(checkpoint.establishment, {
+      enumeratedCandidates: 1,
+      replayedCandidates: 1,
+      rejectedCandidates: 0,
+    });
+    assert.deepEqual(
+      {
+        expansions: checkpoint.expansions,
+        enumeratedCandidates: checkpoint.enumeratedCandidates,
+        replayedCandidates: checkpoint.replayedCandidates,
+        rejectedCandidates: checkpoint.rejectedCandidates,
+      },
+      {
+        expansions: legacyValue.expansions,
+        enumeratedCandidates: legacyValue.enumeratedCandidates,
+        replayedCandidates: legacyValue.replayedCandidates,
+        rejectedCandidates: legacyValue.rejectedCandidates,
+      },
+    );
+    assert.notEqual(checkpoint.incumbent, null);
+    assert.equal(
+      checkpoint.incumbent?.amountOut,
+      legacyValue.incumbent?.amountOut ?? 90n,
+    );
     assertDeepFrozen(checkpoint);
 
     const interrupted = routeExactInputSinglePathInterruptible(
@@ -161,28 +190,21 @@ void test('presents every reachable boundary with legacy budget-N counters and i
         },
       },
     );
-    const legacyValue = legacyCheckpoint(legacy);
-    if (legacyValue.incumbent === null) {
-      assert.equal(interrupted.status, 'no-plan');
-      if (interrupted.status === 'no-plan') {
-        assert.equal(interrupted.reason, 'interrupted');
-        assert.deepEqual(
-          { ...interrupted.search, termination: undefined },
-          {
-            expansions: legacyValue.expansions,
-            enumeratedCandidates: legacyValue.enumeratedCandidates,
-            replayedCandidates: legacyValue.replayedCandidates,
-            rejectedCandidates: legacyValue.rejectedCandidates,
-            termination: undefined,
-          },
-        );
-      }
-    } else {
-      assert.equal(interrupted.status, 'success');
-      if (interrupted.status === 'success') {
-        assert.equal(interrupted.plan.search.termination, 'interrupted');
-        assert.deepEqual(interrupted.plan.receipt, legacyValue.incumbent);
-      }
+    assert.equal(interrupted.status, 'success');
+    if (interrupted.status === 'success') {
+      assert.equal(interrupted.plan.search.termination, 'interrupted');
+      assert.deepEqual(interrupted.plan.receipt, checkpoint.incumbent);
+      assert.deepEqual(
+        { ...interrupted.plan.search, termination: undefined },
+        {
+          establishment: checkpoint.establishment,
+          expansions: checkpoint.expansions,
+          enumeratedCandidates: checkpoint.enumeratedCandidates,
+          replayedCandidates: checkpoint.replayedCandidates,
+          rejectedCandidates: checkpoint.rejectedCandidates,
+          termination: undefined,
+        },
+      );
     }
     assertDeepFrozen(interrupted);
   }
@@ -218,10 +240,11 @@ void test('orders complete before work-limit and work-limit before callback', ()
       },
     },
   );
-  assert.equal(zeroBudget.status, 'no-plan');
-  if (zeroBudget.status === 'no-plan') {
-    assert.equal(zeroBudget.reason, 'work-limit');
-    assert.equal(zeroBudget.search.expansions, 0);
+  assert.equal(zeroBudget.status, 'success');
+  if (zeroBudget.status === 'success') {
+    assert.equal(zeroBudget.plan.search.termination, 'work-limit');
+    assert.equal(zeroBudget.plan.search.expansions, 0);
+    assert.equal(zeroBudget.plan.receipt.hops[0]?.poolId, 'direct-ac');
   }
   assert.equal(zeroBudgetCalls, 0);
 
@@ -260,6 +283,11 @@ void test('distinguishes interrupted, work-limit, and complete no-route without 
     status: 'no-plan',
     reason: 'interrupted',
     search: {
+      establishment: {
+        enumeratedCandidates: 0,
+        replayedCandidates: 0,
+        rejectedCandidates: 0,
+      },
       expansions: 0,
       enumeratedCandidates: 0,
       replayedCandidates: 0,
@@ -374,6 +402,11 @@ void test('replay rejection is atomic and checkpoints retain a validated incumbe
   assert.equal(result.plan.search.termination, 'interrupted');
   assert.equal(result.plan.receipt.hops[0]?.poolId, 'a-valid-ac');
   assert.deepEqual(observed, {
+    establishment: {
+      enumeratedCandidates: 2,
+      replayedCandidates: 2,
+      rejectedCandidates: 1,
+    },
     expansions: 2,
     enumeratedCandidates: 2,
     replayedCandidates: 2,
@@ -399,6 +432,11 @@ void test('replay rejection is atomic and checkpoints retain a validated incumbe
     status: 'no-plan',
     reason: 'interrupted',
     search: {
+      establishment: {
+        enumeratedCandidates: 1,
+        replayedCandidates: 1,
+        rejectedCandidates: 1,
+      },
       expansions: 1,
       enumeratedCandidates: 1,
       replayedCandidates: 1,
@@ -538,7 +576,25 @@ void test('callback reentrancy cannot change entry-captured request or snapshot 
       snapshotAtEntry,
       { ...requestAtEntry, maxExpansions: checkpoint.expansions },
     );
-    assert.deepEqual(checkpoint, legacyCheckpoint(legacy));
+    const legacyValue = legacyCheckpoint(legacy);
+    assert.deepEqual(
+      {
+        expansions: checkpoint.expansions,
+        enumeratedCandidates: checkpoint.enumeratedCandidates,
+        replayedCandidates: checkpoint.replayedCandidates,
+        rejectedCandidates: checkpoint.rejectedCandidates,
+      },
+      {
+        expansions: legacyValue.expansions,
+        enumeratedCandidates: legacyValue.enumeratedCandidates,
+        replayedCandidates: legacyValue.replayedCandidates,
+        rejectedCandidates: legacyValue.rejectedCandidates,
+      },
+    );
+    assert.equal(
+      checkpoint.incumbent?.amountOut,
+      legacyValue.incumbent?.amountOut ?? 90n,
+    );
   }
   assertDeepFrozen(actual);
 });

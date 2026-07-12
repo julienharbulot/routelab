@@ -24,12 +24,15 @@ Last updated: 2026-07-13
 - Deterministic router-layer interruption at pre-expansion checkpoints; callback-visible incumbents are deeply frozen fresh exact replays, and interruption without one returns a typed no-plan outcome.
 - Opaque, reusable and branchable process-local checkpoint tokens with absolute cumulative work caps, hidden immutable snapshot/frontier binding, cumulative counters, and clone-on-resume isolation.
 - Optional cooperative deadline adapters using an injected absolute monotonic bigint clock at eligible pre-expansion boundaries, with deadline-specific outcomes and no timing leakage into checkpoint or hash state.
+- Deterministic immediate incumbent establishment for interruptible, resumable, and deadline routing: every canonical direct candidate is fresh exact-replayed before the first user stop, the best valid direct receipt is retained, and establishment candidate/replay/rejection work is reported separately from search expansions.
+- One-time establishment state carried through reusable checkpoint branches without recharge, with independently verified monotonic exact incumbent quality over increasing one-shot and cumulative resumed search work.
+- A versioned fixed-input anytime measurement CLI that reports deterministic quality-versus-work separately from warmed, repeated, alternating algorithm-only latency observations with environment metadata and raw samples; it encodes no threshold or performance conclusion.
 - Deterministic bounded enumeration of canonical pool-ID-disjoint route sets with separate path/set work counters and terminations; outputs are structural proposals only.
 - Machine-checked public/private trace boundary and manifest-only engineering-log promotion.
 
 ## Current release gate
 
-Milestones 0–3 and Milestone 4a are integrated locally. Milestone 4b remains open: immediate incumbent establishment, explicit accounting for that work, monotonic quality progression, and separately reported quality-versus-work and statistically meaningful latency evidence are not implemented. A non-authorizing structural slice originally scoped to Milestone 5 is also integrated; it does not satisfy or bypass Milestone 4b. Pool-disjoint candidate sets contain no allocations, outputs, receipts, objectives, or split plans. No split replay/allocation, serialized checkpoint, cross-process resume, default host clock, statistical performance harness, service, protocol adapter, or learned ordering exists.
+Milestones 0–4 are integrated locally. Immediate incumbent establishment, explicit work accounting, monotonic quality progression, and separate quality-versus-work/repeated-latency evidence close the Milestone 4b gate. A non-authorizing structural slice from Milestone 5 is also integrated. Pool-disjoint candidate sets still contain no allocations, outputs, receipts, objectives, or split plans. No split replay/allocation, serialized checkpoint, cross-process resume, default router clock, general statistical performance conclusion, service, protocol adapter, or learned ordering exists.
 
 ## Public evidence
 
@@ -41,7 +44,7 @@ Milestones 0–3 and Milestone 4a are integrated locally. Milestone 4b remains o
 
 ## Next technical milestone
 
-Milestone 4b must freeze and implement deterministic immediate incumbent establishment before the first interruptible/deadline stop, including explicit work accounting, zero-work and already-expired evidence, monotonic quality progression, and separate quality-versus-work and latency reporting. Further Milestone 5 split work remains behind this gate.
+Milestone 5 split allocation is next. It must add exact allocation and split-replay contracts, exact-sum reconstruction, safe no-split fallback, large-integer evidence, and a tiny exhaustive allocation oracle before any approximate allocation method. The integrated pool-disjoint route sets remain structural proposals only.
 
 ## Known limitations
 
@@ -51,8 +54,10 @@ Milestone 4b must freeze and implement deterministic immediate incumbent establi
 - Fixture JSON is hand-auditable evidence, not a public snapshot or replay schema.
 - Domain parsing and general routing still accept caller-supplied opaque checksum identity; canonical computation/verification is explicit and never silently rewrites it. Canonical run creation is the narrower verified execution boundary.
 - Research references describe possible later directions and do not imply implementation or equivalence.
-- Replay-case timings are one observation per fixed offline case with no warmup, repetition, comparison, threshold, statistical interpretation, output persistence, migration, or JSON resource-limit policy; no benchmark harness exists yet.
-- Interruption or deadline checks may occur before any incumbent is established. A zero-work cap or already-expired deadline can therefore return no plan even when an exact-replayable one-hop route exists; Milestone 4b owns the baseline and accounting correction.
+- Replay-case timings remain one observation per fixed M3 case with no warmup, repetition, comparison, threshold, statistical interpretation, output persistence, migration, or JSON resource-limit policy. The separate M4 anytime harness does not change their meaning.
+- Immediate establishment covers canonical exact-replayable one-hop candidates only. With no eligible direct baseline, a zero search cap or already-reached deadline retains typed no-plan behavior.
+- Non-interruptible bounded routing and canonical router-run/case v1 preserve their existing zero-expansion semantics and hashes; establishment accounting belongs to the interruptible, resumable, and deadline runtime APIs.
+- Anytime latency samples cover one fixed offline input and two one-shot runtime variants. They are observational, retain raw values and environment metadata, and support no scaling, threshold, speedup, or general performance claim.
 - Interruption predicates are operational controls only: replay is atomic, in-memory tokens are not serializable/persistable or valid across processes, and paused outcomes do not enter `routelab.router-run.v1` hashes.
 - Deadline adapters require an injected monotonic clock, check only between expansions, make no hard-latency guarantee, and expose no clock samples or configuration in semantic results.
 - Pool-disjoint set ordering is structural enumeration, not a financial preference; candidate sets are never incumbents and require independent exact allocation/replay validation before use.

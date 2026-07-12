@@ -2,7 +2,7 @@
 
 RouteLab is a small, exact TypeScript liquidity router. Given an immutable snapshot of two-asset constant-product pools and an exact-input request, it deterministically searches within explicit hop and work limits, exactly replays every complete candidate, and returns the best valid single-path plan under exact output and deterministic tie-breaking.
 
-It also supports canonical snapshot, run, and case records; deterministic interruption and process-local resume; injected cooperative deadlines; and bounded enumeration of pool-disjoint route sets as non-authorizing structural proposals. See [current public status](STATUS.md) for the precise integrated boundary.
+It also supports canonical snapshot, run, and case records; deterministic interruption and process-local resume; immediate exact-replayed direct incumbents; injected cooperative deadlines; separate anytime quality/latency observations; and bounded enumeration of pool-disjoint route sets as non-authorizing structural proposals. See [current public status](STATUS.md) for the precise integrated boundary.
 
 ## A 30-second executable example
 
@@ -42,7 +42,7 @@ flowchart LR
     J --> K[Structural proposals only]
 ```
 
-The core layers are immutable domain validation, exact constant-product transitions, exact sequential route replay, canonical bounded search, deterministic incumbent selection, and canonical serialization. Interruption, resume, and deadline adapters operate at explicit search checkpoints without weakening exact replay.
+The core layers are immutable domain validation, exact constant-product transitions, exact sequential route replay, canonical bounded search, deterministic incumbent selection, and canonical serialization. Interruptible routing exact-replays every canonical direct candidate before its first user-controlled stop, then carries the best valid baseline and separate establishment accounting through reusable checkpoints. Resume and deadline adapters operate at explicit search boundaries without weakening exact replay.
 
 ## Verification strategy
 
@@ -50,6 +50,7 @@ The repository combines hand-auditable fixtures, focused unit tests, independent
 
 ```bash
 pnpm replay:cases       # Verify fixed offline router cases and emit JSON evidence.
+pnpm measure:anytime    # Emit separate quality/work and repeated raw latency observations.
 pnpm lint               # Run typed ESLint rules.
 pnpm typecheck          # Run strict TypeScript checks without emitting files.
 pnpm test               # Run production and independent-oracle tests.
@@ -66,13 +67,14 @@ CI uses the same pinned pnpm version, performs a frozen install, and runs `pnpm 
 - Pool-disjoint route sets carry no allocations, outputs, receipts, objective, or split authorization.
 - The project does not submit transactions, hold funds, integrate a deployed protocol, or provide a service.
 - Checkpoints are process-local and non-serializable. Deadline adapters require an injected monotonic clock and provide no hard-latency guarantee.
-- Interruption or deadline checks can occur before incumbent establishment, so a zero-work cap or already-expired deadline can return no plan despite an eligible one-hop route. The open M4b gate owns this correction.
-- `pnpm replay:cases` is a verification harness. It has no warmup, repeated algorithm-only samples, comparison mode, statistical analysis, or persisted benchmark results.
+- Immediate establishment is limited to exact-replayable one-hop candidates. With no eligible direct route, a zero search cap or already-reached deadline can still return typed no-plan.
+- Non-interruptible routing and canonical router-run/case v1 retain their existing zero-expansion behavior and hashes; immediate establishment is exposed by the interruptible, resumable, and deadline runtime APIs.
+- `pnpm replay:cases` remains a single-observation verification harness. `pnpm measure:anytime` uses one fixed offline input, warmups, alternating repeated samples, environment metadata, and raw observations, but performs no statistical inference and supports no speedup, threshold, scaling, or production-latency claim.
 - The offline demo reports capability status only; use replay cases and tests for executable financial evidence.
 
 ## Roadmap
 
-The current release target is deterministic offline exact-input routing over immutable snapshots. Immediate incumbent establishment and measured quality progression remain an open M4b gate before further split work. Exact split replay and explicit no-split/equal-split baselines must then precede allocation optimization; acceleration, services, protocol adapters, and learned ordering remain later gated work.
+The current release target is deterministic offline exact-input routing over immutable snapshots. Milestone 4 immediate incumbent establishment and measured quality progression are integrated. Milestone 5 must now add exact split replay and explicit no-split/equal-split baselines before allocation optimization; acceleration, services, protocol adapters, and learned ordering remain later gated work.
 
 See the [technical roadmap](IMPLEMENTATION_PLAN.md), [current release gate](STATUS.md), [accepted invariants](docs/invariants.md), [Milestone 0 fixture derivations](fixtures/m0/README.md), and [research references](docs/references.md).
 

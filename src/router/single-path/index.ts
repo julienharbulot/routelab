@@ -6,6 +6,7 @@ import {
 import {
   buildDeterministicAdjacency,
   enumerateSimplePaths,
+  type DeterministicAdjacencyIndex,
   type SimplePathEnumerationError,
 } from '../../search/simple-paths/index.ts';
 import {
@@ -42,11 +43,18 @@ export interface ExactInputSinglePathPlan {
 }
 
 export interface ExactInputSinglePathInterruptibleSearchSummary {
+  readonly establishment: ExactInputSinglePathEstablishmentSummary;
   readonly expansions: number;
   readonly enumeratedCandidates: number;
   readonly replayedCandidates: number;
   readonly rejectedCandidates: number;
   readonly termination: 'complete' | 'work-limit' | 'interrupted';
+}
+
+export interface ExactInputSinglePathEstablishmentSummary {
+  readonly enumeratedCandidates: number;
+  readonly replayedCandidates: number;
+  readonly rejectedCandidates: number;
 }
 
 export interface ExactInputSinglePathInterruptiblePlan {
@@ -55,6 +63,7 @@ export interface ExactInputSinglePathInterruptiblePlan {
 }
 
 export interface ExactInputSinglePathInterruptionCheckpoint {
+  readonly establishment: ExactInputSinglePathEstablishmentSummary;
   readonly expansions: number;
   readonly enumeratedCandidates: number;
   readonly replayedCandidates: number;
@@ -80,6 +89,7 @@ export interface ExactInputSinglePathResumableCheckpoint {
   readonly assetOut: string;
   readonly amountIn: bigint;
   readonly maxHops: number;
+  readonly establishment: ExactInputSinglePathEstablishmentSummary;
   readonly expansions: number;
   readonly enumeratedCandidates: number;
   readonly replayedCandidates: number;
@@ -93,6 +103,7 @@ export interface ExactInputSinglePathDeadlineControl {
 }
 
 export interface ExactInputSinglePathDeadlineSearchSummary {
+  readonly establishment: ExactInputSinglePathEstablishmentSummary;
   readonly expansions: number;
   readonly enumeratedCandidates: number;
   readonly replayedCandidates: number;
@@ -413,6 +424,7 @@ function frozenSearchSummary(
 }
 
 function frozenInterruptibleSearchSummary(
+  establishment: ExactInputSinglePathEstablishmentSummary,
   expansions: number,
   enumeratedCandidates: number,
   replayedCandidates: number,
@@ -420,11 +432,24 @@ function frozenInterruptibleSearchSummary(
   termination: 'complete' | 'work-limit' | 'interrupted',
 ): ExactInputSinglePathInterruptibleSearchSummary {
   return Object.freeze({
+    establishment,
     expansions,
     enumeratedCandidates,
     replayedCandidates,
     rejectedCandidates,
     termination,
+  });
+}
+
+function frozenEstablishmentSummary(
+  enumeratedCandidates: number,
+  replayedCandidates: number,
+  rejectedCandidates: number,
+): ExactInputSinglePathEstablishmentSummary {
+  return Object.freeze({
+    enumeratedCandidates,
+    replayedCandidates,
+    rejectedCandidates,
   });
 }
 
@@ -485,6 +510,7 @@ interface ExactInputSinglePathResumableExecutionState {
   readonly snapshot: LiquiditySnapshot;
   readonly request: ExactInputSinglePathResumeBinding;
   readonly traversal: SimplePathTraversalState;
+  readonly establishment: ExactInputSinglePathEstablishmentSummary;
   incumbent: ExactInputRouteReplayReceipt | undefined;
   enumeratedCandidates: number;
   replayedCandidates: number;
@@ -495,10 +521,57 @@ interface ExactInputSinglePathHiddenCheckpointState {
   readonly snapshot: LiquiditySnapshot;
   readonly request: ExactInputSinglePathResumeBinding;
   readonly traversal: FrozenSimplePathTraversalState;
+  readonly establishment: ExactInputSinglePathEstablishmentSummary;
   readonly incumbent: ExactInputRouteReplayReceipt | null;
   readonly enumeratedCandidates: number;
   readonly replayedCandidates: number;
   readonly rejectedCandidates: number;
+}
+
+interface ExactInputSinglePathEstablishedIncumbent {
+  readonly summary: ExactInputSinglePathEstablishmentSummary;
+  readonly incumbent: ExactInputRouteReplayReceipt | undefined;
+}
+
+function establishDirectIncumbent(
+  snapshot: LiquiditySnapshot,
+  request: ExactInputSinglePathResumeBinding,
+  adjacency: DeterministicAdjacencyIndex,
+): ExactInputSinglePathEstablishedIncumbent {
+  const bucket = adjacency.buckets.find(({ assetIn }) => assetIn === request.assetIn);
+  const candidates =
+    bucket?.edges.filter(({ assetOut }) => assetOut === request.assetOut) ?? [];
+  let incumbent: ExactInputRouteReplayReceipt | undefined;
+  let replayedCandidates = 0;
+  let rejectedCandidates = 0;
+
+  for (const candidate of candidates) {
+    const replay = replayExactInputRoute(snapshot, {
+      snapshotId: request.snapshotId,
+      snapshotChecksum: request.snapshotChecksum,
+      assetIn: request.assetIn,
+      assetOut: request.assetOut,
+      amountIn: request.amountIn,
+      hops: Object.freeze([candidate]),
+    });
+    replayedCandidates += 1;
+    if (!replay.ok) {
+      rejectedCandidates += 1;
+      continue;
+    }
+    if (incumbent === undefined || isStrictlyBetter(replay.value, incumbent)) {
+      incumbent = replay.value;
+    }
+  }
+
+  return Object.freeze({
+    summary: frozenEstablishmentSummary(
+      candidates.length,
+      replayedCandidates,
+      rejectedCandidates,
+    ),
+    incumbent,
+  });
 }
 
 const resumableCheckpointStates = new WeakMap<
@@ -629,7 +702,12 @@ export function routeExactInputSinglePathInterruptible(
     assetOut: capturedRequest.assetOut,
     maxHops: capturedRequest.maxHops,
   });
-  let incumbent: ExactInputRouteReplayReceipt | undefined;
+  const establishment = establishDirectIncumbent(
+    capturedSnapshot,
+    capturedRequest,
+    adjacency,
+  );
+  let incumbent = establishment.incumbent;
   let enumeratedCandidates = 0;
   let replayedCandidates = 0;
   let rejectedCandidates = 0;
@@ -638,6 +716,7 @@ export function routeExactInputSinglePathInterruptible(
     termination: 'complete' | 'work-limit' | 'interrupted',
   ): ExactInputSinglePathInterruptibleResult => {
     const search = frozenInterruptibleSearchSummary(
+      establishment.summary,
       traversal.expansions,
       enumeratedCandidates,
       replayedCandidates,
@@ -668,6 +747,7 @@ export function routeExactInputSinglePathInterruptible(
     }
 
     const checkpoint: ExactInputSinglePathInterruptionCheckpoint = Object.freeze({
+      establishment: establishment.summary,
       expansions: traversal.expansions,
       enumeratedCandidates,
       replayedCandidates,
@@ -710,6 +790,7 @@ function createResumableCheckpoint(
     snapshot: state.snapshot,
     request: state.request,
     traversal: freezeSimplePathTraversal(state.traversal),
+    establishment: state.establishment,
     incumbent: state.incumbent ?? null,
     enumeratedCandidates: state.enumeratedCandidates,
     replayedCandidates: state.replayedCandidates,
@@ -723,6 +804,7 @@ function createResumableCheckpoint(
     assetOut: state.request.assetOut,
     amountIn: state.request.amountIn,
     maxHops: state.request.maxHops,
+    establishment: state.establishment,
     expansions: state.traversal.expansions,
     enumeratedCandidates: state.enumeratedCandidates,
     replayedCandidates: state.replayedCandidates,
@@ -740,6 +822,7 @@ function cloneResumableExecutionState(
     snapshot: hidden.snapshot,
     request: hidden.request,
     traversal: cloneFrozenSimplePathTraversal(hidden.traversal),
+    establishment: hidden.establishment,
     incumbent: hidden.incumbent ?? undefined,
     enumeratedCandidates: hidden.enumeratedCandidates,
     replayedCandidates: hidden.replayedCandidates,
@@ -752,6 +835,7 @@ function finishResumableExecution(
   termination: 'complete' | 'work-limit' | 'interrupted',
 ): ExactInputSinglePathResumableResult {
   const search = frozenInterruptibleSearchSummary(
+    state.establishment,
     state.traversal.expansions,
     state.enumeratedCandidates,
     state.replayedCandidates,
@@ -800,6 +884,7 @@ function continueResumableExecution(
     }
 
     const checkpoint: ExactInputSinglePathInterruptionCheckpoint = Object.freeze({
+      establishment: state.establishment,
       expansions: state.traversal.expansions,
       enumeratedCandidates: state.enumeratedCandidates,
       replayedCandidates: state.replayedCandidates,
@@ -855,15 +940,23 @@ export function routeExactInputSinglePathResumable(
   const shouldInterrupt = capturedInterruptionControl(control);
   if (shouldInterrupt === undefined) return interruptionControlFailure();
 
+  const binding = frozenResumeBinding(capturedRequest);
+  const establishment = establishDirectIncumbent(
+    capturedSnapshot,
+    binding,
+    adjacency,
+  );
+
   const state: ExactInputSinglePathResumableExecutionState = {
     snapshot: capturedSnapshot,
-    request: frozenResumeBinding(capturedRequest),
+    request: binding,
     traversal: createSimplePathTraversal(adjacency, {
       assetIn: capturedRequest.assetIn,
       assetOut: capturedRequest.assetOut,
       maxHops: capturedRequest.maxHops,
     }),
-    incumbent: undefined,
+    establishment: establishment.summary,
+    incumbent: establishment.incumbent,
     enumeratedCandidates: 0,
     replayedCandidates: 0,
     rejectedCandidates: 0,
@@ -925,6 +1018,7 @@ function frozenDeadlineSearchSummary(
   search: ExactInputSinglePathInterruptibleSearchSummary,
 ): ExactInputSinglePathDeadlineSearchSummary {
   return Object.freeze({
+    establishment: search.establishment,
     expansions: search.expansions,
     enumeratedCandidates: search.enumeratedCandidates,
     replayedCandidates: search.replayedCandidates,

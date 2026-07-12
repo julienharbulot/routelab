@@ -330,21 +330,21 @@ void test('brands tokens by identity and rejects token or cap defects before con
 });
 
 void test('obeys checkpoint presence rules for every termination class', () => {
-  const noPlanWorkLimit = routeExactInputSinglePathResumable(
+  const successWorkLimitAtZero = routeExactInputSinglePathResumable(
     routingGraph(),
     request({ maxExpansions: 0 }),
     { shouldInterrupt: () => false },
   );
-  assert.equal(noPlanWorkLimit.status, 'no-plan');
-  assert.notEqual(checkpointFrom(noPlanWorkLimit), null);
+  assert.equal(successWorkLimitAtZero.status, 'success');
+  assert.notEqual(checkpointFrom(successWorkLimitAtZero), null);
 
-  const noPlanInterrupted = routeExactInputSinglePathResumable(
+  const successInterruptedAtZero = routeExactInputSinglePathResumable(
     routingGraph(),
     request(),
     { shouldInterrupt: () => true },
   );
-  assert.equal(noPlanInterrupted.status, 'no-plan');
-  assert.notEqual(checkpointFrom(noPlanInterrupted), null);
+  assert.equal(successInterruptedAtZero.status, 'success');
+  assert.notEqual(checkpointFrom(successInterruptedAtZero), null);
 
   const successWorkLimit = routeExactInputSinglePathResumable(
     routingGraph(),
@@ -537,6 +537,7 @@ void test('exposes only the frozen public token contract in canonical field orde
     'assetOut',
     'amountIn',
     'maxHops',
+    'establishment',
     'expansions',
     'enumeratedCandidates',
     'replayedCandidates',

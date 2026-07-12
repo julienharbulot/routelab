@@ -44,11 +44,18 @@ interface Receipt {
 }
 
 interface Boundary {
+  readonly establishment: Establishment;
   readonly expansions: number;
   readonly enumeratedCandidates: number;
   readonly replayedCandidates: number;
   readonly rejectedCandidates: number;
   readonly incumbent: Receipt | null;
+}
+
+interface Establishment {
+  readonly enumeratedCandidates: number;
+  readonly replayedCandidates: number;
+  readonly rejectedCandidates: number;
 }
 
 interface Trace {
@@ -57,6 +64,7 @@ interface Trace {
 }
 
 interface Search {
+  readonly establishment: Establishment;
   readonly expansions: number;
   readonly enumeratedCandidates: number;
   readonly replayedCandidates: number;
@@ -203,9 +211,43 @@ function replay(
   };
 }
 
+function establishDirect(
+  value: LiquiditySnapshot,
+  routingRequest: ExactInputSinglePathRouterRequest,
+): { readonly summary: Establishment; readonly incumbent: Receipt | undefined } {
+  const candidates: Edge[] = [];
+  for (const entry of value.pools) {
+    if (entry.asset0 === routingRequest.assetIn && entry.asset1 === routingRequest.assetOut) {
+      candidates.push({ assetIn: entry.asset0, poolId: entry.poolId, assetOut: entry.asset1 });
+    }
+    if (entry.asset1 === routingRequest.assetIn && entry.asset0 === routingRequest.assetOut) {
+      candidates.push({ assetIn: entry.asset1, poolId: entry.poolId, assetOut: entry.asset0 });
+    }
+  }
+  candidates.sort(compareEdges);
+  let incumbent: Receipt | undefined;
+  let rejectedCandidates = 0;
+  for (const candidate of candidates) {
+    const receipt = replay(value, routingRequest, [candidate]);
+    if (receipt === undefined) rejectedCandidates += 1;
+    else if (incumbent === undefined || compareReceipts(receipt, incumbent) < 0) {
+      incumbent = receipt;
+    }
+  }
+  return {
+    summary: {
+      enumeratedCandidates: candidates.length,
+      replayedCandidates: candidates.length,
+      rejectedCandidates,
+    },
+    incumbent,
+  };
+}
+
 function trace(
   value: LiquiditySnapshot,
   routingRequest: ExactInputSinglePathRouterRequest,
+  withEstablishment = true,
 ): Trace {
   const adjacency = new Map<string, Edge[]>();
   for (const entry of value.pools) {
@@ -228,10 +270,22 @@ function trace(
   let enumeratedCandidates = 0;
   let replayedCandidates = 0;
   let rejectedCandidates = 0;
-  let incumbent: Receipt | undefined;
+  const established = withEstablishment
+    ? establishDirect(value, routingRequest)
+    : {
+        summary: {
+          enumeratedCandidates: 0,
+          replayedCandidates: 0,
+          rejectedCandidates: 0,
+        },
+        incumbent: undefined,
+      };
+  const establishment = established.summary;
+  let incumbent = established.incumbent;
   const boundaries: Boundary[] = [];
   const capture = (): void => {
     boundaries.push({
+      establishment,
       expansions,
       enumeratedCandidates,
       replayedCandidates,
@@ -295,6 +349,7 @@ function expectedOutcome(
   const boundary = oracleTrace.boundaries[expansion];
   assert.ok(boundary !== undefined);
   const search: Search = {
+    establishment: boundary.establishment,
     expansions: boundary.expansions,
     enumeratedCandidates: boundary.enumeratedCandidates,
     replayedCandidates: boundary.replayedCandidates,
@@ -346,6 +401,7 @@ function assertResult(
 
 function assertToken(token: ExactInputSinglePathResumableCheckpoint, expected: Outcome): void {
   assert.equal(token.kind, 'routelab.in-memory-router-checkpoint.v1');
+  assert.deepEqual(token.establishment, expected.search.establishment);
   assert.equal(token.expansions, expected.search.expansions);
   assert.equal(token.enumeratedCandidates, expected.search.enumeratedCandidates);
   assert.equal(token.replayedCandidates, expected.search.replayedCandidates);
@@ -356,6 +412,24 @@ function assertToken(token: ExactInputSinglePathResumableCheckpoint, expected: O
   assert.equal('snapshot' in token, false);
   assert.equal('request' in token, false);
   assertDeepFrozen(token);
+}
+
+function legacyProjection(expected: Outcome): unknown {
+  const search = {
+    expansions: expected.search.expansions,
+    enumeratedCandidates: expected.search.enumeratedCandidates,
+    replayedCandidates: expected.search.replayedCandidates,
+    rejectedCandidates: expected.search.rejectedCandidates,
+    termination: expected.search.termination,
+  };
+  if (expected.status === 'success') {
+    return { status: 'success', plan: { receipt: expected.receipt, search } };
+  }
+  return {
+    status: expected.status,
+    reason: expected.reason,
+    search,
+  };
 }
 
 function tokenFrom(result: ExactInputSinglePathResumableResult): ExactInputSinglePathResumableCheckpoint {
@@ -747,7 +821,7 @@ void test('covers rejections, objective ties, huge values, monotonic incumbents,
     { shouldInterrupt: () => false },
   );
   assertResult(rejectedAtOne, expectedOutcome(rejectedTrace, 1, 'work-limit'));
-  assert.equal(tokenFrom(rejectedAtOne).incumbent, null);
+  assert.equal(tokenFrom(rejectedAtOne).incumbent?.hops[0]?.poolId, 'b-good');
   const rejectedComplete = resumeExactInputSinglePath(
     tokenFrom(rejectedAtOne),
     rejectedTrace.totalExpansions,
@@ -874,10 +948,11 @@ void test('covers rejections, objective ties, huge values, monotonic incumbents,
   }
 });
 
-void test('preserves RLT-040, legacy, and canonical vectors unchanged', async () => {
+void test('preserves interruptible equivalence plus noninterruptible and canonical compatibility', async () => {
   const value = routingGraph();
   const baseRequest = request(value);
   const oracleTrace = trace(value, baseRequest);
+  const legacyTrace = trace(value, baseRequest, false);
   for (let cap = 0; cap <= oracleTrace.totalExpansions; cap += 1) {
     const termination = cap === oracleTrace.totalExpansions ? 'complete' : 'work-limit';
     const expected = expectedOutcome(oracleTrace, cap, termination);
@@ -897,7 +972,10 @@ void test('preserves RLT-040, legacy, and canonical vectors unchanged', async ()
       ...baseRequest,
       maxExpansions: cap,
     });
-    assert.deepEqual(withoutToken(resumable), legacy);
+    assert.deepEqual(
+      legacy,
+      legacyProjection(expectedOutcome(legacyTrace, cap, termination)),
+    );
   }
 
   const vectors = [
@@ -929,6 +1007,7 @@ void test('public tokens expose only the frozen opaque field contract in exact o
     'assetOut',
     'amountIn',
     'maxHops',
+    'establishment',
     'expansions',
     'enumeratedCandidates',
     'replayedCandidates',

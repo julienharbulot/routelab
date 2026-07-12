@@ -42,11 +42,18 @@ interface OracleReceipt {
 }
 
 interface OracleBoundary {
+  readonly establishment: OracleEstablishment;
   readonly expansions: number;
   readonly enumeratedCandidates: number;
   readonly replayedCandidates: number;
   readonly rejectedCandidates: number;
   readonly incumbent: OracleReceipt | null;
+}
+
+interface OracleEstablishment {
+  readonly enumeratedCandidates: number;
+  readonly replayedCandidates: number;
+  readonly rejectedCandidates: number;
 }
 
 interface OracleTrace {
@@ -55,6 +62,7 @@ interface OracleTrace {
 }
 
 interface OracleSearch {
+  readonly establishment: OracleEstablishment;
   readonly expansions: number;
   readonly enumeratedCandidates: number;
   readonly replayedCandidates: number;
@@ -218,6 +226,44 @@ function replayIndependently(
   };
 }
 
+function establishDirectIndependently(
+  value: LiquiditySnapshot,
+  routingRequest: ExactInputSinglePathRouterRequest,
+): {
+  readonly summary: OracleEstablishment;
+  readonly incumbent: OracleReceipt | undefined;
+} {
+  const candidates: OracleEdge[] = [];
+  for (const entry of value.pools) {
+    if (entry.asset0 === routingRequest.assetIn && entry.asset1 === routingRequest.assetOut) {
+      candidates.push({ assetIn: entry.asset0, poolId: entry.poolId, assetOut: entry.asset1 });
+    }
+    if (entry.asset1 === routingRequest.assetIn && entry.asset0 === routingRequest.assetOut) {
+      candidates.push({ assetIn: entry.asset1, poolId: entry.poolId, assetOut: entry.asset0 });
+    }
+  }
+  candidates.sort(compareEdges);
+
+  let incumbent: OracleReceipt | undefined;
+  let rejectedCandidates = 0;
+  for (const candidate of candidates) {
+    const receipt = replayIndependently(value, routingRequest, [candidate]);
+    if (receipt === undefined) {
+      rejectedCandidates += 1;
+    } else if (incumbent === undefined || compareReceipts(receipt, incumbent) < 0) {
+      incumbent = receipt;
+    }
+  }
+  return {
+    summary: {
+      enumeratedCandidates: candidates.length,
+      replayedCandidates: candidates.length,
+      rejectedCandidates,
+    },
+    incumbent,
+  };
+}
+
 function traceIndependently(
   value: LiquiditySnapshot,
   routingRequest: ExactInputSinglePathRouterRequest,
@@ -243,11 +289,14 @@ function traceIndependently(
   let enumeratedCandidates = 0;
   let replayedCandidates = 0;
   let rejectedCandidates = 0;
-  let incumbent: OracleReceipt | undefined;
+  const established = establishDirectIndependently(value, routingRequest);
+  const establishment = established.summary;
+  let incumbent = established.incumbent;
   const boundaries: OracleBoundary[] = [];
 
   const capture = (): void => {
     boundaries.push({
+      establishment,
       expansions,
       enumeratedCandidates,
       replayedCandidates,
@@ -316,6 +365,7 @@ function oracleOutcome(
   const boundary = trace.boundaries[expansions];
   assert.ok(boundary !== undefined);
   const search: OracleSearch = {
+    establishment: boundary.establishment,
     expansions: boundary.expansions,
     enumeratedCandidates: boundary.enumeratedCandidates,
     replayedCandidates: boundary.replayedCandidates,
@@ -364,19 +414,26 @@ function assertLegacyMatches(
   expected: OracleOutcome,
 ): void {
   assert.notEqual(expected.search.termination, 'interrupted');
+  const legacySearch = {
+    expansions: expected.search.expansions,
+    enumeratedCandidates: expected.search.enumeratedCandidates,
+    replayedCandidates: expected.search.replayedCandidates,
+    rejectedCandidates: expected.search.rejectedCandidates,
+    termination: expected.search.termination,
+  };
   assert.equal(actual.status, expected.status);
   if (expected.status === 'success') {
     assert.equal(actual.status, 'success');
     assert.deepEqual(actual.plan.receipt, expected.receipt);
-    assert.deepEqual(actual.plan.search, expected.search);
+    assert.deepEqual(actual.plan.search, legacySearch);
   } else if (expected.status === 'no-route') {
     assert.equal(actual.status, 'no-route');
     assert.equal(actual.reason, expected.reason);
-    assert.deepEqual(actual.search, expected.search);
+    assert.deepEqual(actual.search, legacySearch);
   } else {
     assert.equal(actual.status, 'no-plan');
     assert.equal(actual.reason, 'work-limit');
-    assert.deepEqual(actual.search, expected.search);
+    assert.deepEqual(actual.search, legacySearch);
   }
 }
 
@@ -444,6 +501,7 @@ void test('forces every boundary and matches the independent trace plus every le
     assert.deepEqual(observed, trace.boundaries[expansion]);
     assertDeepFrozen(observed);
     assert.deepEqual(Object.keys(observed ?? {}), [
+      'establishment',
       'expansions',
       'enumeratedCandidates',
       'replayedCandidates',
@@ -543,6 +601,11 @@ void test('rejected zero-output candidates preserve only validated incumbents at
   });
   const validTrace = traceIndependently(validThenRejected, validRequest);
   assert.deepEqual(validTrace.boundaries[2], {
+    establishment: {
+      enumeratedCandidates: 2,
+      replayedCandidates: 2,
+      rejectedCandidates: 1,
+    },
     expansions: 2,
     enumeratedCandidates: 2,
     replayedCandidates: 2,
@@ -567,7 +630,7 @@ void test('rejected zero-output candidates preserve only validated incumbents at
     maxHops: 1,
   });
   const rejectedTrace = traceIndependently(rejectedThenValid, rejectedRequest);
-  assert.equal(rejectedTrace.boundaries[1]?.incumbent, null);
+  assert.equal(rejectedTrace.boundaries[1]?.incumbent?.hops[0]?.poolId, 'b-good');
   assertInterruptibleMatches(
     routeExactInputSinglePathInterruptible(
       rejectedThenValid,

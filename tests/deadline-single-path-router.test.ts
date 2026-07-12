@@ -164,10 +164,11 @@ void test('uses equality as reached, continues below, and supports huge bigint s
     deadlineNanoseconds: 10n ** 80n,
     nowNanoseconds: () => 10n ** 80n,
   });
-  assert.equal(equal.status, 'no-plan');
-  if (equal.status === 'no-plan') {
-    assert.equal(equal.reason, 'deadline');
-    assert.equal(equal.search.expansions, 0);
+  assert.equal(equal.status, 'success');
+  if (equal.status === 'success') {
+    assert.equal(equal.plan.search.termination, 'deadline');
+    assert.equal(equal.plan.search.expansions, 0);
+    assert.equal(equal.plan.receipt.amountOut, 90n);
   }
 
   const greater = routeExactInputSinglePathWithDeadline(routingGraph(), request(), {
@@ -220,8 +221,11 @@ void test('keeps invalid, complete, and work-limit precedence ahead of timing ac
     request({ maxExpansions: 0 }),
     unreadControl,
   );
-  assert.equal(zeroCap.status, 'no-plan');
-  if (zeroCap.status === 'no-plan') assert.equal(zeroCap.reason, 'work-limit');
+  assert.equal(zeroCap.status, 'success');
+  if (zeroCap.status === 'success') {
+    assert.equal(zeroCap.plan.search.termination, 'work-limit');
+    assert.equal(zeroCap.plan.receipt.amountOut, 90n);
+  }
   assert.equal(reads, 0);
 
   let boundedCalls = 0;
@@ -617,6 +621,7 @@ void test('does not carry regression state or timing configuration across resume
     'assetOut',
     'amountIn',
     'maxHops',
+    'establishment',
     'expansions',
     'enumeratedCandidates',
     'replayedCandidates',

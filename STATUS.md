@@ -24,11 +24,12 @@ Last updated: 2026-07-13
 - Deterministic router-layer interruption at pre-expansion checkpoints; callback-visible incumbents are deeply frozen fresh exact replays, and interruption without one returns a typed no-plan outcome.
 - Opaque, reusable and branchable process-local checkpoint tokens with absolute cumulative work caps, hidden immutable snapshot/frontier binding, cumulative counters, and clone-on-resume isolation.
 - Optional cooperative deadline adapters using an injected absolute monotonic bigint clock at eligible pre-expansion boundaries, with deadline-specific outcomes and no timing leakage into checkpoint or hash state.
+- Deterministic bounded enumeration of canonical pool-ID-disjoint route sets with separate path/set work counters and terminations; outputs are structural proposals only.
 - Machine-checked public/private trace boundary and manifest-only engineering-log promotion.
 
 ## Current release gate
 
-Milestones 0–4 are integrated locally. Deterministic budgets, interruption, process-local resume, and optional injected-clock deadline outcomes preserve exact incumbents and legacy/canonical behavior. No serialized/persisted checkpoint, cross-process resume, default host clock, hard real-time guarantee, statistical performance harness, split allocation, service, protocol adapter, or learned ordering exists.
+Milestones 0–4 and the first structural slice of Milestone 5 are integrated locally. Pool-disjoint candidate sets are deterministic non-authorizing proposals; they do not contain allocations, outputs, receipts, objectives, or split plans. No split replay/allocation, serialized checkpoint, cross-process resume, default host clock, statistical performance harness, service, protocol adapter, or learned ordering exists.
 
 ## Public evidence
 
@@ -40,7 +41,7 @@ Milestones 0–4 are integrated locally. Deterministic budgets, interruption, pr
 
 ## Next technical milestone
 
-Milestone 5 begins with deterministic pool-disjoint candidate plans and no-split/equal-split/greedy baselines before any numerical allocation model.
+Milestone 5 continues with an exact split replay kernel and explicit no-split/equal-split baselines, including exact-sum allocation validation, before greedy or numerical allocation.
 
 ## Known limitations
 
@@ -53,3 +54,4 @@ Milestone 5 begins with deterministic pool-disjoint candidate plans and no-split
 - Benchmark timings are one observation per fixed offline case with no warmup, repetition, comparison, threshold, statistical interpretation, output persistence, migration, or JSON resource-limit policy.
 - Interruption predicates are operational controls only: replay is atomic, in-memory tokens are not serializable/persistable or valid across processes, and paused outcomes do not enter `routelab.router-run.v1` hashes.
 - Deadline adapters require an injected monotonic clock, check only between expansions, make no hard-latency guarantee, and expose no clock samples or configuration in semantic results.
+- Pool-disjoint set ordering is structural enumeration, not a financial preference; candidate sets are never incumbents and require independent exact allocation/replay validation before use.

@@ -14,6 +14,7 @@ export const walkingSkeletonStatus = {
   deterministicInterruption: 'validated-incumbents-only',
   resumableCheckpoints: 'opaque-in-memory-branchable',
   cooperativeDeadline: 'injected-monotonic-boundary-only',
+  poolDisjointRouteSets: 'structural-proposals-only',
 } as const;
 
 export function renderWalkingSkeletonStatus(): string {

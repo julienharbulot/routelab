@@ -1,0 +1,32 @@
+{
+  "scenarioId": "m0-single-division-rounding",
+  "description": "One final division returns one unit where pre-rounding effective input would return zero.",
+  "request": {
+    "assetIn": "A",
+    "assetOut": "B",
+    "amountIn": "1"
+  },
+  "pools": [
+    {
+      "poolId": "rounding-ab",
+      "asset0": "A",
+      "reserve0": "1",
+      "asset1": "B",
+      "reserve1": "3",
+      "feeChargedNumerator": "1",
+      "feeDenominator": "2"
+    }
+  ],
+  "expected": {
+    "outcome": "route",
+    "routePoolIds": ["rounding-ab"],
+    "directionalRoute": [
+      { "assetIn": "A", "poolId": "rounding-ab", "assetOut": "B" }
+    ],
+    "amountOut": "1",
+    "reserve0After": "2",
+    "reserve1After": "2",
+    "rejectedTwoStageEffectiveInput": "0",
+    "rejectedTwoStageAmountOut": "0"
+  }
+}

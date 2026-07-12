@@ -1,0 +1,30 @@
+{
+  "scenarioId": "m0-direct-pool",
+  "description": "One direct A-to-B pool with a charged fee of 3/1000.",
+  "request": {
+    "assetIn": "A",
+    "assetOut": "B",
+    "amountIn": "100"
+  },
+  "pools": [
+    {
+      "poolId": "direct-ab",
+      "asset0": "A",
+      "reserve0": "1000",
+      "asset1": "B",
+      "reserve1": "1000",
+      "feeChargedNumerator": "3",
+      "feeDenominator": "1000"
+    }
+  ],
+  "expected": {
+    "outcome": "route",
+    "routePoolIds": ["direct-ab"],
+    "directionalRoute": [
+      { "assetIn": "A", "poolId": "direct-ab", "assetOut": "B" }
+    ],
+    "amountOut": "90",
+    "reserve0After": "1100",
+    "reserve1After": "910"
+  }
+}

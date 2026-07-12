@@ -1,0 +1,33 @@
+{
+  "scenarioId": "m0-disconnected-pair",
+  "description": "The requested A-to-D pair is disconnected; no numeric quote is fabricated.",
+  "request": {
+    "assetIn": "A",
+    "assetOut": "D",
+    "amountIn": "100"
+  },
+  "pools": [
+    {
+      "poolId": "component-ab",
+      "asset0": "A",
+      "reserve0": "1000",
+      "asset1": "B",
+      "reserve1": "1000",
+      "feeChargedNumerator": "0",
+      "feeDenominator": "1"
+    },
+    {
+      "poolId": "component-cd",
+      "asset0": "C",
+      "reserve0": "1000",
+      "asset1": "D",
+      "reserve1": "1000",
+      "feeChargedNumerator": "0",
+      "feeDenominator": "1"
+    }
+  ],
+  "expected": {
+    "outcome": "no-route",
+    "reason": "No contiguous route connects A to D."
+  }
+}

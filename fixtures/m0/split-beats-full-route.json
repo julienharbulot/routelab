@@ -1,0 +1,70 @@
+{
+  "scenarioId": "m0-split-beats-full-route",
+  "description": "A stated split across two pool-disjoint routes beats sending the full input through either route alone.",
+  "request": {
+    "assetIn": "A",
+    "assetOut": "C",
+    "amountIn": "100"
+  },
+  "pools": [
+    {
+      "poolId": "left-ac",
+      "asset0": "A",
+      "reserve0": "100",
+      "asset1": "C",
+      "reserve1": "100",
+      "feeChargedNumerator": "0",
+      "feeDenominator": "1"
+    },
+    {
+      "poolId": "right-ac",
+      "asset0": "A",
+      "reserve0": "100",
+      "asset1": "C",
+      "reserve1": "100",
+      "feeChargedNumerator": "0",
+      "feeDenominator": "1"
+    }
+  ],
+  "expected": {
+    "outcome": "split-comparison",
+    "fullInputComparisons": [
+      {
+        "routePoolIds": ["left-ac"],
+        "directionalRoute": [
+          { "assetIn": "A", "poolId": "left-ac", "assetOut": "C" }
+        ],
+        "allocation": "100",
+        "amountOut": "50"
+      },
+      {
+        "routePoolIds": ["right-ac"],
+        "directionalRoute": [
+          { "assetIn": "A", "poolId": "right-ac", "assetOut": "C" }
+        ],
+        "allocation": "100",
+        "amountOut": "50"
+      }
+    ],
+    "statedSplit": [
+      {
+        "routePoolIds": ["left-ac"],
+        "directionalRoute": [
+          { "assetIn": "A", "poolId": "left-ac", "assetOut": "C" }
+        ],
+        "allocation": "50",
+        "amountOut": "33"
+      },
+      {
+        "routePoolIds": ["right-ac"],
+        "directionalRoute": [
+          { "assetIn": "A", "poolId": "right-ac", "assetOut": "C" }
+        ],
+        "allocation": "50",
+        "amountOut": "33"
+      }
+    ],
+    "statedSplitAmountOut": "66",
+    "claim": "The stated 50/50 split beats either stated full-input route; no global-optimality claim is made."
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "scenarioId": "m0-high-fee-path-loses",
+  "description": "A 90/100 charged-fee path loses to an otherwise identical zero-fee path.",
+  "request": {
+    "assetIn": "A",
+    "assetOut": "B",
+    "amountIn": "100"
+  },
+  "pools": [
+    {
+      "poolId": "zero-fee-ab",
+      "asset0": "A",
+      "reserve0": "1000",
+      "asset1": "B",
+      "reserve1": "1000",
+      "feeChargedNumerator": "0",
+      "feeDenominator": "1"
+    },
+    {
+      "poolId": "high-fee-ab",
+      "asset0": "A",
+      "reserve0": "1000",
+      "asset1": "B",
+      "reserve1": "1000",
+      "feeChargedNumerator": "90",
+      "feeDenominator": "100"
+    }
+  ],
+  "expected": {
+    "outcome": "route-comparison",
+    "zeroFeePath": {
+      "routePoolIds": ["zero-fee-ab"],
+      "directionalRoute": [
+        { "assetIn": "A", "poolId": "zero-fee-ab", "assetOut": "B" }
+      ],
+      "amountOut": "90"
+    },
+    "highFeePath": {
+      "routePoolIds": ["high-fee-ab"],
+      "directionalRoute": [
+        { "assetIn": "A", "poolId": "high-fee-ab", "assetOut": "B" }
+      ],
+      "amountOut": "9"
+    },
+    "winner": "zeroFeePath"
+  }
+}

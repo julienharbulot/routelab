@@ -1,0 +1,62 @@
+{
+  "scenarioId": "m0-two-hop-beats-direct",
+  "description": "The stated A-to-B-to-C route returns more than the direct A-to-C pool.",
+  "request": {
+    "assetIn": "A",
+    "assetOut": "C",
+    "amountIn": "100"
+  },
+  "pools": [
+    {
+      "poolId": "direct-ac",
+      "asset0": "A",
+      "reserve0": "1000",
+      "asset1": "C",
+      "reserve1": "1000",
+      "feeChargedNumerator": "0",
+      "feeDenominator": "1"
+    },
+    {
+      "poolId": "hop-ab",
+      "asset0": "A",
+      "reserve0": "1000",
+      "asset1": "B",
+      "reserve1": "2000",
+      "feeChargedNumerator": "0",
+      "feeDenominator": "1"
+    },
+    {
+      "poolId": "hop-bc",
+      "asset0": "B",
+      "reserve0": "2000",
+      "asset1": "C",
+      "reserve1": "2000",
+      "feeChargedNumerator": "0",
+      "feeDenominator": "1"
+    }
+  ],
+  "expected": {
+    "outcome": "route-comparison",
+    "direct": {
+      "routePoolIds": ["direct-ac"],
+      "directionalRoute": [
+        { "assetIn": "A", "poolId": "direct-ac", "assetOut": "C" }
+      ],
+      "amountOut": "90"
+    },
+    "twoHop": {
+      "routePoolIds": ["hop-ab", "hop-bc"],
+      "directionalRoute": [
+        { "assetIn": "A", "poolId": "hop-ab", "assetOut": "B" },
+        { "assetIn": "B", "poolId": "hop-bc", "assetOut": "C" }
+      ],
+      "hopOutputs": ["181", "165"],
+      "amountOut": "165",
+      "poolReservesAfter": {
+        "hop-ab": ["1100", "1819"],
+        "hop-bc": ["2181", "1835"]
+      }
+    },
+    "winner": "twoHop"
+  }
+}

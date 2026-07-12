@@ -13,6 +13,7 @@ export const walkingSkeletonStatus = {
   offlineBenchmarkHarness: 'v1-single-observation-no-performance-claim',
   deterministicInterruption: 'validated-incumbents-only',
   resumableCheckpoints: 'opaque-in-memory-branchable',
+  cooperativeDeadline: 'injected-monotonic-boundary-only',
 } as const;
 
 export function renderWalkingSkeletonStatus(): string {

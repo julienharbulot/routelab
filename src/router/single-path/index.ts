@@ -87,6 +87,38 @@ export interface ExactInputSinglePathResumableCheckpoint {
   readonly incumbent: ExactInputRouteReplayReceipt | null;
 }
 
+export interface ExactInputSinglePathDeadlineControl {
+  readonly deadlineNanoseconds: bigint;
+  readonly nowNanoseconds: () => bigint;
+}
+
+export interface ExactInputSinglePathDeadlineSearchSummary {
+  readonly expansions: number;
+  readonly enumeratedCandidates: number;
+  readonly replayedCandidates: number;
+  readonly rejectedCandidates: number;
+  readonly termination: 'complete' | 'work-limit' | 'deadline';
+}
+
+export interface ExactInputSinglePathDeadlinePlan {
+  readonly receipt: ExactInputRouteReplayReceipt;
+  readonly search: ExactInputSinglePathDeadlineSearchSummary;
+}
+
+export type ExactInputSinglePathDeadlineError =
+  | {
+      readonly code: 'invalid-deadline-nanoseconds';
+      readonly field: 'deadlineNanoseconds';
+    }
+  | {
+      readonly code: 'deadline-clock-failed';
+      readonly field: 'nowNanoseconds';
+    }
+  | {
+      readonly code: 'deadline-clock-regressed';
+      readonly field: 'nowNanoseconds';
+    };
+
 export type ExactInputSinglePathInvalidResumeError =
   | {
       readonly code: 'invalid-router-checkpoint';
@@ -193,6 +225,37 @@ export type ExactInputSinglePathResumableResult =
   | {
       readonly status: 'invalid-resume';
       readonly error: ExactInputSinglePathInvalidResumeError;
+    };
+
+export type ExactInputSinglePathDeadlineResult =
+  | {
+      readonly status: 'success';
+      readonly plan: ExactInputSinglePathDeadlinePlan;
+      readonly checkpoint: ExactInputSinglePathResumableCheckpoint | null;
+    }
+  | {
+      readonly status: 'no-route';
+      readonly reason: 'no-candidate' | 'all-candidates-rejected';
+      readonly search: ExactInputSinglePathDeadlineSearchSummary;
+      readonly checkpoint: null;
+    }
+  | {
+      readonly status: 'no-plan';
+      readonly reason: 'work-limit' | 'deadline';
+      readonly search: ExactInputSinglePathDeadlineSearchSummary;
+      readonly checkpoint: ExactInputSinglePathResumableCheckpoint;
+    }
+  | {
+      readonly status: 'invalid-request';
+      readonly error: ExactInputSinglePathRouterValidationError;
+    }
+  | {
+      readonly status: 'invalid-resume';
+      readonly error: ExactInputSinglePathInvalidResumeError;
+    }
+  | {
+      readonly status: 'deadline-error';
+      readonly error: ExactInputSinglePathDeadlineError;
     };
 
 type ExactInputSinglePathInvalidRequestResult = Extract<
@@ -848,4 +911,178 @@ export function resumeExactInputSinglePath(
   const shouldInterrupt = capturedInterruptionControl(control);
   if (shouldInterrupt === undefined) return interruptionControlFailure();
   return continueResumableExecution(state, maxExpansions, shouldInterrupt);
+}
+
+const deadlinePredicateFailure = new Error();
+
+function frozenDeadlineError(
+  error: ExactInputSinglePathDeadlineError,
+): ExactInputSinglePathDeadlineError {
+  return Object.freeze(error);
+}
+
+function frozenDeadlineSearchSummary(
+  search: ExactInputSinglePathInterruptibleSearchSummary,
+): ExactInputSinglePathDeadlineSearchSummary {
+  return Object.freeze({
+    expansions: search.expansions,
+    enumeratedCandidates: search.enumeratedCandidates,
+    replayedCandidates: search.replayedCandidates,
+    rejectedCandidates: search.rejectedCandidates,
+    termination: search.termination === 'interrupted' ? 'deadline' : search.termination,
+  });
+}
+
+function projectDeadlineResult(
+  inner: ExactInputSinglePathResumableResult,
+  deadlineError: ExactInputSinglePathDeadlineError | undefined,
+): ExactInputSinglePathDeadlineResult {
+  if (inner.status === 'control-error') {
+    if (deadlineError === undefined) {
+      throw new Error('Deadline predicate failed without a deadline error.');
+    }
+    return Object.freeze({ status: 'deadline-error', error: deadlineError });
+  }
+  if (deadlineError !== undefined) {
+    throw new Error('Deadline error did not stop resumable routing.');
+  }
+  if (inner.status === 'invalid-request' || inner.status === 'invalid-resume') {
+    return inner;
+  }
+  if (inner.status === 'success') {
+    const plan: ExactInputSinglePathDeadlinePlan = Object.freeze({
+      receipt: inner.plan.receipt,
+      search: frozenDeadlineSearchSummary(inner.plan.search),
+    });
+    return Object.freeze({
+      status: 'success',
+      plan,
+      checkpoint: inner.checkpoint,
+    });
+  }
+  if (inner.status === 'no-route') {
+    return Object.freeze({
+      status: 'no-route',
+      reason: inner.reason,
+      search: frozenDeadlineSearchSummary(inner.search),
+      checkpoint: null,
+    });
+  }
+  return Object.freeze({
+    status: 'no-plan',
+    reason: inner.reason === 'interrupted' ? 'deadline' : inner.reason,
+    search: frozenDeadlineSearchSummary(inner.search),
+    checkpoint: inner.checkpoint,
+  });
+}
+
+function executeWithDeadline(
+  deadlineControl: ExactInputSinglePathDeadlineControl,
+  execute: (
+    control: ExactInputSinglePathInterruptionControl,
+  ) => ExactInputSinglePathResumableResult,
+): ExactInputSinglePathDeadlineResult {
+  let captured:
+    | {
+        readonly deadlineNanoseconds: bigint;
+        readonly nowNanoseconds: () => bigint;
+      }
+    | undefined;
+  let previousSample: bigint | undefined;
+  let deadlineError: ExactInputSinglePathDeadlineError | undefined;
+
+  const fail = (error: ExactInputSinglePathDeadlineError): never => {
+    deadlineError = frozenDeadlineError(error);
+    throw deadlinePredicateFailure;
+  };
+
+  const shouldInterrupt = (): boolean => {
+    let dependencies = captured;
+    if (dependencies === undefined) {
+      let deadlineNanoseconds: unknown;
+      try {
+        deadlineNanoseconds = deadlineControl.deadlineNanoseconds;
+      } catch {
+        return fail({
+          code: 'invalid-deadline-nanoseconds',
+          field: 'deadlineNanoseconds',
+        });
+      }
+      if (typeof deadlineNanoseconds !== 'bigint' || deadlineNanoseconds < 0n) {
+        return fail({
+          code: 'invalid-deadline-nanoseconds',
+          field: 'deadlineNanoseconds',
+        });
+      }
+
+      let nowNanoseconds: unknown;
+      try {
+        nowNanoseconds = deadlineControl.nowNanoseconds;
+      } catch {
+        return fail({
+          code: 'deadline-clock-failed',
+          field: 'nowNanoseconds',
+        });
+      }
+      if (typeof nowNanoseconds !== 'function') {
+        return fail({
+          code: 'deadline-clock-failed',
+          field: 'nowNanoseconds',
+        });
+      }
+      dependencies = Object.freeze({
+        deadlineNanoseconds,
+        nowNanoseconds: nowNanoseconds as () => bigint,
+      });
+      captured = dependencies;
+    }
+
+    let sample: unknown;
+    try {
+      const nowNanoseconds = dependencies.nowNanoseconds;
+      sample = nowNanoseconds();
+    } catch {
+      return fail({
+        code: 'deadline-clock-failed',
+        field: 'nowNanoseconds',
+      });
+    }
+    if (typeof sample !== 'bigint' || sample < 0n) {
+      return fail({
+        code: 'deadline-clock-failed',
+        field: 'nowNanoseconds',
+      });
+    }
+    if (previousSample !== undefined && sample < previousSample) {
+      return fail({
+        code: 'deadline-clock-regressed',
+        field: 'nowNanoseconds',
+      });
+    }
+    previousSample = sample;
+    return sample >= dependencies.deadlineNanoseconds;
+  };
+
+  const inner = execute(Object.freeze({ shouldInterrupt }));
+  return projectDeadlineResult(inner, deadlineError);
+}
+
+export function routeExactInputSinglePathWithDeadline(
+  snapshot: LiquiditySnapshot,
+  request: ExactInputSinglePathRouterRequest,
+  deadlineControl: ExactInputSinglePathDeadlineControl,
+): ExactInputSinglePathDeadlineResult {
+  return executeWithDeadline(deadlineControl, (control) =>
+    routeExactInputSinglePathResumable(snapshot, request, control),
+  );
+}
+
+export function resumeExactInputSinglePathWithDeadline(
+  checkpoint: ExactInputSinglePathResumableCheckpoint,
+  maxExpansions: number,
+  deadlineControl: ExactInputSinglePathDeadlineControl,
+): ExactInputSinglePathDeadlineResult {
+  return executeWithDeadline(deadlineControl, (control) =>
+    resumeExactInputSinglePath(checkpoint, maxExpansions, control),
+  );
 }

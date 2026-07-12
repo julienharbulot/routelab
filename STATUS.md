@@ -23,11 +23,12 @@ Last updated: 2026-07-13
 - Deterministic offline case discovery and a versioned benchmark-report CLI that preserves raw semantic evidence while separating single-run timing and environment observations; it makes no performance claim.
 - Deterministic router-layer interruption at pre-expansion checkpoints; callback-visible incumbents are deeply frozen fresh exact replays, and interruption without one returns a typed no-plan outcome.
 - Opaque, reusable and branchable process-local checkpoint tokens with absolute cumulative work caps, hidden immutable snapshot/frontier binding, cumulative counters, and clone-on-resume isolation.
+- Optional cooperative deadline adapters using an injected absolute monotonic bigint clock at eligible pre-expansion boundaries, with deadline-specific outcomes and no timing leakage into checkpoint or hash state.
 - Machine-checked public/private trace boundary and manifest-only engineering-log promotion.
 
 ## Current release gate
 
-Milestones 0–3 and the deterministic interruption/in-memory resume slices of Milestone 4 are integrated locally. Resume preserves legacy results and exact incumbents through unforgeable process-local token identity and never accepts replacement financial state. No serialized/persisted checkpoint, cross-process resume, wall-clock deadline, statistical performance harness, split allocation, service, adapter, or learned ordering exists.
+Milestones 0–4 are integrated locally. Deterministic budgets, interruption, process-local resume, and optional injected-clock deadline outcomes preserve exact incumbents and legacy/canonical behavior. No serialized/persisted checkpoint, cross-process resume, default host clock, hard real-time guarantee, statistical performance harness, split allocation, service, protocol adapter, or learned ordering exists.
 
 ## Public evidence
 
@@ -39,7 +40,7 @@ Milestones 0–3 and the deterministic interruption/in-memory resume slices of M
 
 ## Next technical milestone
 
-Milestone 4 continues with an optional wall-clock deadline adapter that remains separate from deterministic work budgets, checkpoint state, and semantic hashes.
+Milestone 5 begins with deterministic pool-disjoint candidate plans and no-split/equal-split/greedy baselines before any numerical allocation model.
 
 ## Known limitations
 
@@ -51,3 +52,4 @@ Milestone 4 continues with an optional wall-clock deadline adapter that remains 
 - Research references describe possible later directions and do not imply implementation or equivalence.
 - Benchmark timings are one observation per fixed offline case with no warmup, repetition, comparison, threshold, statistical interpretation, output persistence, migration, or JSON resource-limit policy.
 - Interruption predicates are operational controls only: replay is atomic, in-memory tokens are not serializable/persistable or valid across processes, and paused outcomes do not enter `routelab.router-run.v1` hashes.
+- Deadline adapters require an injected monotonic clock, check only between expansions, make no hard-latency guarantee, and expose no clock samples or configuration in semantic results.

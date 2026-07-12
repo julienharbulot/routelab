@@ -6,17 +6,18 @@ import {
   walkingSkeletonStatus,
 } from '../src/walking-skeleton.ts';
 
-void test('reports deterministic exact-replay capability status', () => {
+void test('reports deterministic bounded-path capability status', () => {
   assert.deepEqual(walkingSkeletonStatus, {
     project: 'RouteLab TS',
-    stage: 'exact-replay-kernel',
+    stage: 'bounded-path-enumeration',
     mode: 'offline-deterministic',
     financialQuoting: 'exact-constant-product',
     routeReplay: 'exact-explicit-simple-route',
+    pathEnumeration: 'deterministic-bounded-simple-paths',
   });
 
   assert.equal(
     renderWalkingSkeletonStatus(),
-    '{\n  "project": "RouteLab TS",\n  "stage": "exact-replay-kernel",\n  "mode": "offline-deterministic",\n  "financialQuoting": "exact-constant-product",\n  "routeReplay": "exact-explicit-simple-route"\n}',
+    '{\n  "project": "RouteLab TS",\n  "stage": "bounded-path-enumeration",\n  "mode": "offline-deterministic",\n  "financialQuoting": "exact-constant-product",\n  "routeReplay": "exact-explicit-simple-route",\n  "pathEnumeration": "deterministic-bounded-simple-paths"\n}',
   );
 });

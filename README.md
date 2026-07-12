@@ -2,7 +2,7 @@
 
 RouteLab TS is a small, exact, measurable liquidity-router project. Its target first release is deterministic offline exact-input routing over immutable snapshots of two-asset constant-product pools.
 
-Today the executable code is a TypeScript walking skeleton with an offline deterministic demo. Exact financial semantics and six hand-auditable fixtures are public, but pool quoting, route replay, graph search, allocation, services, and protocol adapters are not implemented yet.
+Today the executable code validates immutable in-memory pool snapshots and performs exact bigint quote/transition for one two-asset constant-product pool. Exact financial semantics, six hand-auditable fixtures, focused tests, and an independent bounded arithmetic oracle are public. Multi-hop replay, graph search, allocation, services, and protocol adapters are not implemented yet. The offline deterministic demo reports capability status only; it does not execute a financial request.
 
 ## Prerequisites
 

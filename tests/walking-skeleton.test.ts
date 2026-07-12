@@ -6,16 +6,16 @@ import {
   walkingSkeletonStatus,
 } from '../src/walking-skeleton.ts';
 
-void test('reports a deterministic non-financial walking-skeleton status', () => {
+void test('reports deterministic exact-pool capability status', () => {
   assert.deepEqual(walkingSkeletonStatus, {
     project: 'RouteLab TS',
-    stage: 'repository-contract',
+    stage: 'exact-pool-kernel',
     mode: 'offline-deterministic',
-    financialQuoting: 'deferred',
+    financialQuoting: 'exact-constant-product',
   });
 
   assert.equal(
     renderWalkingSkeletonStatus(),
-    '{\n  "project": "RouteLab TS",\n  "stage": "repository-contract",\n  "mode": "offline-deterministic",\n  "financialQuoting": "deferred"\n}',
+    '{\n  "project": "RouteLab TS",\n  "stage": "exact-pool-kernel",\n  "mode": "offline-deterministic",\n  "financialQuoting": "exact-constant-product"\n}',
   );
 });

@@ -1,8 +1,8 @@
 export const walkingSkeletonStatus = {
   project: 'RouteLab TS',
-  stage: 'repository-contract',
+  stage: 'exact-pool-kernel',
   mode: 'offline-deterministic',
-  financialQuoting: 'deferred',
+  financialQuoting: 'exact-constant-product',
 } as const;
 
 export function renderWalkingSkeletonStatus(): string {

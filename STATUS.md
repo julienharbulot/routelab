@@ -17,11 +17,12 @@ Last updated: 2026-07-13
 - Canonical immutable directional adjacency and deterministic simple-path enumeration under explicit hop and edge-expansion limits; candidates remain non-authorizing proposals.
 - Exact bounded single-path routing: every complete proposal is fresh-replayed, invalid candidates preserve the incumbent, and exact output/fewer-hop/raw-route-key ordering selects the plan.
 - Canonical `routelab.snapshot.v1` financial-content serialization with pool-order independence and `sha256:` checksum computation/verification.
+- Canonical `routelab.router-run.v1` in-memory bounded-router execution records with checksum verification, exact semantic result/counter projection, observation exclusion, and a prefixed determinism hash.
 - Machine-checked public/private trace boundary and manifest-only engineering-log promotion.
 
 ## Current release gate
 
-Milestones 0–2 are integrated, and the first Milestone 3 slice now defines canonical snapshot financial-content bytes and checksum computation locally. Routing still treats supplied checksums as pinned opaque identity and does not enforce recomputation. No canonical replay-run schema/determinism hash, benchmark CLI, split allocation, service, adapter, or learned ordering exists.
+Milestones 0–2 are integrated, and the first two Milestone 3 slices now define canonical snapshot financial-content bytes/checksums and an in-memory checksum-verified bounded-router run/determinism hash. The general router still treats supplied checksums as pinned opaque identity; the canonical-run boundary performs verification. No canonical run parser or persisted case format, benchmark CLI, split allocation, service, adapter, or learned ordering exists.
 
 ## Public evidence
 
@@ -33,7 +34,7 @@ Milestones 0–2 are integrated, and the first Milestone 3 slice now defines can
 
 ## Next technical milestone
 
-Milestone 3 continues with a canonical replay-run/result schema and determinism hash that includes semantic counters while excluding observations such as elapsed time.
+Milestone 3 continues with parsing and round-trip validation for versioned offline canonical run cases before benchmark tooling is added.
 
 ## Known limitations
 
@@ -41,6 +42,6 @@ Milestone 3 continues with a canonical replay-run/result schema and determinism 
 - A work-limited success is best only among already-complete explored candidates; it makes no completeness or unrestricted optimality claim.
 - The router is single-path only and does not split liquidity, submit transactions, hold funds, or model a deployed protocol.
 - Fixture JSON is hand-auditable evidence, not a public snapshot or replay schema.
-- Domain parsing and routing still accept caller-supplied opaque checksum identity; canonical computation/verification is an explicit helper and never silently rewrites it.
+- Domain parsing and general routing still accept caller-supplied opaque checksum identity; canonical computation/verification is explicit and never silently rewrites it. Canonical run creation is the narrower verified execution boundary.
 - Research references describe possible later directions and do not imply implementation or equivalence.
-- The canonical snapshot-checksum slice requires matching CI evidence after its integration commit is pushed.
+- Canonical router-run records are in-memory writer output only; no parser, persisted case compatibility, benchmark execution, or timing record exists yet.

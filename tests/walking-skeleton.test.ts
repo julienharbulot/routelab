@@ -16,10 +16,11 @@ void test('reports deterministic bounded-router capability status', () => {
     pathEnumeration: 'deterministic-bounded-simple-paths',
     singlePathRouting: 'exact-bounded',
     canonicalSnapshotChecksum: 'sha256-v1-available-unenforced',
+    canonicalRouterRun: 'sha256-v1-in-memory-writer',
   });
 
   assert.equal(
     renderWalkingSkeletonStatus(),
-    '{\n  "project": "RouteLab TS",\n  "stage": "bounded-single-path-router",\n  "mode": "offline-deterministic",\n  "financialQuoting": "exact-constant-product",\n  "routeReplay": "exact-explicit-simple-route",\n  "pathEnumeration": "deterministic-bounded-simple-paths",\n  "singlePathRouting": "exact-bounded",\n  "canonicalSnapshotChecksum": "sha256-v1-available-unenforced"\n}',
+    '{\n  "project": "RouteLab TS",\n  "stage": "bounded-single-path-router",\n  "mode": "offline-deterministic",\n  "financialQuoting": "exact-constant-product",\n  "routeReplay": "exact-explicit-simple-route",\n  "pathEnumeration": "deterministic-bounded-simple-paths",\n  "singlePathRouting": "exact-bounded",\n  "canonicalSnapshotChecksum": "sha256-v1-available-unenforced",\n  "canonicalRouterRun": "sha256-v1-in-memory-writer"\n}',
   );
 });

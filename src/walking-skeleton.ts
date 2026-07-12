@@ -7,6 +7,7 @@ export const walkingSkeletonStatus = {
   pathEnumeration: 'deterministic-bounded-simple-paths',
   singlePathRouting: 'exact-bounded',
   canonicalSnapshotChecksum: 'sha256-v1-available-unenforced',
+  canonicalRouterRun: 'sha256-v1-in-memory-writer',
 } as const;
 
 export function renderWalkingSkeletonStatus(): string {

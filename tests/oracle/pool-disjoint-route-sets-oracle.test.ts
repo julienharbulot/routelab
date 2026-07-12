@@ -800,7 +800,7 @@ function financialPool(poolId: string, asset0: string, asset1: string): Constant
   };
 }
 
-void test('preserves existing adjacency, simple-path, fixture, and benchmark evidence', () => {
+void test('preserves existing adjacency, simple-path, fixture, and replay-case evidence', () => {
   const pools = SIX_POOL_GRAPH.map(({ poolId, asset0, asset1 }) =>
     financialPool(poolId, asset0, asset1),
   );

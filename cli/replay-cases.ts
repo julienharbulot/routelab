@@ -5,7 +5,7 @@ import {
   type OfflineRouterBenchmarkDependencies,
 } from '../src/benchmark/offline-router-cases/index.ts';
 
-const USAGE = 'Usage: pnpm benchmark [--cases <directory>]';
+const USAGE = 'Usage: pnpm replay:cases [--cases <directory>]';
 const DEFAULT_CASE_DIRECTORY = 'fixtures/m3/router-cases';
 
 function parseCaseDirectory(arguments_: readonly string[]):
@@ -63,7 +63,7 @@ if (parsedArguments.kind === 'help') {
   );
 
   if (!result.ok) {
-    process.stderr.write(`benchmark failed: ${result.error.code}\n`);
+    process.stderr.write(`case replay failed: ${result.error.code}\n`);
     process.exitCode = 1;
   } else {
     process.stdout.write(`${result.value.canonicalJson}\n`);

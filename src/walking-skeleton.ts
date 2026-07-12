@@ -10,7 +10,7 @@ export const walkingSkeletonStatus = {
   canonicalRouterRun: 'sha256-v1-in-memory-writer',
   canonicalRouterRunReader: 'exact-replay-verified-in-memory',
   canonicalRouterCases: 'v1-three-offline-fixtures',
-  offlineBenchmarkHarness: 'v1-single-observation-no-performance-claim',
+  offlineReplayCases: 'v1-fixed-verification-cases',
   deterministicInterruption: 'validated-incumbents-only',
   resumableCheckpoints: 'opaque-in-memory-branchable',
   cooperativeDeadline: 'injected-monotonic-boundary-only',

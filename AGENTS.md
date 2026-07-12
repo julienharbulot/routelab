@@ -2,7 +2,7 @@
 
 ## Mission and current boundary
 
-RouteLab is a small, correct, measurable TypeScript liquidity router developed through verified vertical slices. The first supported intent is exact-input routing over immutable snapshots of two-asset constant-product pools. The current public implementation is only an offline deterministic walking skeleton; financial execution remains deferred until each prerequisite release gate passes.
+RouteLab is a small, correct, measurable TypeScript liquidity router. The first supported intent is exact-input routing over immutable snapshots of two-asset constant-product pools. RouteLab grows through verified vertical slices. See `STATUS.md` for currently integrated capabilities and the current release gate.
 
 Do not claim transaction submission, custody, production financial execution, unrestricted global optimality, or equivalence with cited research. Splitting, acceleration, services, protocol adapters, and learned ordering follow only after their stated prerequisites.
 
@@ -61,6 +61,7 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm demo
+pnpm replay:cases
 pnpm check
 ```
 

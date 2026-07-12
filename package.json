@@ -13,7 +13,7 @@
     "lint": "eslint src cli tests scripts",
     "test": "node --test \"tests/**/*.test.ts\"",
     "test:pool": "node --test tests/constant-product.test.ts",
-    "benchmark": "node cli/benchmark.ts",
+    "replay:cases": "node cli/replay-cases.ts",
     "demo": "node cli/demo.ts",
     "trace:check": "pnpm trace:check:index",
     "trace:check:index": "node scripts/trace/check-public-surface.ts --index",

@@ -16,11 +16,11 @@ import {
 } from '../src/benchmark/offline-router-cases/index.ts';
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
-const CLI_PATH = fileURLToPath(new URL('../cli/benchmark.ts', import.meta.url));
+const CLI_PATH = fileURLToPath(new URL('../cli/replay-cases.ts', import.meta.url));
 const FIXTURE_DIRECTORY = fileURLToPath(
   new URL('../fixtures/m3/router-cases/', import.meta.url),
 );
-const USAGE = 'Usage: pnpm benchmark [--cases <directory>]\n';
+const USAGE = 'Usage: pnpm replay:cases [--cases <directory>]\n';
 
 const FIXED_ENVIRONMENT: OfflineRouterBenchmarkEnvironment = {
   nodeVersion: 'v24.test',
@@ -415,5 +415,5 @@ void test('CLI emits one compact report line or one stable runtime failure line'
   const failure = runCli(['--cases', 'fixtures/m3/router-cases-does-not-exist']);
   assert.equal(failure.status, 1);
   assert.equal(failure.stdout, '');
-  assert.equal(failure.stderr, 'benchmark failed: case-directory-read-failed\n');
+  assert.equal(failure.stderr, 'case replay failed: case-directory-read-failed\n');
 });

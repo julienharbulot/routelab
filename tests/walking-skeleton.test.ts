@@ -19,7 +19,7 @@ void test('reports deterministic bounded-router capability status', () => {
     canonicalRouterRun: 'sha256-v1-in-memory-writer',
     canonicalRouterRunReader: 'exact-replay-verified-in-memory',
     canonicalRouterCases: 'v1-three-offline-fixtures',
-    offlineBenchmarkHarness: 'v1-single-observation-no-performance-claim',
+    offlineReplayCases: 'v1-fixed-verification-cases',
     deterministicInterruption: 'validated-incumbents-only',
     resumableCheckpoints: 'opaque-in-memory-branchable',
     cooperativeDeadline: 'injected-monotonic-boundary-only',
@@ -28,6 +28,6 @@ void test('reports deterministic bounded-router capability status', () => {
 
   assert.equal(
     renderWalkingSkeletonStatus(),
-    '{\n  "project": "RouteLab TS",\n  "stage": "bounded-single-path-router",\n  "mode": "offline-deterministic",\n  "financialQuoting": "exact-constant-product",\n  "routeReplay": "exact-explicit-simple-route",\n  "pathEnumeration": "deterministic-bounded-simple-paths",\n  "singlePathRouting": "exact-bounded",\n  "canonicalSnapshotChecksum": "sha256-v1-available-unenforced",\n  "canonicalRouterRun": "sha256-v1-in-memory-writer",\n  "canonicalRouterRunReader": "exact-replay-verified-in-memory",\n  "canonicalRouterCases": "v1-three-offline-fixtures",\n  "offlineBenchmarkHarness": "v1-single-observation-no-performance-claim",\n  "deterministicInterruption": "validated-incumbents-only",\n  "resumableCheckpoints": "opaque-in-memory-branchable",\n  "cooperativeDeadline": "injected-monotonic-boundary-only",\n  "poolDisjointRouteSets": "structural-proposals-only"\n}',
+    '{\n  "project": "RouteLab TS",\n  "stage": "bounded-single-path-router",\n  "mode": "offline-deterministic",\n  "financialQuoting": "exact-constant-product",\n  "routeReplay": "exact-explicit-simple-route",\n  "pathEnumeration": "deterministic-bounded-simple-paths",\n  "singlePathRouting": "exact-bounded",\n  "canonicalSnapshotChecksum": "sha256-v1-available-unenforced",\n  "canonicalRouterRun": "sha256-v1-in-memory-writer",\n  "canonicalRouterRunReader": "exact-replay-verified-in-memory",\n  "canonicalRouterCases": "v1-three-offline-fixtures",\n  "offlineReplayCases": "v1-fixed-verification-cases",\n  "deterministicInterruption": "validated-incumbents-only",\n  "resumableCheckpoints": "opaque-in-memory-branchable",\n  "cooperativeDeadline": "injected-monotonic-boundary-only",\n  "poolDisjointRouteSets": "structural-proposals-only"\n}',
   );
 });

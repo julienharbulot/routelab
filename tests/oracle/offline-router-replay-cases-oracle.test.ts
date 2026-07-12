@@ -33,9 +33,9 @@ const ENVIRONMENT: OfflineRouterBenchmarkEnvironment = {
   platform: 'oracle-platform',
   arch: 'oracle-arch',
 };
-const USAGE = 'Usage: pnpm benchmark [--cases <directory>]\n';
+const USAGE = 'Usage: pnpm replay:cases [--cases <directory>]\n';
 const REPOSITORY_ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const CLI_PATH = fileURLToPath(new URL('../../cli/benchmark.ts', import.meta.url));
+const CLI_PATH = fileURLToPath(new URL('../../cli/replay-cases.ts', import.meta.url));
 const FIXTURE_DIRECTORY = fileURLToPath(
   new URL('../../fixtures/m3/router-cases/', import.meta.url),
 );
@@ -505,6 +505,6 @@ void test('CLI emits one report line on success and one stable runtime failure l
   assert.equal(runtimeFailure.stdout, '');
   assert.equal(
     runtimeFailure.stderr,
-    'benchmark failed: case-directory-read-failed\n',
+    'case replay failed: case-directory-read-failed\n',
   );
 });

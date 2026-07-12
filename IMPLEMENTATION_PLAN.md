@@ -13,8 +13,9 @@ validated snapshot
   -> exact pool quote and immutable transition
   -> exact multi-hop replay with receipts
   -> deterministic bounded single-path baseline
-  -> versioned replay and benchmark harness
-  -> interruption-safe incumbents
+  -> versioned replay-case verification
+  -> interruption, checkpoint, resume, and deadline mechanics
+  -> immediate validated incumbent and measured quality progression
   -> exact split allocation with fallback
   -> measured acceleration experiments
   -> thin service/protocol boundaries
@@ -41,21 +42,29 @@ Build deterministic adjacency and simple-path enumeration, then select the best 
 
 Gate: every returned plan replays exactly against the requested snapshot; exhaustive bounded comparisons agree; invalid candidates never replace a valid incumbent. Claims are bounded to the configured search space.
 
-## Milestone 3 — Replay and benchmark backbone
+## Milestone 3 — Replay-case verification backbone
 
-Define a canonical replay schema and checksum, determinism hash, benchmark CLI, and versioned offline cases. Separate semantic fields from observational timing. Preserve raw inputs and outputs behind summaries.
+Define a canonical replay schema and checksum, determinism hash, replay-case verification CLI, and versioned offline cases. Separate semantic fields from observational timing. Preserve raw inputs and outputs behind summaries.
 
-Gate: round trips are canonical; identical inputs produce identical semantic hashes and counters; benchmarks require no credentials or live service; environment metadata and limitations accompany results.
+Gate: round trips are canonical; identical inputs produce identical semantic hashes and counters; replay verification requires no credentials or live service; environment metadata and limitations accompany observations without creating a benchmark claim.
 
-## Milestone 4 — Anytime execution
+## Milestone 4a — Interruption, checkpoint, resume, and deadline mechanics
 
-Add an explicit deterministic work budget, immediate validated incumbent, monotonic updates, and checkpoint-based interruption tests. Treat wall-clock deadlines as service behavior rather than reproducible termination.
+Add deterministic pre-expansion interruption, reusable and branchable process-local checkpoints with cumulative work caps, and optional cooperative deadlines over an injected monotonic clock. Return only fresh exact-replayed incumbents, and treat wall-clock deadlines as service behavior rather than reproducible termination.
 
-Gate: forced interruption returns only a fully exact-replayed incumbent or typed no-plan outcome; deterministic budgets reproduce termination; quality-versus-work and latency observations are reported separately.
+Gate: forced interruption and deadline tests cover every eligible boundary; paused outcomes contain only fully exact-replayed incumbents or typed no-plan results; cumulative deterministic work caps reproduce termination and resume from isolated reusable checkpoints; timing does not enter deterministic state or hashes.
+
+## Milestone 4b — Immediate incumbent and quality progression
+
+Define and implement a deterministic incumbent-establishment phase before the first user-controlled interruption or deadline stop. The task must freeze baseline eligibility and ordering, exact-replay authorization, and explicit accounting for establishment work before production changes. At minimum, an eligible exact-replayable one-hop route must not be lost merely because the search budget is zero or the first deadline sample is already expired.
+
+Gate: zero-work and already-expired forced cases return the established exact-replayed baseline when one is eligible; cases without an eligible baseline retain typed no-plan behavior; incumbent quality is monotonic under increasing deterministic work; establishment work is visible in deterministic accounting; quality-versus-work evidence and statistically meaningful latency observations are reported separately with versioned inputs, warmup, sample counts, comparisons, environment metadata, and persisted raw results.
 
 ## Milestone 5 — Split allocation
 
 Start with deterministic pool-disjoint candidates and no-split/equal-split/greedy baselines. Add a tiny exhaustive allocation oracle before approximate models or numerical allocation. Reconstruct exact integer allocations whose nonnegative sum is the requested input, then exact-replay every plan. Preserve a safe baseline fallback.
+
+An independently integrated structural candidate-set slice does not satisfy or bypass the open Milestone 4b gate. Further split-routing claims remain gated by immediate incumbent establishment and measured progression.
 
 Gate: exact-sum reconstruction, fallback, large integer, and exhaustive tiny comparisons pass. Approximate failures cannot corrupt the incumbent. No global-optimality claim exceeds the implemented candidate and allocation space.
 

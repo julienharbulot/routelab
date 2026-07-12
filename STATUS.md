@@ -20,7 +20,7 @@ Last updated: 2026-07-13
 - Canonical `routelab.router-run.v1` in-memory bounded-router execution records with checksum verification, exact semantic result/counter projection, observation exclusion, and a prefixed determinism hash.
 - Strict in-memory canonical-run parsing that reconstructs snapshot/request inputs and accepts supplied result bytes and hashes only after fresh exact bounded-router replay reproduces them.
 - Canonical `routelab.router-case.v1` in-memory create/parse verification and three fixed offline success/no-route/no-plan case files with documented byte counts, file hashes, and run hashes.
-- Deterministic offline case discovery and a versioned benchmark-report CLI that preserves raw semantic evidence while separating single-run timing and environment observations; it makes no performance claim.
+- Deterministic offline case discovery and a versioned replay-case verification CLI that preserves raw semantic evidence while separating single-run timing and environment observations; it makes no benchmark or performance claim.
 - Deterministic router-layer interruption at pre-expansion checkpoints; callback-visible incumbents are deeply frozen fresh exact replays, and interruption without one returns a typed no-plan outcome.
 - Opaque, reusable and branchable process-local checkpoint tokens with absolute cumulative work caps, hidden immutable snapshot/frontier binding, cumulative counters, and clone-on-resume isolation.
 - Optional cooperative deadline adapters using an injected absolute monotonic bigint clock at eligible pre-expansion boundaries, with deadline-specific outcomes and no timing leakage into checkpoint or hash state.
@@ -29,7 +29,7 @@ Last updated: 2026-07-13
 
 ## Current release gate
 
-Milestones 0–4 and the first structural slice of Milestone 5 are integrated locally. Pool-disjoint candidate sets are deterministic non-authorizing proposals; they do not contain allocations, outputs, receipts, objectives, or split plans. No split replay/allocation, serialized checkpoint, cross-process resume, default host clock, statistical performance harness, service, protocol adapter, or learned ordering exists.
+Milestones 0–3 and Milestone 4a are integrated locally. Milestone 4b remains open: immediate incumbent establishment, explicit accounting for that work, monotonic quality progression, and separately reported quality-versus-work and statistically meaningful latency evidence are not implemented. A non-authorizing structural slice originally scoped to Milestone 5 is also integrated; it does not satisfy or bypass Milestone 4b. Pool-disjoint candidate sets contain no allocations, outputs, receipts, objectives, or split plans. No split replay/allocation, serialized checkpoint, cross-process resume, default host clock, statistical performance harness, service, protocol adapter, or learned ordering exists.
 
 ## Public evidence
 
@@ -41,7 +41,7 @@ Milestones 0–4 and the first structural slice of Milestone 5 are integrated lo
 
 ## Next technical milestone
 
-Milestone 5 continues with an exact split replay kernel and explicit no-split/equal-split baselines, including exact-sum allocation validation, before greedy or numerical allocation.
+Milestone 4b must freeze and implement deterministic immediate incumbent establishment before the first interruptible/deadline stop, including explicit work accounting, zero-work and already-expired evidence, monotonic quality progression, and separate quality-versus-work and latency reporting. Further Milestone 5 split work remains behind this gate.
 
 ## Known limitations
 
@@ -51,7 +51,8 @@ Milestone 5 continues with an exact split replay kernel and explicit no-split/eq
 - Fixture JSON is hand-auditable evidence, not a public snapshot or replay schema.
 - Domain parsing and general routing still accept caller-supplied opaque checksum identity; canonical computation/verification is explicit and never silently rewrites it. Canonical run creation is the narrower verified execution boundary.
 - Research references describe possible later directions and do not imply implementation or equivalence.
-- Benchmark timings are one observation per fixed offline case with no warmup, repetition, comparison, threshold, statistical interpretation, output persistence, migration, or JSON resource-limit policy.
+- Replay-case timings are one observation per fixed offline case with no warmup, repetition, comparison, threshold, statistical interpretation, output persistence, migration, or JSON resource-limit policy; no benchmark harness exists yet.
+- Interruption or deadline checks may occur before any incumbent is established. A zero-work cap or already-expired deadline can therefore return no plan even when an exact-replayable one-hop route exists; Milestone 4b owns the baseline and accounting correction.
 - Interruption predicates are operational controls only: replay is atomic, in-memory tokens are not serializable/persistable or valid across processes, and paused outcomes do not enter `routelab.router-run.v1` hashes.
 - Deadline adapters require an injected monotonic clock, check only between expansions, make no hard-latency guarantee, and expose no clock samples or configuration in semantic results.
 - Pool-disjoint set ordering is structural enumeration, not a financial preference; candidate sets are never incumbents and require independent exact allocation/replay validation before use.

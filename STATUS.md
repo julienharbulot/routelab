@@ -20,11 +20,12 @@ Last updated: 2026-07-13
 - Canonical `routelab.router-run.v1` in-memory bounded-router execution records with checksum verification, exact semantic result/counter projection, observation exclusion, and a prefixed determinism hash.
 - Strict in-memory canonical-run parsing that reconstructs snapshot/request inputs and accepts supplied result bytes and hashes only after fresh exact bounded-router replay reproduces them.
 - Canonical `routelab.router-case.v1` in-memory create/parse verification and three fixed offline success/no-route/no-plan case files with documented byte counts, file hashes, and run hashes.
+- Deterministic offline case discovery and a versioned benchmark-report CLI that preserves raw semantic evidence while separating single-run timing and environment observations; it makes no performance claim.
 - Machine-checked public/private trace boundary and manifest-only engineering-log promotion.
 
 ## Current release gate
 
-Milestones 0–2 are integrated, and the first four Milestone 3 slices now define canonical snapshot financial-content bytes/checksums, an in-memory checksum-verified bounded-router run/determinism hash, an exact-replay-verifying reader, and versioned offline case wrappers/files. The general router still treats supplied checksums as pinned opaque identity; the canonical-run boundary performs verification. No production file discovery or benchmark CLI, split allocation, service, adapter, or learned ordering exists.
+Milestones 0–2 and the initial Milestone 3 replay/benchmark backbone are integrated locally: canonical snapshot identity, semantic run records/hashes, exact-replay readers, versioned offline case files, deterministic discovery, and a separated-observation CLI. The general router still treats supplied checksums as pinned opaque identity; the canonical-run boundary performs verification. No statistical performance harness, split allocation, service, adapter, or learned ordering exists.
 
 ## Public evidence
 
@@ -36,7 +37,7 @@ Milestones 0–2 are integrated, and the first four Milestone 3 slices now defin
 
 ## Next technical milestone
 
-Milestone 3 continues with deterministic offline case discovery and a benchmark CLI that separates semantic results from timing/environment observations.
+Milestone 4 begins with deterministic interruption semantics that can return only a fully exact-replayed incumbent or a typed no-plan outcome.
 
 ## Known limitations
 
@@ -46,4 +47,4 @@ Milestone 3 continues with deterministic offline case discovery and a benchmark 
 - Fixture JSON is hand-auditable evidence, not a public snapshot or replay schema.
 - Domain parsing and general routing still accept caller-supplied opaque checksum identity; canonical computation/verification is explicit and never silently rewrites it. Canonical run creation is the narrower verified execution boundary.
 - Research references describe possible later directions and do not imply implementation or equivalence.
-- Case files are fixed repository fixtures only; no production discovery, benchmark execution, timing/environment record, migration, or JSON resource-limit policy exists yet.
+- Benchmark timings are one observation per fixed offline case with no warmup, repetition, comparison, threshold, statistical interpretation, output persistence, migration, or JSON resource-limit policy.

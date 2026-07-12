@@ -78,6 +78,15 @@ A small clarity, naming, or local maintainability improvement. Include only when
 - Did the change mix algorithm, dataset, broad cleanup, package extraction, or public API work?
 - Are dependencies and abstractions earned by current behavior?
 
+### Milestone completion
+
+Before any next-milestone task becomes ready or active, perform a separate read-only review of the cumulative integrated milestone, not only its final task or diff.
+
+- Map every milestone outcome and gate clause in `IMPLEMENTATION_PLAN.md` to implemented behavior and independent evidence.
+- Reconcile `STATUS.md`, known limitations, deferred work, and any prematurely integrated later-milestone slice against that full scope.
+- Report `MILESTONE COMPLETE` only when every clause is supported. Otherwise report `MILESTONE INCOMPLETE`, enumerate the blocking gaps, and recommend same-milestone follow-up packets.
+- Never treat later-milestone code, passing tests alone, or a partial structural prerequisite as permission to waive unfinished scope.
+
 ### Exact financial behavior
 
 - Do exact values remain `bigint` end to end?
@@ -164,3 +173,5 @@ Use one of these conclusions:
 - **No blocking findings in reviewed scope:** state residual uncertainty and unverified areas.
 
 The reviewer recommends. The lead decides and records the resolution.
+
+For a milestone completion review, append the explicit gate result and next-milestone eligibility. An incomplete result blocks the transition.

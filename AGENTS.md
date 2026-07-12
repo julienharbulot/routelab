@@ -44,6 +44,8 @@ When authorities conflict, stop the affected work and identify the conflict. Tes
 
 Build the smallest verified vertical slice and do not skip prerequisites. Exact execution precedes search; a deterministic bounded baseline precedes acceleration; replay precedes benchmark claims; measured bottlenecks precede performance architecture; model-disabled correctness precedes learned ordering. A later milestone cannot disguise a failed current gate.
 
+Before the first task from a later milestone becomes ready or active, the lead must commission a read-only milestone completion review of the cumulative integrated state—not only the final task diff. The reviewer maps every outcome and gate clause in `IMPLEMENTATION_PLAN.md` to code and independent evidence, reconciles `STATUS.md` limitations, and reports the milestone as complete or incomplete. The lead records that result in the closing task. Any missing scope keeps the current milestone open, requires a same-milestone follow-up packet, and blocks later-milestone selection; already-integrated later work cannot waive or satisfy the missing gate.
+
 ## Bounded roles
 
 The lead owns contracts, task selection, integration, public claims, and final gates. A builder implements one bounded production change. An oracle/test engineer derives independent expected behavior without circular use of the production helper. A read-only reviewer works in named scout or review mode and returns evidence and risks.

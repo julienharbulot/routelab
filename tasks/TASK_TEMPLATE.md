@@ -8,6 +8,7 @@
 - **Lead:** initial parent thread
 - **Active ExecPlan:** none | path
 - **Related tasks / ADRs:**
+- **Closes milestone:** no | milestone ID; if yes, cumulative completion review is required before any next-milestone task
 
 ## Outcome
 
@@ -143,4 +144,6 @@ Complete only after work returns.
 - Final commands and results:
 - Integrated commit:
 - Release-gate effect:
+- Milestone-scope review: not applicable | `MILESTONE COMPLETE` | `MILESTONE INCOMPLETE`, with review evidence
+- Next-milestone eligibility: not applicable | blocked | eligible
 - Follow-up task, if any:

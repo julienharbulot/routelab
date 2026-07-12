@@ -6,6 +6,7 @@ export const walkingSkeletonStatus = {
   routeReplay: 'exact-explicit-simple-route',
   pathEnumeration: 'deterministic-bounded-simple-paths',
   singlePathRouting: 'exact-bounded',
+  canonicalSnapshotChecksum: 'sha256-v1-available-unenforced',
 } as const;
 
 export function renderWalkingSkeletonStatus(): string {

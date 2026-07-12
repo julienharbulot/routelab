@@ -9,9 +9,13 @@ import {
   type SimplePathEnumerationError,
 } from '../../search/simple-paths/index.ts';
 import {
+  cloneFrozenSimplePathTraversal,
   createSimplePathTraversal,
   expandSimplePathTraversal,
+  freezeSimplePathTraversal,
   normalizeSimplePathTraversal,
+  type FrozenSimplePathTraversalState,
+  type SimplePathTraversalState,
 } from '../../search/simple-paths/traversal.ts';
 
 export interface ExactInputSinglePathRouterRequest {
@@ -67,6 +71,31 @@ export interface ExactInputSinglePathInterruptionControl {
 export interface ExactInputSinglePathInterruptionControlError {
   readonly code: 'interruption-check-failed';
 }
+
+export interface ExactInputSinglePathResumableCheckpoint {
+  readonly kind: 'routelab.in-memory-router-checkpoint.v1';
+  readonly snapshotId: string;
+  readonly snapshotChecksum: string;
+  readonly assetIn: string;
+  readonly assetOut: string;
+  readonly amountIn: bigint;
+  readonly maxHops: number;
+  readonly expansions: number;
+  readonly enumeratedCandidates: number;
+  readonly replayedCandidates: number;
+  readonly rejectedCandidates: number;
+  readonly incumbent: ExactInputRouteReplayReceipt | null;
+}
+
+export type ExactInputSinglePathInvalidResumeError =
+  | {
+      readonly code: 'invalid-router-checkpoint';
+      readonly field: 'checkpoint';
+    }
+  | {
+      readonly code: 'invalid-resume-max-expansions';
+      readonly field: 'maxExpansions';
+    };
 
 export type ExactInputSinglePathRouterValidationErrorCode =
   | 'snapshot-identity-mismatch'
@@ -133,6 +162,37 @@ export type ExactInputSinglePathInterruptibleResult =
   | {
       readonly status: 'control-error';
       readonly error: ExactInputSinglePathInterruptionControlError;
+    };
+
+export type ExactInputSinglePathResumableResult =
+  | {
+      readonly status: 'success';
+      readonly plan: ExactInputSinglePathInterruptiblePlan;
+      readonly checkpoint: ExactInputSinglePathResumableCheckpoint | null;
+    }
+  | {
+      readonly status: 'no-route';
+      readonly reason: 'no-candidate' | 'all-candidates-rejected';
+      readonly search: ExactInputSinglePathInterruptibleSearchSummary;
+      readonly checkpoint: null;
+    }
+  | {
+      readonly status: 'no-plan';
+      readonly reason: 'work-limit' | 'interrupted';
+      readonly search: ExactInputSinglePathInterruptibleSearchSummary;
+      readonly checkpoint: ExactInputSinglePathResumableCheckpoint;
+    }
+  | {
+      readonly status: 'invalid-request';
+      readonly error: ExactInputSinglePathRouterValidationError;
+    }
+  | {
+      readonly status: 'control-error';
+      readonly error: ExactInputSinglePathInterruptionControlError;
+    }
+  | {
+      readonly status: 'invalid-resume';
+      readonly error: ExactInputSinglePathInvalidResumeError;
     };
 
 type ExactInputSinglePathInvalidRequestResult = Extract<
@@ -305,7 +365,10 @@ function frozenInterruptibleSearchSummary(
   });
 }
 
-function interruptionControlFailure(): ExactInputSinglePathInterruptibleResult {
+function interruptionControlFailure(): Extract<
+  ExactInputSinglePathInterruptibleResult,
+  { readonly status: 'control-error' }
+> {
   const error: ExactInputSinglePathInterruptionControlError = Object.freeze({
     code: 'interruption-check-failed',
   });
@@ -344,6 +407,70 @@ function captureInterruptibleRequest(
     maxHops: request.maxHops,
     maxExpansions: request.maxExpansions,
   });
+}
+
+interface ExactInputSinglePathResumeBinding {
+  readonly snapshotId: string;
+  readonly snapshotChecksum: string;
+  readonly assetIn: string;
+  readonly assetOut: string;
+  readonly amountIn: bigint;
+  readonly maxHops: number;
+}
+
+interface ExactInputSinglePathResumableExecutionState {
+  readonly snapshot: LiquiditySnapshot;
+  readonly request: ExactInputSinglePathResumeBinding;
+  readonly traversal: SimplePathTraversalState;
+  incumbent: ExactInputRouteReplayReceipt | undefined;
+  enumeratedCandidates: number;
+  replayedCandidates: number;
+  rejectedCandidates: number;
+}
+
+interface ExactInputSinglePathHiddenCheckpointState {
+  readonly snapshot: LiquiditySnapshot;
+  readonly request: ExactInputSinglePathResumeBinding;
+  readonly traversal: FrozenSimplePathTraversalState;
+  readonly incumbent: ExactInputRouteReplayReceipt | null;
+  readonly enumeratedCandidates: number;
+  readonly replayedCandidates: number;
+  readonly rejectedCandidates: number;
+}
+
+const resumableCheckpointStates = new WeakMap<
+  ExactInputSinglePathResumableCheckpoint,
+  ExactInputSinglePathHiddenCheckpointState
+>();
+
+function frozenResumeBinding(
+  request: ExactInputSinglePathRouterRequest,
+): ExactInputSinglePathResumeBinding {
+  return Object.freeze({
+    snapshotId: request.snapshotId,
+    snapshotChecksum: request.snapshotChecksum,
+    assetIn: request.assetIn,
+    assetOut: request.assetOut,
+    amountIn: request.amountIn,
+    maxHops: request.maxHops,
+  });
+}
+
+function invalidResume(
+  error: ExactInputSinglePathInvalidResumeError,
+): ExactInputSinglePathResumableResult {
+  return Object.freeze({ status: 'invalid-resume', error: Object.freeze(error) });
+}
+
+function capturedInterruptionControl(
+  control: ExactInputSinglePathInterruptionControl,
+): ExactInputSinglePathInterruptionControl['shouldInterrupt'] | undefined {
+  try {
+    const shouldInterrupt = control.shouldInterrupt;
+    return typeof shouldInterrupt === 'function' ? shouldInterrupt : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function routeExactInputSinglePath(
@@ -511,4 +638,214 @@ export function routeExactInputSinglePathInterruptible(
       incumbent = replay.value;
     }
   }
+}
+
+function createResumableCheckpoint(
+  state: ExactInputSinglePathResumableExecutionState,
+): ExactInputSinglePathResumableCheckpoint {
+  const hiddenState: ExactInputSinglePathHiddenCheckpointState = Object.freeze({
+    snapshot: state.snapshot,
+    request: state.request,
+    traversal: freezeSimplePathTraversal(state.traversal),
+    incumbent: state.incumbent ?? null,
+    enumeratedCandidates: state.enumeratedCandidates,
+    replayedCandidates: state.replayedCandidates,
+    rejectedCandidates: state.rejectedCandidates,
+  });
+  const checkpoint: ExactInputSinglePathResumableCheckpoint = Object.freeze({
+    kind: 'routelab.in-memory-router-checkpoint.v1',
+    snapshotId: state.request.snapshotId,
+    snapshotChecksum: state.request.snapshotChecksum,
+    assetIn: state.request.assetIn,
+    assetOut: state.request.assetOut,
+    amountIn: state.request.amountIn,
+    maxHops: state.request.maxHops,
+    expansions: state.traversal.expansions,
+    enumeratedCandidates: state.enumeratedCandidates,
+    replayedCandidates: state.replayedCandidates,
+    rejectedCandidates: state.rejectedCandidates,
+    incumbent: state.incumbent ?? null,
+  });
+  resumableCheckpointStates.set(checkpoint, hiddenState);
+  return checkpoint;
+}
+
+function cloneResumableExecutionState(
+  hidden: ExactInputSinglePathHiddenCheckpointState,
+): ExactInputSinglePathResumableExecutionState {
+  return {
+    snapshot: hidden.snapshot,
+    request: hidden.request,
+    traversal: cloneFrozenSimplePathTraversal(hidden.traversal),
+    incumbent: hidden.incumbent ?? undefined,
+    enumeratedCandidates: hidden.enumeratedCandidates,
+    replayedCandidates: hidden.replayedCandidates,
+    rejectedCandidates: hidden.rejectedCandidates,
+  };
+}
+
+function finishResumableExecution(
+  state: ExactInputSinglePathResumableExecutionState,
+  termination: 'complete' | 'work-limit' | 'interrupted',
+): ExactInputSinglePathResumableResult {
+  const search = frozenInterruptibleSearchSummary(
+    state.traversal.expansions,
+    state.enumeratedCandidates,
+    state.replayedCandidates,
+    state.rejectedCandidates,
+    termination,
+  );
+  const checkpoint =
+    termination === 'complete' ? null : createResumableCheckpoint(state);
+
+  if (state.incumbent !== undefined) {
+    const plan: ExactInputSinglePathInterruptiblePlan = Object.freeze({
+      receipt: state.incumbent,
+      search,
+    });
+    return Object.freeze({ status: 'success', plan, checkpoint });
+  }
+  if (termination !== 'complete') {
+    if (checkpoint === null) {
+      throw new Error('Paused resumable outcome requires a checkpoint.');
+    }
+    return Object.freeze({
+      status: 'no-plan',
+      reason: termination,
+      search,
+      checkpoint,
+    });
+  }
+  const reason =
+    state.enumeratedCandidates === 0
+      ? ('no-candidate' as const)
+      : ('all-candidates-rejected' as const);
+  return Object.freeze({ status: 'no-route', reason, search, checkpoint: null });
+}
+
+function continueResumableExecution(
+  state: ExactInputSinglePathResumableExecutionState,
+  maxExpansions: number,
+  shouldInterrupt: ExactInputSinglePathInterruptionControl['shouldInterrupt'],
+): ExactInputSinglePathResumableResult {
+  while (true) {
+    if (normalizeSimplePathTraversal(state.traversal)) {
+      return finishResumableExecution(state, 'complete');
+    }
+    if (state.traversal.expansions === maxExpansions) {
+      return finishResumableExecution(state, 'work-limit');
+    }
+
+    const checkpoint: ExactInputSinglePathInterruptionCheckpoint = Object.freeze({
+      expansions: state.traversal.expansions,
+      enumeratedCandidates: state.enumeratedCandidates,
+      replayedCandidates: state.replayedCandidates,
+      rejectedCandidates: state.rejectedCandidates,
+      incumbent: state.incumbent ?? null,
+    });
+    try {
+      if (shouldInterrupt(checkpoint)) {
+        return finishResumableExecution(state, 'interrupted');
+      }
+    } catch {
+      return interruptionControlFailure();
+    }
+
+    const completedPath = expandSimplePathTraversal(state.traversal);
+    if (completedPath === undefined) continue;
+
+    state.enumeratedCandidates += 1;
+    const replay = replayExactInputRoute(state.snapshot, {
+      snapshotId: state.request.snapshotId,
+      snapshotChecksum: state.request.snapshotChecksum,
+      assetIn: state.request.assetIn,
+      assetOut: state.request.assetOut,
+      amountIn: state.request.amountIn,
+      hops: completedPath,
+    });
+    state.replayedCandidates += 1;
+    if (!replay.ok) {
+      state.rejectedCandidates += 1;
+      continue;
+    }
+    if (
+      state.incumbent === undefined ||
+      isStrictlyBetter(replay.value, state.incumbent)
+    ) {
+      state.incumbent = replay.value;
+    }
+  }
+}
+
+export function routeExactInputSinglePathResumable(
+  snapshot: LiquiditySnapshot,
+  request: ExactInputSinglePathRouterRequest,
+  control: ExactInputSinglePathInterruptionControl,
+): ExactInputSinglePathResumableResult {
+  const capturedSnapshot = captureInterruptibleSnapshot(snapshot);
+  const capturedRequest = captureInterruptibleRequest(request);
+  const adjacency = buildDeterministicAdjacency(capturedSnapshot);
+  const knownAssets = new Set(adjacency.buckets.map((bucket) => bucket.assetIn));
+  const requestFailure = validateRequest(capturedSnapshot, capturedRequest, knownAssets);
+  if (requestFailure !== undefined) return requestFailure;
+
+  const shouldInterrupt = capturedInterruptionControl(control);
+  if (shouldInterrupt === undefined) return interruptionControlFailure();
+
+  const state: ExactInputSinglePathResumableExecutionState = {
+    snapshot: capturedSnapshot,
+    request: frozenResumeBinding(capturedRequest),
+    traversal: createSimplePathTraversal(adjacency, {
+      assetIn: capturedRequest.assetIn,
+      assetOut: capturedRequest.assetOut,
+      maxHops: capturedRequest.maxHops,
+    }),
+    incumbent: undefined,
+    enumeratedCandidates: 0,
+    replayedCandidates: 0,
+    rejectedCandidates: 0,
+  };
+  return continueResumableExecution(
+    state,
+    capturedRequest.maxExpansions,
+    shouldInterrupt,
+  );
+}
+
+export function resumeExactInputSinglePath(
+  checkpoint: ExactInputSinglePathResumableCheckpoint,
+  maxExpansions: number,
+  control: ExactInputSinglePathInterruptionControl,
+): ExactInputSinglePathResumableResult {
+  const hiddenState = resumableCheckpointStates.get(checkpoint);
+  if (hiddenState === undefined) {
+    return invalidResume({
+      code: 'invalid-router-checkpoint',
+      field: 'checkpoint',
+    });
+  }
+  if (!Number.isSafeInteger(maxExpansions) || maxExpansions < 0) {
+    return invalidResume({
+      code: 'invalid-resume-max-expansions',
+      field: 'maxExpansions',
+    });
+  }
+  if (maxExpansions < hiddenState.traversal.expansions) {
+    return invalidResume({
+      code: 'invalid-resume-max-expansions',
+      field: 'maxExpansions',
+    });
+  }
+
+  const state = cloneResumableExecutionState(hiddenState);
+  if (normalizeSimplePathTraversal(state.traversal)) {
+    return finishResumableExecution(state, 'complete');
+  }
+  if (state.traversal.expansions === maxExpansions) {
+    return finishResumableExecution(state, 'work-limit');
+  }
+
+  const shouldInterrupt = capturedInterruptionControl(control);
+  if (shouldInterrupt === undefined) return interruptionControlFailure();
+  return continueResumableExecution(state, maxExpansions, shouldInterrupt);
 }

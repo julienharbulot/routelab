@@ -12,6 +12,7 @@ export const walkingSkeletonStatus = {
   canonicalRouterCases: 'v1-three-offline-fixtures',
   offlineBenchmarkHarness: 'v1-single-observation-no-performance-claim',
   deterministicInterruption: 'validated-incumbents-only',
+  resumableCheckpoints: 'opaque-in-memory-branchable',
 } as const;
 
 export function renderWalkingSkeletonStatus(): string {

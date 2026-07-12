@@ -22,11 +22,12 @@ Last updated: 2026-07-13
 - Canonical `routelab.router-case.v1` in-memory create/parse verification and three fixed offline success/no-route/no-plan case files with documented byte counts, file hashes, and run hashes.
 - Deterministic offline case discovery and a versioned benchmark-report CLI that preserves raw semantic evidence while separating single-run timing and environment observations; it makes no performance claim.
 - Deterministic router-layer interruption at pre-expansion checkpoints; callback-visible incumbents are deeply frozen fresh exact replays, and interruption without one returns a typed no-plan outcome.
+- Opaque, reusable and branchable process-local checkpoint tokens with absolute cumulative work caps, hidden immutable snapshot/frontier binding, cumulative counters, and clone-on-resume isolation.
 - Machine-checked public/private trace boundary and manifest-only engineering-log promotion.
 
 ## Current release gate
 
-Milestones 0–3 and the first Milestone 4 interruption slice are integrated locally. Deterministic interruption preserves legacy results and exposes only entry-captured, exact-replayed incumbents; interrupted outcomes are not persisted or hashed. No resumable checkpoint, wall-clock deadline, statistical performance harness, split allocation, service, adapter, or learned ordering exists.
+Milestones 0–3 and the deterministic interruption/in-memory resume slices of Milestone 4 are integrated locally. Resume preserves legacy results and exact incumbents through unforgeable process-local token identity and never accepts replacement financial state. No serialized/persisted checkpoint, cross-process resume, wall-clock deadline, statistical performance harness, split allocation, service, adapter, or learned ordering exists.
 
 ## Public evidence
 
@@ -38,7 +39,7 @@ Milestones 0–3 and the first Milestone 4 interruption slice are integrated loc
 
 ## Next technical milestone
 
-Milestone 4 continues with resumable checkpoint state before any optional wall-clock deadline mode.
+Milestone 4 continues with an optional wall-clock deadline adapter that remains separate from deterministic work budgets, checkpoint state, and semantic hashes.
 
 ## Known limitations
 
@@ -49,4 +50,4 @@ Milestone 4 continues with resumable checkpoint state before any optional wall-c
 - Domain parsing and general routing still accept caller-supplied opaque checksum identity; canonical computation/verification is explicit and never silently rewrites it. Canonical run creation is the narrower verified execution boundary.
 - Research references describe possible later directions and do not imply implementation or equivalence.
 - Benchmark timings are one observation per fixed offline case with no warmup, repetition, comparison, threshold, statistical interpretation, output persistence, migration, or JSON resource-limit policy.
-- Interruption predicates are operational controls only: replay is atomic, checkpoints are not serializable/resumable, and interrupted outcomes do not enter `routelab.router-run.v1` hashes.
+- Interruption predicates are operational controls only: replay is atomic, in-memory tokens are not serializable/persistable or valid across processes, and paused outcomes do not enter `routelab.router-run.v1` hashes.

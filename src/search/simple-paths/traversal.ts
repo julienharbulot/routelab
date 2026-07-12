@@ -31,16 +31,36 @@ export interface SimplePathTraversalState {
   expansions: number;
 }
 
+export interface FrozenSimplePathTraversalFrame {
+  readonly path: readonly DirectionalRouteHop[];
+  readonly visitedAssets: readonly string[];
+  readonly visitedPools: readonly string[];
+  readonly edges: readonly DirectionalRouteHop[];
+  readonly nextEdgeIndex: number;
+}
+
+export interface FrozenSimplePathTraversalState {
+  readonly request: TraversalRequest;
+  readonly buckets: readonly TraversalAdjacencyBucket[];
+  readonly stack: readonly FrozenSimplePathTraversalFrame[];
+  readonly completePaths: readonly (readonly DirectionalRouteHop[])[];
+  readonly expansions: number;
+}
+
+function frozenEdge(edge: DirectionalRouteHop): DirectionalRouteHop {
+  return Object.freeze({
+    assetIn: edge.assetIn,
+    poolId: edge.poolId,
+    assetOut: edge.assetOut,
+  });
+}
+
 function frozenPath(path: readonly DirectionalRouteHop[]): readonly DirectionalRouteHop[] {
-  return Object.freeze(
-    path.map((edge) =>
-      Object.freeze({
-        assetIn: edge.assetIn,
-        poolId: edge.poolId,
-        assetOut: edge.assetOut,
-      }),
-    ),
-  );
+  return Object.freeze(path.map(frozenEdge));
+}
+
+function frozenEdges(edges: readonly DirectionalRouteHop[]): readonly DirectionalRouteHop[] {
+  return Object.freeze(edges.map(frozenEdge));
 }
 
 export function createSimplePathTraversal(
@@ -122,4 +142,67 @@ export function expandSimplePathTraversal(
     nextEdgeIndex: 0,
   });
   return undefined;
+}
+
+export function freezeSimplePathTraversal(
+  state: SimplePathTraversalState,
+): FrozenSimplePathTraversalState {
+  const request: TraversalRequest = Object.freeze({
+    assetIn: state.request.assetIn,
+    assetOut: state.request.assetOut,
+    maxHops: state.request.maxHops,
+  });
+  const buckets = Object.freeze(
+    [...state.bucketsByAsset.values()].map((bucket) =>
+      Object.freeze({
+        assetIn: bucket.assetIn,
+        edges: frozenEdges(bucket.edges),
+      }),
+    ),
+  );
+  const stack = Object.freeze(
+    state.stack.map((frame): FrozenSimplePathTraversalFrame =>
+      Object.freeze({
+        path: frozenPath(frame.path),
+        visitedAssets: Object.freeze([...frame.visitedAssets]),
+        visitedPools: Object.freeze([...frame.visitedPools]),
+        edges: frozenEdges(frame.edges),
+        nextEdgeIndex: frame.nextEdgeIndex,
+      }),
+    ),
+  );
+  const completePaths = Object.freeze(state.completePaths.map(frozenPath));
+  return Object.freeze({
+    request,
+    buckets,
+    stack,
+    completePaths,
+    expansions: state.expansions,
+  });
+}
+
+export function cloneFrozenSimplePathTraversal(
+  frozen: FrozenSimplePathTraversalState,
+): SimplePathTraversalState {
+  const buckets = frozen.buckets.map((bucket) => ({
+    assetIn: bucket.assetIn,
+    edges: frozenEdges(bucket.edges),
+  }));
+  return {
+    request: Object.freeze({
+      assetIn: frozen.request.assetIn,
+      assetOut: frozen.request.assetOut,
+      maxHops: frozen.request.maxHops,
+    }),
+    bucketsByAsset: new Map(buckets.map((bucket) => [bucket.assetIn, bucket])),
+    stack: frozen.stack.map((frame) => ({
+      path: frozenPath(frame.path),
+      visitedAssets: new Set(frame.visitedAssets),
+      visitedPools: new Set(frame.visitedPools),
+      edges: frozenEdges(frame.edges),
+      nextEdgeIndex: frame.nextEdgeIndex,
+    })),
+    completePaths: frozen.completePaths.map(frozenPath),
+    expansions: frozen.expansions,
+  };
 }

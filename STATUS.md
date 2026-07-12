@@ -28,11 +28,13 @@ Last updated: 2026-07-13
 - One-time establishment state carried through reusable checkpoint branches without recharge, with independently verified monotonic exact incumbent quality over increasing one-shot and cumulative resumed search work.
 - A versioned fixed-input anytime measurement CLI that reports deterministic quality-versus-work separately from warmed, repeated, alternating algorithm-only latency observations with environment metadata and raw samples; it encodes no threshold or performance conclusion.
 - Deterministic bounded enumeration of canonical pool-ID-disjoint route sets with separate path/set work counters and terminations; outputs are structural proposals only.
+- Atomic exact replay of explicit canonical pool-disjoint split allocations: positive bigint legs sum exactly to the request, every route replays from the captured original snapshot, and no partial receipt escapes failure.
+- Deterministic bounded split routing with an exact single-path fallback plus canonical equal-split proposals, exact remainder reconstruction, fresh split replay, explicit fallback/structural/allocation counters, and a complete split-plan tie key.
 - Machine-checked public/private trace boundary and manifest-only engineering-log promotion.
 
 ## Current release gate
 
-Milestones 0–4 are integrated locally. Immediate incumbent establishment, explicit work accounting, monotonic quality progression, and separate quality-versus-work/repeated-latency evidence close the Milestone 4b gate. A non-authorizing structural slice from Milestone 5 is also integrated. Pool-disjoint candidate sets still contain no allocations, outputs, receipts, objectives, or split plans. No split replay/allocation, serialized checkpoint, cross-process resume, default router clock, general statistical performance conclusion, service, protocol adapter, or learned ordering exists.
+Milestones 0–4 are integrated locally. Milestone 5 now includes structural pool-disjoint candidates, exact split replay, and exact no-split/equal-split baselines with a safe fallback. The Milestone 5 gate remains open pending bounded greedy allocation and independent exhaustive tiny-allocation comparison. No serialized checkpoint, cross-process resume, default router clock, general statistical performance conclusion, historical dataset, service, protocol adapter, or learned ordering exists.
 
 ## Public evidence
 
@@ -44,13 +46,13 @@ Milestones 0–4 are integrated locally. Immediate incumbent establishment, expl
 
 ## Next technical milestone
 
-Milestone 5 split allocation is next. It must add exact allocation and split-replay contracts, exact-sum reconstruction, safe no-split fallback, large-integer evidence, and a tiny exhaustive allocation oracle before any approximate allocation method. The integrated pool-disjoint route sets remain structural proposals only.
+Complete Milestone 5 split allocation by adding a bounded deterministic greedy baseline only after the independent tiny exhaustive allocation oracle is in place. Compare greedy/no-split/equal candidates against that oracle on tiny inputs, preserve the exact fallback under every proposal failure or work limit, retain large-integer exact-sum evidence, and do not claim optimality beyond the evaluated candidate/allocation space.
 
 ## Known limitations
 
 - The demo reports repository capability only; it does not execute a snapshot, quote, transition, replay, or route.
 - A work-limited success is best only among already-complete explored candidates; it makes no completeness or unrestricted optimality claim.
-- The router is single-path only and does not split liquidity, submit transactions, hold funds, or model a deployed protocol.
+- Split routing is limited to pool-disjoint routes and currently evaluates only no-split and canonical equal-split allocations. It has no greedy/approximate allocator and does not submit transactions, hold funds, or model a deployed protocol.
 - Fixture JSON is hand-auditable evidence, not a public snapshot or replay schema.
 - Domain parsing and general routing still accept caller-supplied opaque checksum identity; canonical computation/verification is explicit and never silently rewrites it. Canonical run creation is the narrower verified execution boundary.
 - Research references describe possible later directions and do not imply implementation or equivalence.
@@ -60,4 +62,4 @@ Milestone 5 split allocation is next. It must add exact allocation and split-rep
 - Anytime latency samples cover one fixed offline input and two one-shot runtime variants. They are observational, retain raw values and environment metadata, and support no scaling, threshold, speedup, or general performance claim.
 - Interruption predicates are operational controls only: replay is atomic, in-memory tokens are not serializable/persistable or valid across processes, and paused outcomes do not enter `routelab.router-run.v1` hashes.
 - Deadline adapters require an injected monotonic clock, check only between expansions, make no hard-latency guarantee, and expose no clock samples or configuration in semantic results.
-- Pool-disjoint set ordering is structural enumeration, not a financial preference; candidate sets are never incumbents and require independent exact allocation/replay validation before use.
+- Pool-disjoint set ordering is structural enumeration, not a financial preference. Candidate sets become financially eligible only after an explicit exact allocation reconstructs the input and exact split replay succeeds; the implemented baseline policies are not a global allocation search.

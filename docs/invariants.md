@@ -207,12 +207,19 @@ A route candidate is eligible for exact replay only when it:
 
 Any failure rejects the whole candidate without changing the incumbent or snapshot.
 
+### Pool-disjoint split replay
+
+An executable split contains one or more canonical route legs with positive exact allocations. The allocations sum exactly to the requested input, and pool IDs are pairwise disjoint across legs regardless of direction. Assets may be shared across legs because this model has pool-local reserve state and no global asset ledger.
+
+Each leg starts from the same captured original snapshot and then observes sequential transitions along its own route. A leg never observes another leg's transitions. Only after every leg replays successfully is a split receipt exposed; its exact output is the `bigint` sum of the leg outputs. A validation or replay failure exposes no partial receipt and preserves any prior incumbent. Zero-allocation routes are omitted rather than executed.
+
 ### Returned-plan validity
 
 A returned plan is valid only when it:
 
 - carries the requested snapshot ID and checksum;
-- consumes exactly the requested input amount (and, after splitting exists, has nonnegative allocations whose exact sum equals it);
+- consumes exactly the requested input amount;
+- for a split plan, contains only positive-allocation legs in canonical route order, omits zero-allocation routes, and has allocations whose exact sum equals the requested input;
 - contains exact receipts consistent with a fresh sequential replay;
 - has a positive final output equal to that replay's output;
 - contains no approximate value as an authorizing result;
@@ -246,7 +253,15 @@ Triples and sequences are compared component-by-component using raw, case-sensit
 
 An equal-output candidate replaces an incumbent only when it has fewer hops, or when hop counts are equal and its canonical directional route key is smaller. This makes the selected plan independent of discovery order. Incumbent quality is monotonic under the complete objective tuple.
 
-When split plans arrive in a later milestone, that task must extend the canonical plan key before such plans compete; it may not rely on object or map iteration order.
+For pool-disjoint split plans, the exact objective and deterministic tie order is:
+
+1. greater exact summed final output;
+2. fewer positive-allocation legs;
+3. fewer total hops across those legs;
+4. the lexicographically smaller sequence of canonical directional route keys;
+5. for the same ordered routes, the lexicographically smaller exact allocation vector using numeric `bigint` comparison.
+
+Split legs are ordered by the existing raw UTF-16 directional route key before this comparison. An equal plan does not replace the incumbent. The allocation-vector tie is deterministic only; it does not claim that smaller earlier allocations have financial preference. Zero-allocation routes are omitted rather than replayed because every supported positive support is itself a canonical pool-disjoint candidate subset.
 
 ### Alternatives and rationale
 

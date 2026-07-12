@@ -263,11 +263,16 @@ For pool-disjoint split plans, the exact objective and deterministic tie order i
 
 Split legs are ordered by the existing raw UTF-16 directional route key before this comparison. An equal plan does not replace the incumbent. The allocation-vector tie is deterministic only; it does not claim that smaller earlier allocations have financial preference. Zero-allocation routes are omitted rather than replayed because every supported positive support is itself a canonical pool-disjoint candidate subset.
 
+A bounded greedy allocation policy may propose allocations by dividing the exact input into a configured positive safe-integer number of exact `bigint` chunks. Quotient/remainder reconstruction must sum exactly, and chunks with value zero are not processed. At each step, exact partial split replays may score which canonical route receives the next whole chunk. Those score receipts are never incumbents, even when the final score covers the full requested input. Authorization requires a distinct fresh full-input split replay after allocation completes.
+
+The greedy policy starts from the validated no-split/equal incumbent and can only replace it under the complete split objective above. Evaluation work is bounded explicitly; a cap reached during a route-option step exposes no partial allocation or receipt. Exact scoring or final replay failure preserves the incumbent. Chunk allocation is a bounded heuristic, not a global-optimality claim; tiny exhaustive allocation evidence bounds only the named configured cases.
+
 ### Alternatives and rationale
 
 - “First discovered wins” was rejected because refactoring traversal order could silently change equal-output results.
 - Pool-ID sequence alone was rejected because explicit directional hop triples are easier to audit and remain unambiguous.
 - Locale comparison was rejected because environment locale is not part of deterministic configuration.
+- Treating a final greedy score as the returned plan was rejected because proposal scoring and full-input authorization remain separate roles even when their exact inputs happen to match.
 
 ## 9. Deterministic execution
 

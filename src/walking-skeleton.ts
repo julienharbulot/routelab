@@ -1,6 +1,6 @@
 export const walkingSkeletonStatus = {
   project: 'RouteLab TS',
-  stage: 'split-baseline-router',
+  stage: 'bounded-greedy-split-router',
   mode: 'offline-deterministic',
   financialQuoting: 'exact-constant-product',
   routeReplay: 'exact-explicit-simple-route',
@@ -16,7 +16,7 @@ export const walkingSkeletonStatus = {
   cooperativeDeadline: 'injected-monotonic-boundary-only',
   poolDisjointRouteSets: 'structural-proposals-only',
   splitReplay: 'exact-pool-disjoint-positive-legs',
-  splitRouting: 'exact-single-fallback-and-equal-baseline',
+  splitRouting: 'exact-fallback-equal-and-bounded-greedy',
 } as const;
 
 export function renderWalkingSkeletonStatus(): string {

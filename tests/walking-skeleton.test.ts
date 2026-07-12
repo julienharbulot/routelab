@@ -9,7 +9,7 @@ import {
 void test('reports deterministic bounded-router capability status', () => {
   assert.deepEqual(walkingSkeletonStatus, {
     project: 'RouteLab TS',
-    stage: 'split-baseline-router',
+    stage: 'bounded-greedy-split-router',
     mode: 'offline-deterministic',
     financialQuoting: 'exact-constant-product',
     routeReplay: 'exact-explicit-simple-route',
@@ -25,11 +25,11 @@ void test('reports deterministic bounded-router capability status', () => {
     cooperativeDeadline: 'injected-monotonic-boundary-only',
     poolDisjointRouteSets: 'structural-proposals-only',
     splitReplay: 'exact-pool-disjoint-positive-legs',
-    splitRouting: 'exact-single-fallback-and-equal-baseline',
+    splitRouting: 'exact-fallback-equal-and-bounded-greedy',
   });
 
   assert.equal(
     renderWalkingSkeletonStatus(),
-    '{\n  "project": "RouteLab TS",\n  "stage": "split-baseline-router",\n  "mode": "offline-deterministic",\n  "financialQuoting": "exact-constant-product",\n  "routeReplay": "exact-explicit-simple-route",\n  "pathEnumeration": "deterministic-bounded-simple-paths",\n  "singlePathRouting": "exact-bounded",\n  "canonicalSnapshotChecksum": "sha256-v1-available-unenforced",\n  "canonicalRouterRun": "sha256-v1-in-memory-writer",\n  "canonicalRouterRunReader": "exact-replay-verified-in-memory",\n  "canonicalRouterCases": "v1-three-offline-fixtures",\n  "offlineReplayCases": "v1-fixed-verification-cases",\n  "deterministicInterruption": "validated-incumbents-only",\n  "resumableCheckpoints": "opaque-in-memory-branchable",\n  "cooperativeDeadline": "injected-monotonic-boundary-only",\n  "poolDisjointRouteSets": "structural-proposals-only",\n  "splitReplay": "exact-pool-disjoint-positive-legs",\n  "splitRouting": "exact-single-fallback-and-equal-baseline"\n}',
+    '{\n  "project": "RouteLab TS",\n  "stage": "bounded-greedy-split-router",\n  "mode": "offline-deterministic",\n  "financialQuoting": "exact-constant-product",\n  "routeReplay": "exact-explicit-simple-route",\n  "pathEnumeration": "deterministic-bounded-simple-paths",\n  "singlePathRouting": "exact-bounded",\n  "canonicalSnapshotChecksum": "sha256-v1-available-unenforced",\n  "canonicalRouterRun": "sha256-v1-in-memory-writer",\n  "canonicalRouterRunReader": "exact-replay-verified-in-memory",\n  "canonicalRouterCases": "v1-three-offline-fixtures",\n  "offlineReplayCases": "v1-fixed-verification-cases",\n  "deterministicInterruption": "validated-incumbents-only",\n  "resumableCheckpoints": "opaque-in-memory-branchable",\n  "cooperativeDeadline": "injected-monotonic-boundary-only",\n  "poolDisjointRouteSets": "structural-proposals-only",\n  "splitReplay": "exact-pool-disjoint-positive-legs",\n  "splitRouting": "exact-fallback-equal-and-bounded-greedy"\n}',
   );
 });

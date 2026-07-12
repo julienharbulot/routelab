@@ -2,7 +2,7 @@
 
 RouteLab is a small, exact TypeScript liquidity router. Given an immutable snapshot of two-asset constant-product pools and an exact-input request, it deterministically searches within explicit hop and work limits, exactly replays every complete candidate, and returns a validated plan under exact output and deterministic tie-breaking.
 
-It also supports canonical snapshot, run, and case records; deterministic interruption and process-local resume; immediate exact-replayed direct incumbents; injected cooperative deadlines; separate anytime quality/latency observations; and exact pool-disjoint no-split/equal-split baselines with a safe single-path fallback. See [current public status](STATUS.md) for the precise integrated boundary.
+It also supports canonical snapshot, run, and case records; deterministic interruption and process-local resume; immediate exact-replayed direct incumbents; injected cooperative deadlines; separate anytime quality/latency observations; and exact pool-disjoint no-split/equal/greedy baselines with a safe single-path fallback. See [current public status](STATUS.md) for the precise integrated boundary.
 
 ## A 30-second executable example
 
@@ -39,11 +39,11 @@ flowchart LR
     A --> I[Canonical snapshot, run, and case records]
     G --> I
     C --> J[Pool-disjoint route sets]
-    J --> K[Exact-sum baseline allocations]
+    J --> K[Exact-sum baseline and greedy allocations]
     K --> E
 ```
 
-The core layers are immutable domain validation, exact constant-product transitions, exact sequential route replay, canonical bounded search, deterministic incumbent selection, and canonical serialization. Pool-disjoint split replay evaluates each positive leg against the same captured original snapshot, exposes a receipt only after every leg succeeds, and requires allocations to sum exactly to the request. The baseline split router starts with an exact single-path fallback and admits only fresh-replayed equal-split improvements. Interruptible routing exact-replays every canonical direct candidate before its first user-controlled stop, then carries the best valid baseline and separate establishment accounting through reusable checkpoints. Resume and deadline adapters operate at explicit search boundaries without weakening exact replay.
+The core layers are immutable domain validation, exact constant-product transitions, exact sequential route replay, canonical bounded search, deterministic incumbent selection, and canonical serialization. Pool-disjoint split replay evaluates each positive leg against the same captured original snapshot, exposes a receipt only after every leg succeeds, and requires allocations to sum exactly to the request. Split routing starts with an exact single-path/equal fallback; a bounded greedy policy scores exact chunk assignments but admits only a distinct fresh full-input replay under the complete split objective. Interruptible routing exact-replays every canonical direct candidate before its first user-controlled stop, then carries the best valid baseline and separate establishment accounting through reusable checkpoints. Resume and deadline adapters operate at explicit search boundaries without weakening exact replay.
 
 ## Verification strategy
 
@@ -64,7 +64,7 @@ CI uses the same pinned pnpm version, performs a frozen install, and runs `pnpm 
 
 ## Limitations
 
-- Routing is bounded. Split routing evaluates only the exact no-split and canonical equal-split policies over enumerated pool-disjoint route sets; it has no greedy allocator yet and makes no unrestricted global-optimality claim.
+- Routing is bounded. Split routing evaluates exact no-split, canonical equal-split, and configured chunk-greedy policies over enumerated pool-disjoint route sets. Flooring and zero-output activation can make even unit chunks miss the tiny exhaustive optimum, so no unrestricted global-optimality claim is made.
 - The project does not submit transactions, hold funds, integrate a deployed protocol, or provide a service.
 - Checkpoints are process-local and non-serializable. Deadline adapters require an injected monotonic clock and provide no hard-latency guarantee.
 - Immediate establishment is limited to exact-replayable one-hop candidates. With no eligible direct route, a zero search cap or already-reached deadline can still return typed no-plan.
@@ -74,7 +74,7 @@ CI uses the same pinned pnpm version, performs a frozen install, and runs `pnpm 
 
 ## Roadmap
 
-The current release target is deterministic offline exact-input routing over immutable snapshots. Milestone 4 is complete. Milestone 5 now has exact split replay plus explicit no-split/equal-split baselines; bounded greedy allocation and the tiny exhaustive allocation comparison remain before the milestone gate can close. Acceleration, services, protocol adapters, and learned ordering remain later gated work.
+The current release target is deterministic offline exact-input routing over immutable snapshots. Milestone 4 is complete. Milestone 5 implementation now includes exact split replay, no-split/equal/greedy policies, and independent tiny exhaustive allocation comparisons; its mandatory cumulative completion review still gates Milestone 6. Acceleration, services, protocol adapters, and learned ordering remain later gated work.
 
 See the [technical roadmap](IMPLEMENTATION_PLAN.md), [current release gate](STATUS.md), [accepted invariants](docs/invariants.md), [Milestone 0 fixture derivations](fixtures/m0/README.md), and [research references](docs/references.md).
 

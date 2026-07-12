@@ -30,11 +30,13 @@ Last updated: 2026-07-13
 - Deterministic bounded enumeration of canonical pool-ID-disjoint route sets with separate path/set work counters and terminations; outputs are structural proposals only.
 - Atomic exact replay of explicit canonical pool-disjoint split allocations: positive bigint legs sum exactly to the request, every route replays from the captured original snapshot, and no partial receipt escapes failure.
 - Deterministic bounded split routing with an exact single-path fallback plus canonical equal-split proposals, exact remainder reconstruction, fresh split replay, explicit fallback/structural/allocation counters, and a complete split-plan tie key.
+- Oracle-first bounded greedy allocation over canonical pool-disjoint route sets: exact quotient/remainder chunks, exact partial scoring, explicit evaluation caps/frontiers, a distinct full-input authorization replay, fallback-preserving failures, and full-objective incumbent updates.
+- A standalone tiny exhaustive allocation oracle and black-box production comparison covering exact compositions, quality bounds, a named unit-chunk optimum, a coarse suboptimal case, a zero-output activation barrier, arbitrary-precision reconstruction, and the allocation-vector tie.
 - Machine-checked public/private trace boundary and manifest-only engineering-log promotion.
 
 ## Current release gate
 
-Milestones 0–4 are integrated locally. Milestone 5 now includes structural pool-disjoint candidates, exact split replay, and exact no-split/equal-split baselines with a safe fallback. The Milestone 5 gate remains open pending bounded greedy allocation and independent exhaustive tiny-allocation comparison. No serialized checkpoint, cross-process resume, default router clock, general statistical performance conclusion, historical dataset, service, protocol adapter, or learned ordering exists.
+Milestones 0–4 are complete. Milestone 5 implementation now includes structural pool-disjoint candidates, exact split replay, safe no-split/equal baselines, bounded exact greedy proposals, and independent tiny exhaustive allocation comparisons. The Milestone 5 gate remains open only for its mandatory cumulative completion review; Milestone 6 selection is blocked until that review returns complete. No serialized checkpoint, cross-process resume, default router clock, general statistical performance conclusion, historical dataset, service, protocol adapter, or learned ordering exists.
 
 ## Public evidence
 
@@ -46,13 +48,13 @@ Milestones 0–4 are integrated locally. Milestone 5 now includes structural poo
 
 ## Next technical milestone
 
-Complete Milestone 5 split allocation by adding a bounded deterministic greedy baseline only after the independent tiny exhaustive allocation oracle is in place. Compare greedy/no-split/equal candidates against that oracle on tiny inputs, preserve the exact fallback under every proposal failure or work limit, retain large-integer exact-sum evidence, and do not claim optimality beyond the evaluated candidate/allocation space.
+Commission the cumulative read-only Milestone 5 completion review. It must map every split-allocation outcome and gate clause to integrated code and independent evidence, reconcile these limitations, and return `MILESTONE COMPLETE` before Milestone 6 historical-data work becomes eligible.
 
 ## Known limitations
 
 - The demo reports repository capability only; it does not execute a snapshot, quote, transition, replay, or route.
 - A work-limited success is best only among already-complete explored candidates; it makes no completeness or unrestricted optimality claim.
-- Split routing is limited to pool-disjoint routes and currently evaluates only no-split and canonical equal-split allocations. It has no greedy/approximate allocator and does not submit transactions, hold funds, or model a deployed protocol.
+- Split routing is limited to pool-disjoint routes and configured no-split/equal/chunk-greedy policies. Greedy parts and evaluation work are explicitly bounded; integer flooring and zero-output eligibility can make unit chunks miss the tiny exhaustive optimum. No global allocation or route optimality is claimed, and RouteLab does not submit transactions, hold funds, or model a deployed protocol.
 - Fixture JSON is hand-auditable evidence, not a public snapshot or replay schema.
 - Domain parsing and general routing still accept caller-supplied opaque checksum identity; canonical computation/verification is explicit and never silently rewrites it. Canonical run creation is the narrower verified execution boundary.
 - Research references describe possible later directions and do not imply implementation or equivalence.
@@ -63,3 +65,4 @@ Complete Milestone 5 split allocation by adding a bounded deterministic greedy b
 - Interruption predicates are operational controls only: replay is atomic, in-memory tokens are not serializable/persistable or valid across processes, and paused outcomes do not enter `routelab.router-run.v1` hashes.
 - Deadline adapters require an injected monotonic clock, check only between expansions, make no hard-latency guarantee, and expose no clock samples or configuration in semantic results.
 - Pool-disjoint set ordering is structural enumeration, not a financial preference. Candidate sets become financially eligible only after an explicit exact allocation reconstructs the input and exact split replay succeeds; the implemented baseline policies are not a global allocation search.
+- Greedy partial replay receipts are scoring evidence only, including a final score that may cover the full amount. Only a distinct post-selection full-input replay can replace the exact fallback. Defensive final-replay failure accounting is retained, although disagreement with an identical successful final score is unreachable under the current captured pure model.

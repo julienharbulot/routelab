@@ -3,3 +3,25 @@ coverage/
 dist/
 *.tsbuildinfo
 *.swp
+
+# Local/private agent control plane
+.routelab-private/
+AGENTS.override.md
+
+# Local coding-agent/tool state
+.serena/
+
+# Private prompts and raw traces
+.codex/prompts/
+agent-reports/
+reviews/raw/
+private/
+
+# Local secrets and environment
+.env
+.env.*
+!.env.example
+secrets/
+
+# Research source cache; public repo stores links/notes only
+docs/research-papers/*.pdf

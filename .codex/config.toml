@@ -1,0 +1,6 @@
+# Project-scoped Codex configuration for the RouteLab four-thread topology.
+
+[agents]
+max_threads = 4
+max_depth = 1
+interrupt_message = true

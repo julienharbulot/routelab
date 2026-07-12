@@ -1,33 +1,48 @@
 # RouteLab TS
 
-RouteLab TS is being built as a small, exact, and measurable liquidity router. The current repository contract provides strict TypeScript checks, typed linting, tests, and a deterministic offline walking-skeleton demo.
+RouteLab TS is a small, exact, measurable liquidity-router project. Its target first release is deterministic offline exact-input routing over immutable snapshots of two-asset constant-product pools.
 
-Financial quoting is intentionally deferred until the amount, fee, rounding, reserve-transition, and snapshot invariants are documented and reviewed.
+Today the executable code is a TypeScript walking skeleton with an offline deterministic demo. Exact financial semantics and six hand-auditable fixtures are public, but pool quoting, route replay, graph search, allocation, services, and protocol adapters are not implemented yet.
 
 ## Prerequisites
 
-- Node.js 24
+- Node.js 24.18.0
 - pnpm 11.12.0
 
-The `packageManager` and `engines` fields in `package.json` pin the package-manager version and maintained Node line used by CI.
-
-## Bootstrap
-
-Install the pinned pnpm version if it is not already available, then install the locked development dependencies:
+The repository pins both versions. It does not require a global package-manager installation. With Corepack distributed alongside Node.js 24.18.0:
 
 ```bash
-npm install --global pnpm@11.12.0
-pnpm install --frozen-lockfile
+corepack pnpm --version
+corepack pnpm install --frozen-lockfile
 ```
+
+The version command must report `11.12.0`. Do not modify a host toolchain to repair a missing runtime; use an already-supported local/CI path or report the unverified check.
 
 ## Commands
 
 ```bash
-pnpm lint       # Run typed ESLint rules.
-pnpm typecheck  # Run strict TypeScript checks without emitting files.
-pnpm test       # Run the Node.js built-in test runner.
-pnpm demo       # Print deterministic offline walking-skeleton status.
-pnpm check      # Run lint, type-checking, tests, and the demo.
+pnpm trace:check:index    # Verify the exact staged publication surface.
+pnpm trace:check:head     # Verify the current commit tree.
+pnpm trace:check:history  # Audit every reachable commit; known historical exposure fails.
+pnpm lint         # Run typed ESLint rules.
+pnpm typecheck    # Run strict TypeScript checks without emitting files.
+pnpm test         # Run Node's built-in test runner.
+pnpm demo         # Print deterministic offline capability status.
+pnpm check        # Run the complete local gate.
 ```
 
-CI performs a frozen install and runs the same `pnpm check` command.
+CI performs a frozen install and runs `pnpm check`.
+
+## Technical contract
+
+- [Accepted financial and deterministic invariants](docs/invariants.md)
+- [Milestone 0 fixtures](fixtures/m0/README.md)
+- [Technical roadmap](IMPLEMENTATION_PLAN.md)
+- [Current public status](STATUS.md)
+- [Research references](docs/references.md)
+
+## Engineering method and evidence
+
+RouteLab uses a bounded human-led workflow with separate implementation, independent oracle, and read-only review roles. Accepted contracts, reviewed decisions, reproducible evidence, and concise integrated outcomes stay public. Active coordination, raw reports, prompts, unpublished evidence, and local tool state remain private.
+
+See the [development model](docs/CODEX_OPERATING_MODEL.md), [review contract](docs/CODE_REVIEW.md), [task template](tasks/TASK_TEMPLATE.md), and [engineering log](docs/engineering-log/README.md). `pnpm check` runs the staged-index boundary check, while the HEAD and history modes provide explicit committed-tree audits.

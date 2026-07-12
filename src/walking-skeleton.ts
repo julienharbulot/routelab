@@ -8,6 +8,7 @@ export const walkingSkeletonStatus = {
   singlePathRouting: 'exact-bounded',
   canonicalSnapshotChecksum: 'sha256-v1-available-unenforced',
   canonicalRouterRun: 'sha256-v1-in-memory-writer',
+  canonicalRouterRunReader: 'exact-replay-verified-in-memory',
 } as const;
 
 export function renderWalkingSkeletonStatus(): string {

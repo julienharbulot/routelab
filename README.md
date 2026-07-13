@@ -2,7 +2,7 @@
 
 RouteLab is a small, exact TypeScript liquidity router. Given an immutable snapshot of two-asset constant-product pools and an exact-input request, it deterministically searches within explicit hop and work limits, exactly replays every complete candidate, and returns a validated plan under exact output and deterministic tie-breaking.
 
-It also supports canonical snapshot, single-path run/case, and additive split run/case records; checksum-verified prepared contexts; one curated, independently reconciled historical snapshot; one exhaustive result-blind synthetic request corpus with offline integrity and derivation verification; one checksummed offline composed-runtime evaluation over that corpus; a composed anytime split runtime with one shared discovery pass and request-wide typed controls; deterministic interruption and process-local single-path resume; immediate exact-replayed direct incumbents; injected cooperative deadlines; and exact pool-disjoint no-split/equal/greedy policies with a safe fallback. See [current public status](STATUS.md) for the precise integrated boundary.
+It also supports canonical snapshot, single-path run/case, and additive split run/case records; checksum-verified prepared contexts; one curated, independently reconciled historical snapshot; one exhaustive result-blind synthetic request corpus with offline integrity and derivation verification; checksummed offline composed and numerical evaluations over that corpus; a composed anytime split runtime with one shared discovery pass and request-wide typed controls; deterministic interruption and process-local single-path resume; immediate exact-replayed direct incumbents; injected cooperative deadlines; and exact pool-disjoint no-split/equal/greedy/numerical policies with a safe fallback. See [current public status](STATUS.md) for the precise integrated boundary.
 
 ## A 30-second executable example
 
@@ -15,6 +15,7 @@ pnpm install --frozen-lockfile
 pnpm verify:historical-data
 pnpm verify:synthetic-requests
 pnpm verify:historical-evaluation
+pnpm verify:numerical-evaluation
 pnpm replay:cases
 pnpm replay:split-cases
 pnpm demo
@@ -31,6 +32,8 @@ The emitted JSON still uses the versioned `routelab.benchmark-report.v1` schema 
 `pnpm verify:synthetic-requests` first revalidates that historical import, then verifies a separately versioned 396-request corpus. The corpus exhaustively combines all 132 ordered distinct asset pairs with three exact input-asset liquidity-relative amount tiers. Its ordering, byte hash, maximum-reserve amounts, and graph-only direct/two-hop labels are independently rederived offline. It contains no runtime configuration or router results and does not model historical demand or equal-value trades.
 
 `pnpm verify:historical-evaluation` revalidates those inputs once, reuses their prepared context, and freshly reproduces all 2,376 exact request/profile results from the [timing-free, prose-free comparison config and retained evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/composed-two-hop-pair-v3/README.md). All 396 terminal-profile cells completed within the bounded two-hop/two-route policy, and no adjacent profile step lost a plan or regressed under the full exact objective. The separate observation config and 11,880 elapsed values are raw call-only evidence on one recorded environment, not a speedup, threshold, percentile, scaling, or production claim.
+
+`pnpm verify:numerical-evaluation` reuses the same verified corpus/context and retained baseline, then freshly reproduces the [timing-free path-shadow-price evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/numerical-path-shadow-price-v1/README.md). It retains all 2,376 cells, executes only the 414 result-blind eligible cells, and records 318 improved, 96 equal, and zero regressed exact objectives. All four frozen evidence clauses hold, so the artifact records numerical mode as primary; this is neither a default-mode decision nor a performance or global-optimality claim.
 
 ## Why exact replay matters
 
@@ -70,6 +73,7 @@ pnpm replay:split-cases # Verify deterministic exact split records with no timin
 pnpm verify:historical-data # Verify the curated historical import and preparation boundary offline.
 pnpm verify:synthetic-requests # Verify the result-blind synthetic request corpus offline.
 pnpm verify:historical-evaluation # Freshly replay the exact composed historical evaluation.
+pnpm verify:numerical-evaluation # Freshly replay the identical-input numerical evaluation.
 pnpm measure:anytime    # Emit separate quality/work and repeated raw latency observations.
 pnpm lint               # Run typed ESLint rules.
 pnpm typecheck          # Run strict TypeScript checks without emitting files.
@@ -95,7 +99,7 @@ CI uses the same pinned pnpm version, performs a frozen install, and runs `pnpm 
 
 ## Roadmap
 
-The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 are integrated and cumulatively reviewed complete for their accepted gates. Milestone 6 is integrated and cumulatively reviewed complete for the additive composed-runtime prerequisite, enforced parse-before-prepare input boundary, accepted [historical-source and dataset contract](docs/adr/accepted/0003-historical-source-and-dataset-contract.md), [canonical one-snapshot import](datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/README.md), separately versioned [synthetic exhaustive request corpus](datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/README.md), and [checksummed composed-runtime evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/composed-two-hop-pair-v3/README.md); its exact completion commit passed CI. Milestone 7a is active. Exact replay consolidation and the accepted [path-level numerical allocation contract](docs/adr/accepted/0004-path-level-numerical-allocation.md) are integrated. The additive direct source-module numerical runtime now composes the independently verified proposal core with exact residual assignment, scoring, and distinct full-input authorization while preserving the exact no-split/equal/greedy baseline. Identical-input retained evaluation and the primary-versus-experimental decision remain pending; no historical algorithm comparison or performance result exists. Acceleration, services, protocol adapters, and learned ordering remain later gated work.
+The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 are integrated and cumulatively reviewed complete for their accepted gates. Milestone 6 is integrated and cumulatively reviewed complete for the additive composed-runtime prerequisite, enforced parse-before-prepare input boundary, accepted [historical-source and dataset contract](docs/adr/accepted/0003-historical-source-and-dataset-contract.md), [canonical one-snapshot import](datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/README.md), separately versioned [synthetic exhaustive request corpus](datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/README.md), and [checksummed composed-runtime evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/composed-two-hop-pair-v3/README.md); its exact completion commit passed CI. Milestone 7a implementation is integrated pending cumulative review. Exact replay consolidation, the accepted [path-level numerical allocation contract](docs/adr/accepted/0004-path-level-numerical-allocation.md), the direct numerical runtime, frozen comparison cohort, and [retained identical-input evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/numerical-path-shadow-price-v1/README.md) are present. The evidence records primary numerical mode under the four accepted clauses while preserving exact replay and the baseline. No default-mode or performance result follows. Acceleration, services, protocol adapters, and learned ordering remain later gated work.
 
 See the [technical roadmap](IMPLEMENTATION_PLAN.md), [current release gate](STATUS.md), [accepted invariants](docs/invariants.md), [Milestone 0 fixture derivations](fixtures/m0/README.md), and [research references](docs/references.md).
 

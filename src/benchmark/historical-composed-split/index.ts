@@ -17,6 +17,7 @@ import {
   CANONICAL_SYNTHETIC_REQUEST_CORPUS_DIRECTORY,
   verifySyntheticRequestCorpus,
   type SyntheticExactInputRequest,
+  type SyntheticRequestCorpusVerificationResult,
 } from '../../verification/synthetic-request-corpus/index.ts';
 
 export const CANONICAL_HISTORICAL_COMPARISON_CONFIG_PATH =
@@ -254,12 +255,34 @@ export type HistoricalEvaluationVerificationResult =
   | { readonly ok: true; readonly value: HistoricalEvaluationSummary }
   | { readonly ok: false; readonly error: HistoricalEvaluationError };
 
+type VerifiedSyntheticRequestCorpusBundle = Extract<
+  SyntheticRequestCorpusVerificationResult,
+  { readonly ok: true }
+>['value'];
+
+/** @internal */
+export interface PreverifiedHistoricalComposedSplitEvaluation {
+  readonly summary: HistoricalEvaluationSummary;
+  readonly semanticCells: readonly Readonly<Record<string, unknown>>[];
+  readonly runtimeResults: readonly CanonicalSplitRouterRuntimeResult[];
+}
+
+/** @internal */
+export type PreverifiedHistoricalComposedSplitEvaluationResult =
+  | { readonly ok: true; readonly value: PreverifiedHistoricalComposedSplitEvaluation }
+  | { readonly ok: false; readonly error: HistoricalEvaluationError };
+
 type JsonRecord = Record<string, unknown>;
 
 interface ArtifactDescriptor {
   readonly path: string;
   readonly bytes: number;
   readonly sha256: string;
+}
+
+interface HistoricalEvaluationPreamble {
+  readonly manifestJson: { readonly text: string; readonly value: unknown };
+  readonly manifest: NonNullable<ReturnType<typeof parseManifest>>;
 }
 
 interface SemanticBuild {
@@ -854,6 +877,42 @@ function deepFreeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
+function cachedReadDependencies(
+  dependencies: HistoricalEvaluationReadDependencies,
+): HistoricalEvaluationReadDependencies {
+  const reads = new Map<string, Promise<Uint8Array>>();
+  return Object.freeze({
+    readFile(filePath: string): Promise<Uint8Array> {
+      let read = reads.get(filePath);
+      if (read === undefined) {
+        read = Promise.resolve().then(() => dependencies.readFile(filePath));
+        reads.set(filePath, read);
+      }
+      return read.then((bytes) => Uint8Array.from(bytes));
+    },
+  });
+}
+
+async function readHistoricalEvaluationPreamble(
+  directory: string,
+  dependencies: HistoricalEvaluationReadDependencies,
+): Promise<
+  | { readonly ok: true; readonly value: HistoricalEvaluationPreamble }
+  | { readonly ok: false; readonly error: HistoricalEvaluationError }
+> {
+  const manifestBytes = await safeRead(dependencies.readFile, path.join(directory, 'manifest.json'));
+  if (manifestBytes === undefined) return failure('manifest-read-failed', 'manifest.json');
+  const manifestJson = parseJson(manifestBytes);
+  if (manifestJson === undefined) return failure('invalid-manifest-json', 'manifest.json');
+  const manifest = parseManifest(manifestJson.value);
+  if (manifest === undefined) return failure('invalid-manifest-shape', 'manifest.json');
+  const config = await readComparisonConfig(dependencies, manifest.config);
+  if (!config.ok) return config;
+  const observationConfig = await readObservationConfig(dependencies, manifest.observationConfig);
+  if (!observationConfig.ok) return observationConfig;
+  return Object.freeze({ ok: true, value: Object.freeze({ manifestJson, manifest }) });
+}
+
 export async function createHistoricalComposedSplitEvaluation(
   dependencies: HistoricalEvaluationGenerationDependencies,
 ): Promise<HistoricalEvaluationGenerationResult> {
@@ -1099,26 +1158,45 @@ export async function verifyHistoricalComposedSplitEvaluation(
   directory: string,
   dependencies: HistoricalEvaluationReadDependencies,
 ): Promise<HistoricalEvaluationVerificationResult> {
-  const manifestBytes = await safeRead(dependencies.readFile, path.join(directory, 'manifest.json'));
-  if (manifestBytes === undefined) return failure('manifest-read-failed', 'manifest.json');
-  const manifestJson = parseJson(manifestBytes);
-  if (manifestJson === undefined) return failure('invalid-manifest-json', 'manifest.json');
-  const manifest = parseManifest(manifestJson.value);
-  if (manifest === undefined) return failure('invalid-manifest-shape', 'manifest.json');
+  const cached = cachedReadDependencies(dependencies);
 
-  const config = await readComparisonConfig(dependencies, manifest.config);
-  if (!config.ok) return config;
-  const observationConfig = await readObservationConfig(
-    dependencies,
-    manifest.observationConfig,
-  );
-  if (!observationConfig.ok) return observationConfig;
+  // Preserve the supported verifier's manifest -> configs -> corpus precedence.
+  const preamble = await readHistoricalEvaluationPreamble(directory, cached);
+  if (!preamble.ok) return preamble;
+
   const verified = await verifySyntheticRequestCorpus(
     CANONICAL_SYNTHETIC_REQUEST_CORPUS_DIRECTORY,
-    { readFile: dependencies.readFile },
+    { readFile: cached.readFile },
   );
   if (!verified.ok) return failure('corpus-invalid', `corpus/${verified.error.artifact}`);
 
+  const continued = await verifyHistoricalComposedSplitEvaluationWithVerifiedCorpus(
+    directory,
+    cached,
+    verified.value,
+    preamble.value,
+  );
+  if (!continued.ok) return continued;
+  return Object.freeze({ ok: true, value: continued.value.summary });
+}
+
+/**
+ * Continues the retained M6 verification from an already verified corpus bundle.
+ * Callers must pass the exact bundle they intend to reuse for later runtime work.
+ *
+ * @internal
+ */
+export async function verifyHistoricalComposedSplitEvaluationWithVerifiedCorpus(
+  directory: string,
+  dependencies: HistoricalEvaluationReadDependencies,
+  verified: VerifiedSyntheticRequestCorpusBundle,
+  establishedPreamble?: HistoricalEvaluationPreamble,
+): Promise<PreverifiedHistoricalComposedSplitEvaluationResult> {
+  const loaded = establishedPreamble === undefined
+    ? await readHistoricalEvaluationPreamble(directory, dependencies)
+    : Object.freeze({ ok: true as const, value: establishedPreamble });
+  if (!loaded.ok) return loaded;
+  const { manifestJson, manifest } = loaded.value;
   const semanticArtifact = await readDeclaredArtifact(
     directory,
     dependencies,
@@ -1131,7 +1209,7 @@ export async function verifyHistoricalComposedSplitEvaluation(
   }
   let semantic: SemanticBuild;
   try {
-    semantic = buildSemantic(verified.value);
+    semantic = buildSemantic(verified);
   } catch (error) {
     if (error instanceof EvaluationAbort) return failure(error.code, error.artifact);
     return failure('semantic-replay-mismatch', 'semantic-results.json');
@@ -1168,6 +1246,10 @@ export async function verifyHistoricalComposedSplitEvaluation(
 
   return Object.freeze({
     ok: true,
-    value: summaryFrom(semantic, manifest.observations.sha256),
+    value: deepFreeze({
+      summary: summaryFrom(semantic, manifest.observations.sha256),
+      semanticCells: semantic.cells,
+      runtimeResults: semantic.results,
+    }),
   });
 }

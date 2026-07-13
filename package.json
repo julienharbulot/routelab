@@ -19,6 +19,8 @@
     "verify:synthetic-requests": "node cli/verify-synthetic-request-corpus.ts",
     "evaluate:historical": "node cli/run-historical-composed-split-evaluation.ts",
     "verify:historical-evaluation": "node cli/verify-historical-composed-split-evaluation.ts",
+    "evaluate:numerical": "node cli/run-historical-numerical-split-evaluation.ts",
+    "verify:numerical-evaluation": "node cli/verify-historical-numerical-split-evaluation.ts",
     "measure:anytime": "node cli/measure-anytime.ts",
     "demo": "node cli/demo.ts",
     "trace:check": "pnpm trace:check:index",
@@ -26,7 +28,7 @@
     "trace:check:head": "node scripts/trace/check-public-surface.ts --head",
     "trace:check:history": "node scripts/trace/check-public-surface.ts --history",
     "trace:promote": "node scripts/trace/promote.ts",
-    "check": "pnpm trace:check && pnpm lint && pnpm typecheck && pnpm test && pnpm verify:historical-data && pnpm verify:synthetic-requests && pnpm verify:historical-evaluation && pnpm demo"
+    "check": "pnpm trace:check && pnpm lint && pnpm typecheck && pnpm test && pnpm verify:historical-data && pnpm verify:synthetic-requests && pnpm verify:historical-evaluation && pnpm verify:numerical-evaluation && pnpm demo"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

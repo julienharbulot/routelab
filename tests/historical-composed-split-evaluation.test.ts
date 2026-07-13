@@ -11,10 +11,14 @@ import {
   CANONICAL_HISTORICAL_OBSERVATION_CONFIG_PATH,
   createHistoricalComposedSplitEvaluation,
   verifyHistoricalComposedSplitEvaluation,
+  verifyHistoricalComposedSplitEvaluationWithVerifiedCorpus,
   type HistoricalEvaluationArtifacts,
   type HistoricalEvaluationErrorCode,
 } from '../src/benchmark/historical-composed-split/index.ts';
-import { CANONICAL_SYNTHETIC_REQUEST_CORPUS_DIRECTORY } from '../src/verification/synthetic-request-corpus/index.ts';
+import {
+  CANONICAL_SYNTHETIC_REQUEST_CORPUS_DIRECTORY,
+  verifySyntheticRequestCorpus,
+} from '../src/verification/synthetic-request-corpus/index.ts';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const HISTORICAL_DIRECTORY =
@@ -254,4 +258,57 @@ void test('freshly replays semantic bytes and applies verifier error precedence'
   record(manifest['counts'])['requestCount'] = 395;
   changedManifest.set(manifestPath, new TextEncoder().encode(JSON.stringify(manifest)));
   await expectCode(changedManifest, 'manifest-metadata-mismatch');
+});
+
+void test('preserves prelude precedence, one-read behavior, and the preverified continuation', async () => {
+  const artifacts = await generatedArtifacts();
+  const canonical = persistedFiles(artifacts);
+  const manifestPath = path.join(EVALUATION_DIRECTORY, 'manifest.json');
+  const corpusManifestPath = path.join(CORPUS_DIRECTORY, 'manifest.json');
+
+  const simultaneousManifest = new Map(canonical);
+  simultaneousManifest.set(manifestPath, new TextEncoder().encode('{}'));
+  simultaneousManifest.delete(CANONICAL_HISTORICAL_COMPARISON_CONFIG_PATH);
+  simultaneousManifest.delete(corpusManifestPath);
+  await expectCode(simultaneousManifest, 'invalid-manifest-shape');
+
+  const simultaneousConfig = new Map(canonical);
+  simultaneousConfig.delete(CANONICAL_HISTORICAL_COMPARISON_CONFIG_PATH);
+  simultaneousConfig.delete(corpusManifestPath);
+  await expectCode(simultaneousConfig, 'config-read-failed');
+
+  const simultaneousCorpus = new Map(canonical);
+  simultaneousCorpus.delete(corpusManifestPath);
+  simultaneousCorpus.delete(path.join(EVALUATION_DIRECTORY, 'semantic-results.json'));
+  await expectCode(simultaneousCorpus, 'corpus-invalid');
+
+  const counts = new Map<string, number>();
+  const nonIdempotent = async (filePath: string): Promise<Uint8Array> => {
+    const count = (counts.get(filePath) ?? 0) + 1;
+    counts.set(filePath, count);
+    if (count !== 1) return new TextEncoder().encode('{}');
+    return reader(canonical)(filePath);
+  };
+  const supported = await verifyHistoricalComposedSplitEvaluation(EVALUATION_DIRECTORY, {
+    readFile: nonIdempotent,
+  });
+  assert.equal(supported.ok, true);
+  for (const [filePath, count] of counts) assert.equal(count, 1, filePath);
+
+  const verifiedCorpus = await verifySyntheticRequestCorpus(CORPUS_DIRECTORY, {
+    readFile: reader(canonical),
+  });
+  assert.equal(verifiedCorpus.ok, true);
+  if (!verifiedCorpus.ok) return;
+  const continued = await verifyHistoricalComposedSplitEvaluationWithVerifiedCorpus(
+    EVALUATION_DIRECTORY,
+    { readFile: reader(canonical) },
+    verifiedCorpus.value,
+  );
+  assert.equal(continued.ok, true);
+  if (continued.ok) {
+    assert.deepEqual(continued.value.summary, supported.ok ? supported.value : undefined);
+    assert.equal(continued.value.semanticCells.length, 2_376);
+    assert.equal(continued.value.runtimeResults.length, 2_376);
+  }
 });

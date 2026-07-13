@@ -11,26 +11,24 @@ import {
   type ExactInputSplitRuntimeControlValidationError,
   type ExactInputSplitRuntimeRequest,
   type ExactInputSplitRuntimeResult,
-  type ExactInputSplitRuntimeSearchSummary,
   type ExactInputSplitRuntimeValidationError,
   type ExactInputSplitWorkCaps,
-  type ExactInputSplitWorkCounters,
 } from '../../router/anytime-exact-input-split/index.ts';
-import type { ExactInputRouteReplayReceipt } from '../../replay/exact-input-route/index.ts';
 import { prepareRoutingContext } from '../../runtime/prepared-routing-context/index.ts';
 import {
   CANONICAL_SNAPSHOT_SCHEMA_VERSION,
   serializeCanonicalSnapshotContent,
   type CanonicalSnapshotChecksumMismatchError,
 } from '../canonical-snapshot/index.ts';
+import {
+  projectCanonicalSplitRouterResult,
+  type CanonicalSplitRouterRuntimeResult,
+} from '../canonical-split-router-result/index.ts';
 
 export const CANONICAL_SPLIT_ROUTER_RUN_SCHEMA_VERSION =
   'routelab.split-router-run.v1';
 
-type CanonicalRuntimeResult = Extract<
-  ExactInputSplitRuntimeResult,
-  { readonly status: 'success' | 'no-route' | 'no-plan' }
->;
+type CanonicalRuntimeResult = CanonicalSplitRouterRuntimeResult;
 
 export interface CanonicalSplitRouterRun {
   readonly routerResult: CanonicalRuntimeResult;
@@ -315,84 +313,6 @@ function captureCaps(
   return Object.freeze(values) as unknown as ExactInputSplitWorkCaps;
 }
 
-function projectCounters(counters: ExactInputSplitWorkCounters): object {
-  return {
-    directCandidates: counters.directCandidates,
-    directCandidateReplays: counters.directCandidateReplays,
-    directCandidateRejections: counters.directCandidateRejections,
-    pathExpansions: counters.pathExpansions,
-    bestSingleCandidateReplays: counters.bestSingleCandidateReplays,
-    bestSingleCandidateRejections: counters.bestSingleCandidateRejections,
-    candidateSetExpansions: counters.candidateSetExpansions,
-    equalProposalReplays: counters.equalProposalReplays,
-    equalProposalRejections: counters.equalProposalRejections,
-    greedyOptionReplays: counters.greedyOptionReplays,
-    greedyOptionRejections: counters.greedyOptionRejections,
-    finalAuthorizationReplays: counters.finalAuthorizationReplays,
-    finalAuthorizationRejections: counters.finalAuthorizationRejections,
-  };
-}
-
-function projectSearch(search: ExactInputSplitRuntimeSearchSummary): object {
-  return { counters: projectCounters(search.counters), termination: search.termination };
-}
-
-function projectRouteReceipt(receipt: ExactInputRouteReplayReceipt): object {
-  return {
-    snapshotId: receipt.snapshotId,
-    snapshotChecksum: receipt.snapshotChecksum,
-    assetIn: receipt.assetIn,
-    assetOut: receipt.assetOut,
-    amountIn: receipt.amountIn.toString(10),
-    amountOut: receipt.amountOut.toString(10),
-    hops: receipt.hops.map((hop) => ({
-      poolId: hop.poolId,
-      assetIn: hop.assetIn,
-      assetOut: hop.assetOut,
-      amountIn: hop.amountIn.toString(10),
-      amountOut: hop.amountOut.toString(10),
-      reserveInBefore: hop.reserveInBefore.toString(10),
-      reserveOutBefore: hop.reserveOutBefore.toString(10),
-      reserveInAfter: hop.reserveInAfter.toString(10),
-      reserveOutAfter: hop.reserveOutAfter.toString(10),
-    })),
-  };
-}
-
-function projectSplitReceipt(
-  receipt: Extract<CanonicalRuntimeResult, { readonly status: 'success' }>['plan']['receipt'],
-): object {
-  return {
-    snapshotId: receipt.snapshotId,
-    snapshotChecksum: receipt.snapshotChecksum,
-    assetIn: receipt.assetIn,
-    assetOut: receipt.assetOut,
-    amountIn: receipt.amountIn.toString(10),
-    amountOut: receipt.amountOut.toString(10),
-    legs: receipt.legs.map((leg) => ({
-      allocation: leg.allocation.toString(10),
-      receipt: projectRouteReceipt(leg.receipt),
-    })),
-  };
-}
-
-function projectResult(result: CanonicalRuntimeResult): object {
-  if (result.status === 'success') {
-    return {
-      status: 'success',
-      plan: {
-        receipt: projectSplitReceipt(result.plan.receipt),
-        search: projectSearch(result.plan.search),
-      },
-    };
-  }
-  return {
-    status: result.status,
-    reason: result.reason,
-    search: projectSearch(result.search),
-  };
-}
-
 export function createCanonicalSplitRouterRun(
   snapshot: LiquiditySnapshot,
   request: ExactInputSplitRuntimeRequest,
@@ -476,7 +396,7 @@ export function createCanonicalSplitRouterRun(
       maxGreedyOptionReplays: capturedCaps.maxGreedyOptionReplays,
       maxFinalAuthorizationReplays: capturedCaps.maxFinalAuthorizationReplays,
     },
-    result: projectResult(canonicalResult),
+    result: projectCanonicalSplitRouterResult(canonicalResult),
   });
   const digest = createHash('sha256').update(canonicalJson, 'utf8').digest('hex');
   const value: CanonicalSplitRouterRun = Object.freeze({

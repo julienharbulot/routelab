@@ -73,7 +73,7 @@ Gate: exact-sum reconstruction, fallback, large integer, and exhaustive tiny com
 
 ## Pre-Milestone 6 integration gate — Composed split runtime
 
-Status: complete under cumulative review. The integrated gate provides the verified prepared context, composed anytime split runtime, additive canonical split evidence, fixed fallback/improvement cases, and executable demo required before Milestone 6. The historical source decision, canonical one-snapshot import, and separately versioned synthetic input corpus are integrated; historical evaluation has not started.
+Status: complete under cumulative review. The integrated gate provides the verified prepared context, composed anytime split runtime, additive canonical split evidence, fixed fallback/improvement cases, and executable demo required before Milestone 6. Milestone 6 now also has its historical source decision, canonical one-snapshot import, separately versioned synthetic input corpus, frozen comparison config, and retained composed-runtime evaluation; its separate cumulative completion review remains pending.
 
 Milestone 5 remains complete for its accepted component scope: exact split replay and bounded no-split, equal-split, and greedy baselines. Before those components become the subject of historical evaluation or a service boundary, RouteLab must compose them with the Milestone 4 runtime guarantees rather than benchmarking a chain of independently invoked APIs. This gate is additive and does not rewrite the archived Milestone 5 completion result.
 
@@ -94,6 +94,8 @@ Legacy Milestone 2–5 APIs and canonical single-path v1 records may remain as c
 Gate: independent tiny-graph and forced-stop evidence proves shared discovery, no budget recharge, exact fallback preservation, monotonic incumbent quality, checksum rejection, deterministic counters, and exact replay at every authorization boundary. At least one canonical split case reproduces the hand-audited `50 -> 66` improvement and one forced-stop case returns the exact `50` fallback. The demo executes one of those cases. No latency or throughput claim is created by this gate.
 
 ## Milestone 6 — Historical data and credible evaluation
+
+Status: implementation scope integrated; mandatory cumulative milestone completion review pending. Milestone 7a remains blocked until that review maps every outcome and gate clause to independent evidence and reports complete.
 
 Choose a source through a documented decision, import one canonical snapshot, then grow versioned datasets with provenance, ordering, schema validation, and checksums. Separate dataset changes from algorithm comparisons. The primary benchmark path must consume the composed runtime from the pre-M6 integration gate; legacy component orchestration may be retained only as an explicitly labeled comparison.
 

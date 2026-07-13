@@ -2,7 +2,7 @@
 
 RouteLab is a small, exact TypeScript liquidity router. Given an immutable snapshot of two-asset constant-product pools and an exact-input request, it deterministically searches within explicit hop and work limits, exactly replays every complete candidate, and returns a validated plan under exact output and deterministic tie-breaking.
 
-It also supports canonical snapshot, single-path run/case, and additive split run/case records; checksum-verified prepared contexts; one curated, independently reconciled historical snapshot; one exhaustive result-blind synthetic request corpus with offline integrity and derivation verification; a composed anytime split runtime with one shared discovery pass and request-wide typed controls; deterministic interruption and process-local single-path resume; immediate exact-replayed direct incumbents; injected cooperative deadlines; and exact pool-disjoint no-split/equal/greedy policies with a safe fallback. See [current public status](STATUS.md) for the precise integrated boundary.
+It also supports canonical snapshot, single-path run/case, and additive split run/case records; checksum-verified prepared contexts; one curated, independently reconciled historical snapshot; one exhaustive result-blind synthetic request corpus with offline integrity and derivation verification; one checksummed offline composed-runtime evaluation over that corpus; a composed anytime split runtime with one shared discovery pass and request-wide typed controls; deterministic interruption and process-local single-path resume; immediate exact-replayed direct incumbents; injected cooperative deadlines; and exact pool-disjoint no-split/equal/greedy policies with a safe fallback. See [current public status](STATUS.md) for the precise integrated boundary.
 
 ## A 30-second executable example
 
@@ -14,6 +14,7 @@ corepack install --global pnpm@11.12.0
 pnpm install --frozen-lockfile
 pnpm verify:historical-data
 pnpm verify:synthetic-requests
+pnpm verify:historical-evaluation
 pnpm replay:cases
 pnpm replay:split-cases
 pnpm demo
@@ -28,6 +29,8 @@ The emitted JSON still uses the versioned `routelab.benchmark-report.v1` schema 
 `pnpm verify:historical-data` verifies the first curated historical import entirely offline. It checks the closed manifest and six declared companion artifacts, exact Infura/SQD normalized-source agreement, canonical pool ordering and financial-content checksum, and the untrusted parse-before-prepare boundary before returning a prepared context summary. The imported snapshot is a frozen 54-pool subset at one block, not a request corpus or benchmark.
 
 `pnpm verify:synthetic-requests` first revalidates that historical import, then verifies a separately versioned 396-request corpus. The corpus exhaustively combines all 132 ordered distinct asset pairs with three exact input-asset liquidity-relative amount tiers. Its ordering, byte hash, maximum-reserve amounts, and graph-only direct/two-hop labels are independently rederived offline. It contains no runtime configuration or router results and does not model historical demand or equal-value trades.
+
+`pnpm verify:historical-evaluation` revalidates those inputs once, reuses their prepared context, and freshly reproduces all 2,376 exact request/profile results from the [timing-free, prose-free comparison config and retained evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/composed-two-hop-pair-v3/README.md). All 396 terminal-profile cells completed within the bounded two-hop/two-route policy, and no adjacent profile step lost a plan or regressed under the full exact objective. The separate observation config and 11,880 elapsed values are raw call-only evidence on one recorded environment, not a speedup, threshold, percentile, scaling, or production claim.
 
 ## Why exact replay matters
 
@@ -66,6 +69,7 @@ pnpm replay:cases       # Verify fixed offline router cases and emit JSON eviden
 pnpm replay:split-cases # Verify deterministic exact split records with no timing state.
 pnpm verify:historical-data # Verify the curated historical import and preparation boundary offline.
 pnpm verify:synthetic-requests # Verify the result-blind synthetic request corpus offline.
+pnpm verify:historical-evaluation # Freshly replay the exact composed historical evaluation.
 pnpm measure:anytime    # Emit separate quality/work and repeated raw latency observations.
 pnpm lint               # Run typed ESLint rules.
 pnpm typecheck          # Run strict TypeScript checks without emitting files.
@@ -87,11 +91,11 @@ CI uses the same pinned pnpm version, performs a frozen install, and runs `pnpm 
 - `pnpm replay:cases` remains a single-observation verification harness. `pnpm measure:anytime` uses one fixed offline input, warmups, alternating repeated samples, environment metadata, and raw observations, but performs no statistical inference and supports no speedup, threshold, scaling, or production-latency claim.
 - The executable split demo and `pnpm replay:split-cases` cover one fixed offline two-pool fixture. They support no scaling, latency, throughput, production, or unrestricted-optimality conclusion.
 - Legacy Milestone 2–5 routers remain standalone compatibility and component-test surfaces. The additive high-level split runtime is the composed path with a verified context, one request-local discovery frontier, and one non-recharged typed ledger.
-- `prepareRoutingContext` is a lower-level typed compatibility surface and assumes its `LiquiditySnapshot` is already domain-validated; untrusted JavaScript or imported data must use `parseAndPrepareRoutingContext`. The first curated historical dataset is imported and verified through that boundary. Its separate synthetic corpus exhaustively covers the frozen allowlist pair grid at three maximum-reserve-relative input scales, but it is not historical order flow or a representative market distribution, and no historical evaluation exists.
+- `prepareRoutingContext` is a lower-level typed compatibility surface and assumes its `LiquiditySnapshot` is already domain-validated; untrusted JavaScript or imported data must use `parseAndPrepareRoutingContext`. The first curated historical dataset is imported and verified through that boundary. Its separate synthetic corpus exhaustively covers the frozen allowlist pair grid at three maximum-reserve-relative input scales, but it is not historical order flow or a representative market distribution. The retained evaluation covers only that bounded synthetic grid and makes no algorithm-comparison or performance claim.
 
 ## Roadmap
 
-The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 remain integrated and cumulatively reviewed complete for their accepted component gates, and the additive pre-Milestone 6 composed-runtime gate is complete. Milestone 6 now has an enforced parse-before-prepare input boundary, an accepted [historical-source and dataset contract](docs/adr/accepted/0003-historical-source-and-dataset-contract.md), a [canonical one-snapshot import](datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/README.md), and a separately versioned [synthetic exhaustive request corpus](datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/README.md). A composed-runtime evaluation with a separately frozen comparison profile is next; no historical algorithm or performance result exists. Path-level numerical allocation remains after Milestone 6 and before acceleration. Services, protocol adapters, and learned ordering remain later gated work.
+The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 remain integrated and cumulatively reviewed complete for their accepted component gates, and the additive pre-Milestone 6 composed-runtime gate is complete. Milestone 6 now has an enforced parse-before-prepare input boundary, an accepted [historical-source and dataset contract](docs/adr/accepted/0003-historical-source-and-dataset-contract.md), a [canonical one-snapshot import](datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/README.md), a separately versioned [synthetic exhaustive request corpus](datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/README.md), and one [checksummed composed-runtime evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/composed-two-hop-pair-v3/README.md). The required cumulative Milestone 6 review remains before Milestone 7a. No historical algorithm comparison or performance result exists. Path-level numerical allocation remains after Milestone 6 and before acceleration. Services, protocol adapters, and learned ordering remain later gated work.
 
 See the [technical roadmap](IMPLEMENTATION_PLAN.md), [current release gate](STATUS.md), [accepted invariants](docs/invariants.md), [Milestone 0 fixture derivations](fixtures/m0/README.md), and [research references](docs/references.md).
 

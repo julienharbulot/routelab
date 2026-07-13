@@ -34,6 +34,7 @@ Last updated: 2026-07-13
 - A standalone tiny exhaustive allocation oracle and black-box production comparison covering exact compositions, quality bounds, a named unit-chunk optimum, a coarse suboptimal case, a zero-output activation barrier, arbitrary-precision reconstruction, and the allocation-vector tie.
 - Public opaque `PreparedRoutingContext` construction that defensively captures an already domain-validated snapshot, verifies its canonical checksum before derived state exists, and owns hidden reusable pool, asset, and deterministic-adjacency lookups.
 - An additive `parseAndPrepareRoutingContext(input: unknown)` boundary that returns strict schema/domain failures before checksum verification, then delegates successful parsed snapshots to prepared-context construction; malformed pools expose no prepared capability.
+- An accepted historical-source and dataset contract for Ethereum mainnet block 19,000,000, the canonical Uniswap V2 factory, a fixed 12-token selection policy, conservative raw-provider redistribution limits, and a deterministic future import boundary.
 - Additive composed anytime split routing with mandatory exact direct establishment, one request-local shared path frontier, cardinality-two-or-more derived disjoint sets, six typed cumulative work caps, 13 counters, cooperative stops at every discretionary kind, and a monotonic exact incumbent.
 - Additive canonical `routelab.split-router-run.v1` and `routelab.split-router-case.v1` records that contain cap-driven deterministic semantics only and accept supplied results/hashes only after strict reconstruction and fresh composed-runtime replay.
 - Two fixed canonical split cases and deterministic `pnpm replay:split-cases` evidence for exact input `100`, best single/fallback `50`, allocations `50/50`, split output `66`, and unchanged single-path v1 hashes.
@@ -42,7 +43,7 @@ Last updated: 2026-07-13
 
 ## Current release gate
 
-Milestones 0–5 remain integrated and cumulatively reviewed complete for their accepted component gates. The additive pre-Milestone 6 integration gate is also complete under cumulative review: Milestone 4 anytime controls and Milestone 5 split policies now compose under one verified prepared context, shared discovery, non-recharged request controls, canonical split evidence, and an executable split demo. The first Milestone 6 prerequisite now enforces domain parsing before checksum verification and preparation. Historical source selection and one-snapshot canonical import are next; no source, dataset, or evaluation exists. No split checkpoint/resume, default router clock, general statistical performance conclusion, service, protocol adapter, numerical allocator, or learned ordering exists.
+Milestones 0–5 remain integrated and cumulatively reviewed complete for their accepted component gates. The additive pre-Milestone 6 integration gate is also complete under cumulative review: Milestone 4 anytime controls and Milestone 5 split policies now compose under one verified prepared context, shared discovery, non-recharged request controls, canonical split evidence, and an executable split demo. The first Milestone 6 prerequisite enforces domain parsing before checksum verification and preparation, and the first historical source and deterministic dataset contract are selected. One-snapshot canonical import is next; no historical dataset artifact, acquisition client, evaluation, or performance conclusion exists. No split checkpoint/resume, default router clock, service, protocol adapter, numerical allocator, or learned ordering exists.
 
 ## Public evidence
 
@@ -51,12 +52,13 @@ Milestones 0–5 remain integrated and cumulatively reviewed complete for their 
 - [Fixture evidence classification](fixtures/m0/MANIFEST.md)
 - [Canonical split replay fixtures](fixtures/pre-m6/split-router-cases/README.md)
 - [Raw snapshot validation boundary decision](docs/adr/accepted/0002-validate-raw-snapshots-before-preparation.md)
+- [Historical source and dataset contract](docs/adr/accepted/0003-historical-source-and-dataset-contract.md)
 - [Engineering log](docs/engineering-log/README.md)
 - [Technical roadmap](IMPLEMENTATION_PLAN.md)
 
 ## Next technical milestone
 
-Milestone 6 historical data and credible evaluation remains next. Its untrusted-input validation prerequisite is integrated. Source selection must be documented before importing one canonical snapshot with provenance, licensing, ordering, schema validation, and checksums. The primary measurement path must use the composed runtime and identical request-scoped controls; no benchmark or data-integration claim exists yet.
+Milestone 6 historical data and credible evaluation remains next. Its untrusted-input validation prerequisite and first historical-source decision are integrated. RLT-062 must import the selected canonical snapshot with the accepted provenance, redistribution, ordering, manifest, schema-validation, artifact-hash, and checksum contracts. The primary measurement path must use the composed runtime and identical request-scoped controls; no dataset, benchmark, or data-integration claim exists yet.
 
 ## Known limitations
 
@@ -67,6 +69,7 @@ Milestone 6 historical data and credible evaluation remains next. Its untrusted-
 - Split routing is limited to pool-disjoint routes and configured no-split/equal/chunk-greedy policies. Greedy parts and evaluation work are explicitly bounded; integer flooring and zero-output eligibility can make unit chunks miss the tiny exhaustive optimum. No global allocation or route optimality is claimed, and RouteLab does not submit transactions, hold funds, or model a deployed protocol.
 - Milestone 0 fixture JSON is hand-auditable evidence, not a public snapshot or replay schema; the pre-M6 split fixtures are canonical split case records.
 - Raw snapshot-shaped input must use `parseAndPrepareRoutingContext` to enforce schema/domain parsing before checksum verification and preparation. The lower-level `prepareRoutingContext` remains a typed compatibility surface that checksum-verifies an already domain-validated snapshot; a TypeScript cast alone is not runtime validation. Legacy general routing still accepts caller-supplied opaque checksum identity, while canonical single/split run creation remains a verified execution boundary.
+- The first historical source and future dataset contract are selected, but no historical snapshot, manifest, provider artifact, importer, acquisition client, synthetic request corpus, or evaluation result is tracked. Raw provider material remains private under the accepted conservative redistribution boundary.
 - Research references describe possible later directions and do not imply implementation or equivalence.
 - Replay-case timings remain one observation per fixed M3 case with no warmup, repetition, comparison, threshold, statistical interpretation, output persistence, migration, or JSON resource-limit policy. The separate M4 anytime harness does not change their meaning.
 - Immediate establishment covers canonical exact-replayable one-hop candidates only. With no eligible direct baseline, a zero search cap or already-reached deadline retains typed no-plan behavior.

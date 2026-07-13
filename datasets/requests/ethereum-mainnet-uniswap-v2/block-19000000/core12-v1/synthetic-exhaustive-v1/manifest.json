@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "routelab.synthetic-request-corpus-manifest.v1",
+  "corpusId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1-synthetic-exhaustive-v1",
+  "sourceDataset": {
+    "datasetId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1",
+    "policySha256": "sha256:80c7738104050b03418064d306feab7cab8d420858c76637f95053d497233d1c",
+    "snapshotId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1",
+    "snapshotChecksum": "sha256:5d21166cf218997776efc23b203c2f70637b1fb822807fb236bfc6fd0bf3e755"
+  },
+  "derivation": {
+    "selectionMode": "exhaustive-ordered-distinct-asset-pairs",
+    "randomness": "none",
+    "assetOrder": "raw-utf16-address-ascending",
+    "pairOrder": "asset-in-then-asset-out-then-amount-bucket",
+    "amountOrder": [
+      "max-reserve-1-in-100000",
+      "max-reserve-1-in-10000",
+      "max-reserve-1-in-1000"
+    ],
+    "reserveStatistic": "maximum-positive-incident-reserve-for-input-asset",
+    "amountFormula": "max(1,floor(maximumIncidentReserve*numerator/denominator))",
+    "amountBuckets": [
+      {
+        "id": "max-reserve-1-in-100000",
+        "numerator": "1",
+        "denominator": "100000"
+      },
+      {
+        "id": "max-reserve-1-in-10000",
+        "numerator": "1",
+        "denominator": "10000"
+      },
+      {
+        "id": "max-reserve-1-in-1000",
+        "numerator": "1",
+        "denominator": "1000"
+      }
+    ],
+    "topologyClassification": "undirected-stored-pair-adjacency-only"
+  },
+  "artifact": {
+    "path": "requests.json",
+    "bytes": 99301,
+    "sha256": "sha256:c470f0a33b5d03cdd1ac8d88c92a8e2ec79b78f7d488541c0f4a321ff3e03173"
+  },
+  "counts": {
+    "assetCount": 12,
+    "poolCount": 54,
+    "orderedPairCount": 132,
+    "requestCount": 396,
+    "amountBucketCounts": {
+      "max-reserve-1-in-100000": 132,
+      "max-reserve-1-in-10000": 132,
+      "max-reserve-1-in-1000": 132
+    },
+    "topologyCounts": {
+      "direct-edge-present": 324,
+      "direct-edge-absent-common-neighbor-present": 72
+    }
+  },
+  "limitations": [
+    "This exhaustive grid covers only ordered distinct pairs from one frozen 12-asset allowlist at one block and venue.",
+    "Amounts are exact fractions of each input asset's maximum incident stored reserve; they are not equal-value trades, historical orders, or a representative market distribution.",
+    "Maximum-reserve anchors can be hub- or outlier-biased and are immutable for this corpus version.",
+    "The graph is connected with diameter two, so this corpus contains no disconnected or deeper-topology request.",
+    "Runtime parameters, work caps, router results, routes, allocations, timing, environment metadata, and performance or optimality conclusions are excluded."
+  ]
+}

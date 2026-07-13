@@ -15,6 +15,7 @@
     "test:pool": "node --test tests/constant-product.test.ts",
     "replay:cases": "node cli/replay-cases.ts",
     "replay:split-cases": "node cli/replay-split-cases.ts",
+    "verify:historical-data": "node cli/verify-historical-dataset.ts",
     "measure:anytime": "node cli/measure-anytime.ts",
     "demo": "node cli/demo.ts",
     "trace:check": "pnpm trace:check:index",
@@ -22,7 +23,7 @@
     "trace:check:head": "node scripts/trace/check-public-surface.ts --head",
     "trace:check:history": "node scripts/trace/check-public-surface.ts --history",
     "trace:promote": "node scripts/trace/promote.ts",
-    "check": "pnpm trace:check && pnpm lint && pnpm typecheck && pnpm test && pnpm demo"
+    "check": "pnpm trace:check && pnpm lint && pnpm typecheck && pnpm test && pnpm verify:historical-data && pnpm demo"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

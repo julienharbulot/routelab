@@ -49,6 +49,7 @@
     ".github/",
     "cli/",
     "config/",
+    "datasets/",
     "fixtures/",
     "scripts/",
     "src/",

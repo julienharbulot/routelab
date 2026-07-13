@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "routelab.source-reconciliation.v1",
+  "datasetId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1",
+  "exactMatch": true,
+  "comparedSources": [
+    "infura-direct-state",
+    "sqd-finalized-event-values-at-infura-location-hints"
+  ],
+  "checkedFields": [
+    "datasetId",
+    "policySha256",
+    "selectedTokenSymbols",
+    "block",
+    "factoryAddress",
+    "complete pair set",
+    "token0",
+    "token1",
+    "reserve0",
+    "reserve1"
+  ],
+  "comparedPairCount": 54,
+  "includedPositiveReservePairCount": 54,
+  "differences": []
+}

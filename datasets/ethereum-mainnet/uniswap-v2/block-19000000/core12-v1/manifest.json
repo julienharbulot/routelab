@@ -1,0 +1,161 @@
+{
+  "schemaVersion": "routelab.dataset-manifest.v1",
+  "datasetId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1",
+  "policySha256": "sha256:80c7738104050b03418064d306feab7cab8d420858c76637f95053d497233d1c",
+  "publication": {
+    "artifactClass": "curated-normalized-historical-facts-and-project-metadata",
+    "rawProviderMaterial": "excluded-no-redistribution-grant-assumed",
+    "licenseGrant": "none-by-this-manifest",
+    "termsReferences": [
+      {
+        "role": "infura-offering-terms",
+        "url": "https://consensys.io/terms-of-use"
+      },
+      {
+        "role": "uniswap-v2-source-license",
+        "url": "https://github.com/Uniswap/v2-core/blob/master/LICENSE"
+      }
+    ]
+  },
+  "chain": {
+    "chainId": "1",
+    "number": "19000000",
+    "hash": "0xcf384012b91b081230cdf17a3f7dd370d8e67056058af6b272b3d54aa2714fac",
+    "parentHash": "0x759e27a5069535949f0a7247ebc999367dbd77964d77ed004ffc8db3d4940248",
+    "timestamp": "1705173443"
+  },
+  "venue": {
+    "protocol": "uniswap-v2",
+    "factoryAddress": "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f",
+    "factoryDeploymentBlock": "10000835",
+    "pairCreatedTopic": "0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9",
+    "syncTopic": "0x1c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1",
+    "feeChargedNumerator": "3",
+    "feeDenominator": "1000"
+  },
+  "selectionPolicy": "For every unordered pair of the frozen token allowlist, include the canonical Uniswap V2 factory pair if it existed at the target block; retain every discovered pair in source evidence and include only positive-reserve pairs in the RouteLab snapshot.",
+  "tokenBehaviorPolicy": "Stored-reserve benchmark only. No selected token is treated as fee-on-transfer or rebasing. Blacklist, pause, custody, proxy-upgrade, and live transfer feasibility are outside the offline pool-state model and are recorded limitations.",
+  "selectedTokens": [
+    {
+      "symbol": "WETH",
+      "address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+      "decimals": 18
+    },
+    {
+      "symbol": "USDC",
+      "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "decimals": 6
+    },
+    {
+      "symbol": "USDT",
+      "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "decimals": 6
+    },
+    {
+      "symbol": "DAI",
+      "address": "0x6b175474e89094c44da98b954eedeac495271d0f",
+      "decimals": 18
+    },
+    {
+      "symbol": "WBTC",
+      "address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+      "decimals": 8
+    },
+    {
+      "symbol": "UNI",
+      "address": "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984",
+      "decimals": 18
+    },
+    {
+      "symbol": "LINK",
+      "address": "0x514910771af9ca656af840dff83e8264ecf986ca",
+      "decimals": 18
+    },
+    {
+      "symbol": "AAVE",
+      "address": "0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9",
+      "decimals": 18
+    },
+    {
+      "symbol": "MKR",
+      "address": "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2",
+      "decimals": 18
+    },
+    {
+      "symbol": "COMP",
+      "address": "0xc00e94cb662c3520282e6f5717214004a7f26888",
+      "decimals": 18
+    },
+    {
+      "symbol": "CRV",
+      "address": "0xd533a949740bb3306d119cc777fa900ba034cd52",
+      "decimals": 18
+    },
+    {
+      "symbol": "YFI",
+      "address": "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e",
+      "decimals": 18
+    }
+  ],
+  "acquisition": {
+    "canonicalAssertion": "Ethereum mainnet contract state at the frozen block hash",
+    "primary": "Infura archive-backed EIP-1898 direct state calls",
+    "verification": "SQD Portal finalized PairCreated/Sync event values at Infura-supplied event locations",
+    "exactReconciliationRequired": true,
+    "limitation": "SQD did not independently discover the latest relevant event location for each accepted field."
+  },
+  "snapshot": {
+    "schemaVersion": "routelab.snapshot.v1",
+    "snapshotId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1",
+    "snapshotChecksum": "sha256:5d21166cf218997776efc23b203c2f70637b1fb822807fb236bfc6fd0bf3e755",
+    "poolCount": 54,
+    "assetCount": 12,
+    "path": "snapshot.json",
+    "canonicalContentPath": "canonical-snapshot-content.json"
+  },
+  "artifacts": [
+    {
+      "role": "policy",
+      "path": "policy.json",
+      "bytes": 2794,
+      "sha256": "sha256:80c7738104050b03418064d306feab7cab8d420858c76637f95053d497233d1c"
+    },
+    {
+      "role": "infura-normalized",
+      "path": "sources/infura-normalized.json",
+      "bytes": 15380,
+      "sha256": "sha256:e9a01c6ae6cd7ef7d76e3aa0b4c0ddec680d5f649ecbf1f3007bc8d766e2ae88"
+    },
+    {
+      "role": "sqd-normalized",
+      "path": "sources/sqd-normalized.json",
+      "bytes": 15377,
+      "sha256": "sha256:c59bd6e2d777dfc7122a4522e203c21aefd607b630bc991977fa2ea0237100b6"
+    },
+    {
+      "role": "reconciliation",
+      "path": "reconciliation.json",
+      "bytes": 565,
+      "sha256": "sha256:ee184996130c610035df3b1b7fc7fe4eb6fc0166af5c93174102c3e0745e29ae"
+    },
+    {
+      "role": "snapshot",
+      "path": "snapshot.json",
+      "bytes": 18502,
+      "sha256": "sha256:4c43d4920f0edb487a262f1d321ba4790d07c7563e2a3b0157c5b51122fb3478"
+    },
+    {
+      "role": "canonical-snapshot-content",
+      "path": "canonical-snapshot-content.json",
+      "bytes": 14799,
+      "sha256": "sha256:5d21166cf218997776efc23b203c2f70637b1fb822807fb236bfc6fd0bf3e755"
+    }
+  ],
+  "limitations": [
+    "This is a frozen allowlist subset of canonical Uniswap V2 stored reserves, not the complete Ethereum liquidity universe.",
+    "The data does not represent historical user order flow; any workload derived from it must be described as synthetic and versioned separately.",
+    "Token transfer behavior, transaction simulation or submission, custody, live execution, future state, and unrestricted routing optimality are outside this dataset contract.",
+    "SQD verified event values at Infura-supplied event locations and did not independently discover the latest relevant location for every accepted field.",
+    "Raw provider material is excluded because this project does not assume a redistribution grant; this manifest grants no license and is not legal advice."
+  ]
+}

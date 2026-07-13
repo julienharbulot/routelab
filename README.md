@@ -17,6 +17,8 @@ pnpm verify:synthetic-requests
 pnpm verify:historical-evaluation
 pnpm verify:numerical-evaluation
 pnpm verify:numerical-baseline-profile
+node cli/verify-representative-numerical-baseline.ts
+node cli/verify-representative-numerical-profile.ts
 pnpm replay:cases
 pnpm replay:split-cases
 pnpm demo
@@ -37,6 +39,8 @@ The emitted JSON still uses the versioned `routelab.benchmark-report.v1` schema 
 `pnpm verify:numerical-evaluation` reuses the same verified corpus/context and retained baseline, then freshly reproduces the [timing-free path-shadow-price evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/numerical-path-shadow-price-v1/README.md). It retains all 2,376 cells, executes only the 414 result-blind eligible cells, and records 318 improved, 96 equal, and zero regressed exact objectives. All four frozen evidence clauses hold, so the artifact records numerical mode as primary; this is neither a default-mode decision nor a performance or global-optimality claim.
 
 `pnpm verify:numerical-baseline-profile` verifies the [first retained Milestone 7b pre-acceleration profile](datasets/profiles/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/numerical-path-shadow-price-baseline-v1/README.md): exact parity for the ordered 414-cell cohort, 4,554-call invocation grammar, separate work and observation artifacts, raw CPU graph integrity, attribution, hashes, and the frozen next-experiment rule. The required within-runtime-root sample population is empty in all three profiles, so the artifact selects no pruning or shortcut. Its all-sample shadow-price observation is not a performance conclusion or experiment selection.
+
+`node cli/verify-representative-numerical-baseline.ts` and `node cli/verify-representative-numerical-profile.ts` verify the separately frozen [supported-regime inputs](fixtures/m7/numerical-representative-profile/README.md) and [retained follow-up profile](datasets/profiles/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-path-shadow-price-preacceleration-v1/README.md). The suite keeps one accepted historical stored-reserve anchor and three deterministic synthetic topology/reserve stresses, freshly verifies 1,269 eligible exact results, and retains 12 nonempty all-sample CPU profiles. Candidate-set discovery is not the strict unique leader in any profile, so the frozen rule selects no pruning, shortcut, or acceleration implementation. This is a negative experiment-selection result, not a performance conclusion.
 
 ## Why exact replay matters
 
@@ -78,6 +82,8 @@ pnpm verify:synthetic-requests # Verify the result-blind synthetic request corpu
 pnpm verify:historical-evaluation # Freshly replay the exact composed historical evaluation.
 pnpm verify:numerical-evaluation # Freshly replay the identical-input numerical evaluation.
 pnpm verify:numerical-baseline-profile # Verify retained work, observations, attribution, and decline decision.
+node cli/verify-representative-numerical-baseline.ts # Replay all supported-regime timing-free baselines.
+node cli/verify-representative-numerical-profile.ts # Verify representative profile artifacts and decline decision.
 pnpm measure:anytime    # Emit separate quality/work and repeated raw latency observations.
 pnpm lint               # Run typed ESLint rules.
 pnpm typecheck          # Run strict TypeScript checks without emitting files.
@@ -88,7 +94,8 @@ pnpm trace:check:head   # Verify the current commit's public surface.
 ```
 
 CI uses the same pinned pnpm version, performs a frozen install, runs `pnpm check`,
-and explicitly verifies the retained numerical baseline profile.
+and explicitly verifies both retained numerical profiles and the representative
+timing-free baseline.
 
 ## Limitations
 
@@ -104,7 +111,7 @@ and explicitly verifies the retained numerical baseline profile.
 
 ## Roadmap
 
-The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 are integrated and cumulatively reviewed complete for their accepted gates. Milestone 6 is integrated and cumulatively reviewed complete for the additive composed-runtime prerequisite, enforced parse-before-prepare input boundary, accepted [historical-source and dataset contract](docs/adr/accepted/0003-historical-source-and-dataset-contract.md), [canonical one-snapshot import](datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/README.md), separately versioned [synthetic exhaustive request corpus](datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/README.md), and [checksummed composed-runtime evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/composed-two-hop-pair-v3/README.md); its exact completion commit passed CI. Milestone 7a is complete under independent cumulative review. The review mapped exact replay consolidation, the accepted [path-level numerical allocation contract](docs/adr/accepted/0004-path-level-numerical-allocation.md), the proposal/reconstruction core, direct numerical runtime, frozen comparison cohort, [retained identical-input evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/numerical-path-shadow-price-v1/README.md), independent evidence, compatibility, and bounded limitations to every outcome and gate clause. The artifact records primary numerical mode under four mechanically derived clauses while preserving exact replay and the baseline; no default-mode, performance, or global-optimality result follows. The first [Milestone 7b pre-acceleration profile](datasets/profiles/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/numerical-path-shadow-price-baseline-v1/README.md) is retained and independently reviewed. Its frozen decision rule declines to select acceleration because all three within-runtime-root sample populations are empty. A separately frozen representative-snapshot measurement follow-up remains required; no pruning or shortcut is selected. Services, protocol adapters, and learned ordering remain later gated work.
+The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 are integrated and cumulatively reviewed complete for their accepted gates. Milestone 6 is integrated and cumulatively reviewed complete for the additive composed-runtime prerequisite, enforced parse-before-prepare input boundary, accepted [historical-source and dataset contract](docs/adr/accepted/0003-historical-source-and-dataset-contract.md), [canonical one-snapshot import](datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/README.md), separately versioned [synthetic exhaustive request corpus](datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/README.md), and [checksummed composed-runtime evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/composed-two-hop-pair-v3/README.md); its exact completion commit passed CI. Milestone 7a is complete under independent cumulative review. The review mapped exact replay consolidation, the accepted [path-level numerical allocation contract](docs/adr/accepted/0004-path-level-numerical-allocation.md), the proposal/reconstruction core, direct numerical runtime, frozen comparison cohort, [retained identical-input evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/numerical-path-shadow-price-v1/README.md), independent evidence, compatibility, and bounded limitations to every outcome and gate clause. The artifact records primary numerical mode under four mechanically derived clauses while preserving exact replay and the baseline; no default-mode, performance, or global-optimality result follows. Milestone 7b retains both the independently reviewed negative [first profile](datasets/profiles/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/numerical-path-shadow-price-baseline-v1/README.md) and a separately frozen [supported-regime follow-up](datasets/profiles/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-path-shadow-price-preacceleration-v1/README.md). The follow-up corrects the absent attribution population without rewriting the first result, but candidate-set discovery is not the strict unique leader in any of 12 profiles. Its frozen rule therefore selects no acceleration implementation. A cumulative Milestone 7 review remains required before services or protocol adapters begin; learned ordering remains later gated work.
 
 See the [technical roadmap](IMPLEMENTATION_PLAN.md), [current release gate](STATUS.md), [accepted invariants](docs/invariants.md), [Milestone 0 fixture derivations](fixtures/m0/README.md), and [research references](docs/references.md).
 

@@ -103,6 +103,7 @@ const SOURCE_PATHS = Object.freeze([
   'cli/run-representative-numerical-profile.ts',
   'cli/verify-representative-numerical-profile.ts',
   'src/benchmark/representative-numerical-baseline/index.ts',
+  'src/benchmark/historical-numerical-profile/index.ts',
 ] as const);
 const LIMITATIONS = Object.freeze([
   'One accepted historical stored-reserve anchor and three deterministic synthetic supported-regime stresses only.',

@@ -113,12 +113,18 @@ Gate: the allocator agrees with the independent tiny exhaustive reference within
 
 ## Milestone 7b — Evidence-led acceleration
 
-Status: active. The first pre-acceleration profile is retained and independently
-reviewed. Its frozen decision population contains no samples in any of the three
-profiles, so it declines to select sound pruning or any other acceleration. A
-separately frozen representative-snapshot measurement follow-up must address the
-absent formal population without rewriting that negative result. No pruning or
-shortcut may be selected before qualifying evidence exists.
+Status: implementation and representative evidence complete; cumulative review
+pending. The first retained profile mechanically declined because its frozen
+within-runtime-root population was empty. A separately frozen follow-up retains
+one accepted historical stored-reserve anchor and three deterministic synthetic
+supported-regime stresses, exact parity for 1,269 eligible cells, 6,345 raw
+call-only observations, and 12 nonempty all-sample CPU profiles. Candidate-set
+discovery is not the strict unique leader in any profile, so the pre-observation
+rule records
+`decline-sound-pruning-selection-from-this-supported-regime-suite`. No sound
+pruning, heuristic, shortcut, or acceleration implementation is selected. The
+cumulative Milestone 7 review must reconcile this explicit negative closure
+before Milestone 8 may start.
 
 Profile the composed bounded baseline on representative snapshots. Add sound pruning first. Consider a PRIME-inspired core/shortcut experiment only when measured expansions or latency justify it, and keep it only if identical-input comparisons earn its complexity.
 

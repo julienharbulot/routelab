@@ -34,3 +34,9 @@ jobs:
 
       - name: Verify retained numerical baseline profile
         run: pnpm verify:numerical-baseline-profile
+
+      - name: Verify representative numerical baseline
+        run: node cli/verify-representative-numerical-baseline.ts
+
+      - name: Verify representative numerical profile
+        run: node cli/verify-representative-numerical-profile.ts

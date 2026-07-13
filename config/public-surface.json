@@ -2,6 +2,7 @@
   "schemaVersion": 3,
   "forbiddenTrackedPatterns": [
     ".routelab-private/**",
+    "data-acquisition/**",
     ".serena/**",
     "AGENTS.override.md",
     ".codex/initial-prompt.md",

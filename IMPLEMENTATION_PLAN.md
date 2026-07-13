@@ -20,8 +20,10 @@ validated snapshot
   -> composed request-scoped split runtime and canonical split evidence
   -> historical data and credible evaluation
   -> path-level numerical allocation experiment
-  -> measured acceleration experiments
+  -> pre-acceleration profiling and experiment selection
+  -> service-runtime and performance consolidation
   -> thin service/protocol boundaries
+  -> representative benchmark and reusable package
   -> optional advisory learned ordering
 ```
 
@@ -67,15 +69,11 @@ Gate: zero-work and already-expired forced cases return the established exact-re
 
 Start with deterministic pool-disjoint candidates and no-split/equal-split/greedy baselines. Add a tiny exhaustive allocation oracle before approximate models or numerical allocation. Reconstruct exact integer allocations whose nonnegative sum is the requested input, then exact-replay every plan. Preserve a safe baseline fallback.
 
-The independently integrated structural candidate-set slice did not itself satisfy or bypass Milestone 4b. Further split-routing claims require the now-integrated immediate-incumbent and measured-progression prerequisites and must still satisfy this milestone's allocation/replay gate.
-
 Gate: exact-sum reconstruction, fallback, large integer, and exhaustive tiny comparisons pass. Approximate failures cannot corrupt the incumbent. No global-optimality claim exceeds the implemented candidate and allocation space.
 
 ## Pre-Milestone 6 integration gate — Composed split runtime
 
-Status: complete under cumulative review. The integrated gate provides the verified prepared context, composed anytime split runtime, additive canonical split evidence, fixed fallback/improvement cases, and executable demo required before Milestone 6. The separate Milestone 6 cumulative review concluded complete for the historical source decision, canonical one-snapshot import, separately versioned synthetic input corpus, frozen comparison config, and retained composed-runtime evaluation; its completion record is integrated and its exact commit passed CI, so Milestone 7a is active.
-
-Milestone 5 remains complete for its accepted component scope: exact split replay and bounded no-split, equal-split, and greedy baselines. Before those components become the subject of historical evaluation or a service boundary, RouteLab must compose them with the Milestone 4 runtime guarantees rather than benchmarking a chain of independently invoked APIs. This gate is additive and does not rewrite the archived Milestone 5 completion result.
+Status: complete under cumulative review. The verified prepared context, composed anytime runtime, canonical split evidence, and exact demo remain the evidence-compatible reference-v1 path. A later service boundary cannot reinterpret its pre-deadline establishment as a hard whole-request deadline.
 
 The composed path must:
 
@@ -95,7 +93,7 @@ Gate: independent tiny-graph and forced-stop evidence proves shared discovery, n
 
 ## Milestone 6 — Historical data and credible evaluation
 
-Status: complete under cumulative review. The completion record is integrated and its exact commit passed CI. The review mapped every outcome and gate clause to the source contract, canonical snapshot/corpus/config identities, direct composed-runtime path, retained exact results and raw environment observations, independent evidence, exact prerequisite integration commits and CI, and reconciled public limitations. Milestone 7a is also complete under cumulative review; its exact-replay consolidation prerequisite, accepted numerical-allocation contract, bounded implementation, and retained evidence all passed their exact implementation gates.
+Status: complete under cumulative review for the accepted source contract, one canonical snapshot, separate result-blind corpus, frozen comparison config, composed-runtime evaluation, independent evidence, exact commits/CI, and public limitations.
 
 Choose a source through a documented decision, import one canonical snapshot, then grow versioned datasets with provenance, ordering, schema validation, and checksums. Separate dataset changes from algorithm comparisons. The primary benchmark path must consume the composed runtime from the pre-M6 integration gate; legacy component orchestration may be retained only as an explicitly labeled comparison.
 
@@ -103,7 +101,7 @@ Gate: primary replay remains offline; data provenance and licensing are clear; e
 
 ## Milestone 7a — Path-level numerical allocation
 
-Status: complete under cumulative review. The independent completion review mapped every outcome and gate clause to the consolidated exact replay path, [ADR 0004](docs/adr/accepted/0004-path-level-numerical-allocation.md), the proposal/reconstruction core, direct source-module numerical runtime, retained identical-input evaluation, non-circular evidence, exact implementation commits and CI, compatibility surfaces, and public limitations. The separately versioned evaluation retains all 2,376 Milestone 6 request/profile cells, executes only the 414 result-blind eligible cells, freshly verifies exact results, and records 318 improved, 96 equal, and zero regressed exact objectives. All four mechanically derived clauses hold, so the artifact records numerical mode as primary without creating a default mode, performance result, or global-optimality claim. Milestone 7b selection follows the exact completion-commit gate.
+Status: complete under cumulative review. [ADR 0004](docs/adr/accepted/0004-path-level-numerical-allocation.md), independent evidence, exact commits/CI, compatibility, and public limitations cover its accepted gate. The evaluation retains all 2,376 cells, freshly executes 414 result-blind eligible cells, and records 318 improved, 96 equal, and zero regressed objectives. Its immutable `primary` field creates no default or performance claim; publicly this is a quality-qualified experimental allocator on complete eligible cells until time-to-quality evidence exists.
 
 Add the missing numerical-allocation stage explicitly rather than allowing the greedy baseline to become the final allocator by omission. Over the bounded pool-disjoint candidate set, implement an approximate path-level shadow-price allocator using normalized `number` values only for proposal generation. Reconstruct a deterministic nonnegative `bigint` allocation whose sum is the exact input, compare residual units using exact replay or exact marginal deltas, and require a distinct full-input exact authorization replay before incumbent replacement.
 
@@ -111,35 +109,58 @@ Retain no-split, equal-split, greedy, and tiny exhaustive modes as fallbacks and
 
 Gate: the allocator agrees with the independent tiny exhaustive reference within its documented proposal/reconstruction limits; every failure preserves the incumbent; exact allocations sum to the request at arbitrary precision; approximate values never authorize results; and representative M6 cases compare exact output, work, and convergence against equal and greedy without a global-optimality claim.
 
-## Milestone 7b — Evidence-led acceleration
+## Milestone 7b — Pre-acceleration profiling and experiment selection
 
-Status: complete under cumulative review. The independent completion review
-mapped every Milestone 7a/7b outcome and gate clause to integrated code,
-independent evidence, exact commits/CI, compatibility surfaces, public
-limitations, and deferred scope, with no severity finding. The first retained
-profile mechanically declined because its frozen within-runtime-root population
-was empty. A separately frozen follow-up retains one accepted historical
-stored-reserve anchor and three deterministic synthetic supported-regime
-stresses, exact parity for 1,269 eligible cells, 6,345 raw call-only observations,
-and 12 nonempty all-sample CPU profiles. Candidate-set discovery is not the
-strict unique leader in any profile, so the pre-observation rule records
-`decline-sound-pruning-selection-from-this-supported-regime-suite`. “Sound
-pruning first” governs ordering if acceleration is evidence-selected; it does not
-require unsupported code after a frozen negative result. No sound pruning,
-heuristic, shortcut, or acceleration implementation is selected. Milestone 8
-selection follows the exact completion-commit gate.
+Status: complete under cumulative review as a negative experiment-selection
+result, not an acceleration capability. The first frozen profile preserves its
+empty formal population. The supported-regime follow-up retains exact parity for
+1,269 eligible cells and 12 nonempty profiles; candidate-set discovery leads none,
+so its precommitted rule selects no pruning, shortcut, or acceleration. “Sound
+pruning first” governs future graph experiments; it does not require unsupported
+code after this result.
 
-Profile the composed bounded baseline on representative snapshots. Add sound pruning first. Consider a PRIME-inspired core/shortcut experiment only when measured expansions or latency justify it, and keep it only if identical-input comparisons earn its complexity.
+Profile the composed bounded baseline on frozen supported-regime inputs. If later sparse, deeper, multi-venue evidence selects graph work, add sound pruning before heuristic pruning and consider a core/shortcut experiment only when measured expansions or latency justify it. Keep any implementation only if identical-input comparisons earn its complexity; the current dense diameter-two evidence does not answer whether graph acceleration is useful on those later regimes.
 
 Gate: sound and heuristic pruning are reported separately; quality and work tradeoffs are explicit under the same request-scoped controls; exact replay still validates results; negative experiments and deletion decisions are preserved without overstated equivalence claims.
 
+## Milestone 7c — Service-runtime and performance consolidation
+
+Status: required direction-correction gate before Milestone 8. Archived 7a/7b completion remains factual for its accepted contracts; this additive gate records later-discovered service prerequisites without rewriting retained evidence.
+
+Freeze the current deterministic runtime and artifacts as `reference-v1`. Add `service-v2` over one shared routing-session engine. Reference policy preserves existing behavior and evidence. Service policy samples the clock at entry, charges all router work to one service-runtime deadline, and server-bounds input decimal length, snapshot/pool/reserve size, hops, routes, direct candidates, structural work, and numerical work between checks. This is not an outer HTTP deadline or SLA. Already-expired, deadline-before-plan, complete no-route, and dependency-error outcomes are typed distinctly.
+
+The shared session owns its captured context/request, frontiers, exact incumbent, non-recharged ledger, controls, diagnostics, and exact authorization. Service scheduling must reach a numerical proposal after the first useful set without first completing every equal and greedy reference proposal. Later work may explore more sets or refine greedily while preserving the exact incumbent.
+
+Freeze an identical-input experiment before observations. Compare the 64-by-64 reference with lower fixed iterations, pinned-runtime square root, and a deterministic fixed-iteration alternative where feasible. Compare strict non-convergence rejection with safe finite-proposal replay, and current reconstruction with activation-aware or bounded-neighborhood exact repair. Retain exact output/regret, failures, time to improvement, elapsed observations, deadline success, counters, environment, and negative results. A frozen rule alone selects a service-fast proposer; exact replay alone authorizes it.
+
+Durably exclude acquisition work from the public repository, keep it in a valid private repository with its own credential/cache/raw-work rules, and export only reviewed tracked Git content. Freeze the later HTTP trust boundary now: bounded identifiers and decimal-string amounts; optional supported snapshot ID and deadline request; server-selected checksum/policy; no client-selected iterations/caps; typed unknown constraints; bounded opt-in debug; timing excluded from deterministic hashes.
+
+Gate:
+
+- service-v2 samples the clock at entry and includes bounded direct establishment in its deadline, with many-direct-pool, already-expired, and no-direct-route fixtures;
+- tight-budget forced cases prove numerical work is not structurally starved behind the complete greedy reference pipeline;
+- reference-v1 and service-v2 policies execute through one orchestration core, while all retained v1 exact results, counters, diagnostics, bytes, and hashes remain compatible;
+- every service action has frozen operational resource bounds and a cooperative stop boundary, and only fully exact-authorized incumbents escape;
+- a retained identical-input numerical-fast experiment reports exact output and timing separately and records a mechanical keep/reject decision;
+- activation and finite non-convergence handling are deliberately improved or explicitly accepted with measured failure evidence;
+- tracked ignore, the separate private acquisition repository, and export checks cannot include acquisition, credentials, raw work, or private-control trees accidentally; and
+- an independent cumulative completion review maps every clause above to integrated code and evidence and states `MILESTONE COMPLETE` before Milestone 8 becomes eligible.
+
 ## Milestone 8 — Thin boundaries
 
-Add an HTTP quote boundary and fixture-based protocol mapping only after the core is stable. Keep routing logic out of adapters. Run concurrency/load experiments before choosing worker-thread or deployment architecture.
+After 7c, add thin HTTP quote/snapshot metadata and fixture-only NEAR Intents mapping, with no relay or settlement claim. Parse through the frozen trust boundary; keep routing out of adapters and timing outside replay. Before selecting workers or deployment, retain concurrency 1/4/16 evidence for queue/service/end-to-end time, p50/p95/p99, deadline success, throughput, memory, event-loop delay, cancellation, and warm/cold behavior. A worker design, if earned, builds prepared contexts inside workers, bounds admission/queues, and returns cloneable results; same-thread `Promise.race` is not cancellation evidence.
 
-Gate: mapping tests are thin and deterministic; external requests cannot weaken snapshot or exactness contracts; operational deadlines do not alter replay semantics.
+Gate: mapping tests are thin and deterministic; external requests cannot weaken snapshot, exactness, resource, or server-policy contracts; operational deadlines do not alter replay semantics; overload and cancellation are typed; and the worker/deployment decision is supported by retained identical-input load evidence rather than assumption.
 
-## Milestone 9 — Optional learned ordering
+## Milestone 9 — Representative benchmark and reusable package
+
+Before portfolio or production-readiness claims, add at least 10 chronological multi-venue snapshots, 20–100 assets, 100–500 pools, sparse/disconnected/repeated-pair/three-/four-hop cases, defensible request regimes, stress fixtures, and manifest verification while retaining the v1 golden. On identical inputs at 1/5/10/25/50/100 ms plus a long reference, compare direct, single, equal, greedy, numerical reference/fast, long-budget, and tiny-exhaustive modes. Report per-request exact-output regret, time to first/best, approximate-versus-exact differences, and scalable raw evidence.
+
+Add a chosen license/data notices, semantic version, explicit package exports, supported build output, benchmark/report commands, quality/time and latency/deadline/throughput results, an exact trace, and reviewed-commit `git archive` output.
+
+Gate: the benchmark protocol is frozen before observations; inputs are identical across modes; provenance and limitations are explicit; raw evidence reproduces the report; package exports expose only reviewed stable surfaces; public archives contain no private/acquisition/local state; and no representativeness, performance, or open-source claim exceeds the integrated evidence and license.
+
+## Milestone 10 — Optional learned ordering
 
 Proceed only after data-sufficiency review. Use a chronological split and a small advisory ranker to order proposals. Keep model-disabled routing correct and complete for supported deterministic mode. Evaluate stale, reversed, random, and corrupted predictions with downstream routing metrics.
 

@@ -26,6 +26,7 @@ const repositoryPolicy = JSON.parse(
 const pathPolicy = {
   forbiddenTrackedPatterns: [
     '.routelab-private/**',
+    'data-acquisition/**',
     'docs/research-papers/**',
     '**/transcripts/**',
     '**/*.zip',
@@ -99,10 +100,16 @@ function commitAll(root: string, message: string): void {
 }
 
 void test('forbidden private paths are rejected with path-specific errors', () => {
-  const errors = findTrackedPathViolations(['.routelab-private/CONTROL.md', 'src/router.ts'], pathPolicy);
+  const errors = findTrackedPathViolations([
+    '.routelab-private/CONTROL.md',
+    'data-acquisition/.env',
+    'src/router.ts',
+  ], pathPolicy);
   assert.deepEqual(errors, [
     '.routelab-private/CONTROL.md: tracked path is forbidden by .routelab-private/**',
     '.routelab-private/CONTROL.md: tracked root .routelab-private/ is not allowed and path is not in allowedTrackedPaths',
+    'data-acquisition/.env: tracked path is forbidden by data-acquisition/**',
+    'data-acquisition/.env: tracked root data-acquisition/ is not allowed and path is not in allowedTrackedPaths',
   ]);
 });
 

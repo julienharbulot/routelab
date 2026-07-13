@@ -8,6 +8,9 @@ dist/
 .routelab-private/
 AGENTS.override.md
 
+# Private acquisition workspace and provider material
+/data-acquisition/
+
 # Local coding-agent/tool state
 .serena/
 

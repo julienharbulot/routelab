@@ -14,6 +14,7 @@
     "test": "node --test \"tests/**/*.test.ts\"",
     "test:pool": "node --test tests/constant-product.test.ts",
     "replay:cases": "node cli/replay-cases.ts",
+    "replay:split-cases": "node cli/replay-split-cases.ts",
     "measure:anytime": "node cli/measure-anytime.ts",
     "demo": "node cli/demo.ts",
     "trace:check": "pnpm trace:check:index",

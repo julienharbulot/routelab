@@ -21,6 +21,8 @@
     "verify:historical-evaluation": "node cli/verify-historical-composed-split-evaluation.ts",
     "evaluate:numerical": "node cli/run-historical-numerical-split-evaluation.ts",
     "verify:numerical-evaluation": "node cli/verify-historical-numerical-split-evaluation.ts",
+    "profile:numerical-baseline": "node cli/run-historical-numerical-profile.ts",
+    "verify:numerical-baseline-profile": "node cli/verify-historical-numerical-profile.ts",
     "measure:anytime": "node cli/measure-anytime.ts",
     "demo": "node cli/demo.ts",
     "trace:check": "pnpm trace:check:index",

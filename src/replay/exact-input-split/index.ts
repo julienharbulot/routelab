@@ -1,9 +1,12 @@
 import type { ConstantProductPool, LiquiditySnapshot } from '../../domain/index.ts';
 import {
-  replayExactInputRoute,
-  type DirectionalRouteHop,
-  type ExactInputRouteReplayErrorCode,
-  type ExactInputRouteReplayReceipt,
+  createEphemeralExactInputReplayPoolResolver,
+  replayExactInputSplitWithResolver,
+} from '../exact-input-kernel/index.ts';
+import type {
+  DirectionalRouteHop,
+  ExactInputRouteReplayErrorCode,
+  ExactInputRouteReplayReceipt,
 } from '../exact-input-route/index.ts';
 
 export interface ExactInputSplitReplayLegRequest {
@@ -121,178 +124,14 @@ function captureRequest(
   });
 }
 
-function failure(
-  code: ExactInputSplitReplayErrorCode,
-  message: string,
-  legIndex: number | null = null,
-  causeCode: ExactInputRouteReplayErrorCode | null = null,
-): ExactInputSplitReplayResult {
-  const error: ExactInputSplitReplayError = Object.freeze({
-    code,
-    message,
-    legIndex,
-    causeCode,
-  });
-  return Object.freeze({ ok: false, error });
-}
-
-function compareRawUtf16(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
-}
-
-function compareDirectionalRoutes(
-  left: readonly DirectionalRouteHop[],
-  right: readonly DirectionalRouteHop[],
-): number {
-  const sharedLength = Math.min(left.length, right.length);
-  for (let index = 0; index < sharedLength; index += 1) {
-    const leftHop = left[index];
-    const rightHop = right[index];
-    if (leftHop === undefined || rightHop === undefined) {
-      throw new Error('Route comparison reached an unavailable hop.');
-    }
-    const comparison =
-      compareRawUtf16(leftHop.assetIn, rightHop.assetIn) ||
-      compareRawUtf16(leftHop.poolId, rightHop.poolId) ||
-      compareRawUtf16(leftHop.assetOut, rightHop.assetOut);
-    if (comparison !== 0) return comparison;
-  }
-  return left.length - right.length;
-}
-
 export function replayExactInputSplit(
   snapshot: LiquiditySnapshot,
   request: ExactInputSplitReplayRequest,
 ): ExactInputSplitReplayResult {
   const capturedSnapshot = captureSnapshot(snapshot);
   const capturedRequest = captureRequest(request);
-
-  if (
-    capturedRequest.snapshotId !== capturedSnapshot.snapshotId ||
-    capturedRequest.snapshotChecksum !== capturedSnapshot.snapshotChecksum
-  ) {
-    return failure(
-      'snapshot-identity-mismatch',
-      'Request snapshotId and snapshotChecksum must match the supplied snapshot.',
-    );
-  }
-  if (capturedRequest.assetIn.length === 0) {
-    return failure('empty-identifier', 'request.assetIn must not be empty.');
-  }
-  if (capturedRequest.assetOut.length === 0) {
-    return failure('empty-identifier', 'request.assetOut must not be empty.');
-  }
-  if (typeof capturedRequest.amountIn !== 'bigint' || capturedRequest.amountIn <= 0n) {
-    return failure('nonpositive-input', 'request.amountIn must be a positive bigint.');
-  }
-  if (capturedRequest.assetIn === capturedRequest.assetOut) {
-    return failure(
-      'same-asset-request',
-      'request.assetIn and request.assetOut must be distinct.',
-    );
-  }
-  if (capturedRequest.legs.length === 0) {
-    return failure('empty-legs', 'request.legs must contain at least one leg.');
-  }
-
-  let allocationSum = 0n;
-  for (const [index, leg] of capturedRequest.legs.entries()) {
-    if (typeof leg.allocation !== 'bigint' || leg.allocation <= 0n) {
-      return failure(
-        'nonpositive-allocation',
-        `request.legs[${index}].allocation must be a positive bigint.`,
-        index,
-      );
-    }
-    if (leg.route.length === 0) {
-      return failure(
-        'empty-route',
-        `request.legs[${index}].route must contain at least one hop.`,
-        index,
-      );
-    }
-    allocationSum += leg.allocation;
-  }
-  if (allocationSum !== capturedRequest.amountIn) {
-    return failure(
-      'allocation-sum-mismatch',
-      'Leg allocations must sum exactly to request.amountIn.',
-    );
-  }
-
-  for (const [index, leg] of capturedRequest.legs.entries()) {
-    if (index > 0) {
-      const prior = capturedRequest.legs[index - 1];
-      if (prior === undefined) {
-        throw new Error('Split validation reached an unavailable prior leg.');
-      }
-      const comparison = compareDirectionalRoutes(prior.route, leg.route);
-      if (comparison === 0) {
-        return failure(
-          'duplicate-route',
-          `request.legs[${index}].route duplicates the prior canonical route.`,
-          index,
-        );
-      }
-      if (comparison > 0) {
-        return failure(
-          'noncanonical-route-order',
-          'request.legs routes must be sorted by raw UTF-16 directional route order.',
-          index,
-        );
-      }
-    }
-  }
-
-  const priorLegPoolIds = new Set<string>();
-  for (const [index, leg] of capturedRequest.legs.entries()) {
-    const currentLegPoolIds = new Set<string>();
-    for (const { poolId } of leg.route) {
-      if (priorLegPoolIds.has(poolId)) {
-        return failure(
-          'shared-pool',
-          `request.legs[${index}] reuses pool ${poolId} from another leg.`,
-          index,
-        );
-      }
-      currentLegPoolIds.add(poolId);
-    }
-    for (const poolId of currentLegPoolIds) priorLegPoolIds.add(poolId);
-  }
-
-  const receiptLegs: ExactInputSplitReplayLegReceipt[] = [];
-  let amountOut = 0n;
-  for (const [index, leg] of capturedRequest.legs.entries()) {
-    const replay = replayExactInputRoute(capturedSnapshot, {
-      snapshotId: capturedRequest.snapshotId,
-      snapshotChecksum: capturedRequest.snapshotChecksum,
-      assetIn: capturedRequest.assetIn,
-      assetOut: capturedRequest.assetOut,
-      amountIn: leg.allocation,
-      hops: leg.route,
-    });
-    if (!replay.ok) {
-      return failure(
-        'leg-replay-failed',
-        `Exact replay failed for request.legs[${index}]: ${replay.error.message}`,
-        index,
-        replay.error.code,
-      );
-    }
-    receiptLegs.push(Object.freeze({ allocation: leg.allocation, receipt: replay.value }));
-    amountOut += replay.value.amountOut;
-  }
-
-  const value: ExactInputSplitReplayReceipt = Object.freeze({
-    snapshotId: capturedRequest.snapshotId,
-    snapshotChecksum: capturedRequest.snapshotChecksum,
-    assetIn: capturedRequest.assetIn,
-    assetOut: capturedRequest.assetOut,
-    amountIn: capturedRequest.amountIn,
-    amountOut,
-    legs: Object.freeze(receiptLegs),
-  });
-  return Object.freeze({ ok: true, value });
+  return replayExactInputSplitWithResolver(
+    createEphemeralExactInputReplayPoolResolver(capturedSnapshot),
+    capturedRequest,
+  );
 }

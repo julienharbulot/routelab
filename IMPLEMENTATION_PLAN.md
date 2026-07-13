@@ -73,7 +73,7 @@ Gate: exact-sum reconstruction, fallback, large integer, and exhaustive tiny com
 
 ## Pre-Milestone 6 integration gate — Composed split runtime
 
-Status: complete under cumulative review. The integrated gate provides the verified prepared context, composed anytime split runtime, additive canonical split evidence, fixed fallback/improvement cases, and executable demo required before Milestone 6. The separate Milestone 6 cumulative review has concluded complete for the historical source decision, canonical one-snapshot import, separately versioned synthetic input corpus, frozen comparison config, and retained composed-runtime evaluation; its completion record still requires integration and successful exact-commit CI before Milestone 7a becomes eligible.
+Status: complete under cumulative review. The integrated gate provides the verified prepared context, composed anytime split runtime, additive canonical split evidence, fixed fallback/improvement cases, and executable demo required before Milestone 6. The separate Milestone 6 cumulative review concluded complete for the historical source decision, canonical one-snapshot import, separately versioned synthetic input corpus, frozen comparison config, and retained composed-runtime evaluation; its completion record is integrated and its exact commit passed CI, so Milestone 7a is active.
 
 Milestone 5 remains complete for its accepted component scope: exact split replay and bounded no-split, equal-split, and greedy baselines. Before those components become the subject of historical evaluation or a service boundary, RouteLab must compose them with the Milestone 4 runtime guarantees rather than benchmarking a chain of independently invoked APIs. This gate is additive and does not rewrite the archived Milestone 5 completion result.
 
@@ -95,7 +95,7 @@ Gate: independent tiny-graph and forced-stop evidence proves shared discovery, n
 
 ## Milestone 6 — Historical data and credible evaluation
 
-Status: cumulative review concluded complete; this completion record still requires integration and successful exact-commit CI before Milestone 7a becomes eligible. The review mapped every outcome and gate clause to the current source contract, canonical snapshot/corpus/config identities, direct composed-runtime path, retained exact results and raw environment observations, independent evidence, exact prerequisite integration commits and CI, and reconciled public limitations.
+Status: complete under cumulative review. The completion record is integrated and its exact commit passed CI. The review mapped every outcome and gate clause to the source contract, canonical snapshot/corpus/config identities, direct composed-runtime path, retained exact results and raw environment observations, independent evidence, exact prerequisite integration commits and CI, and reconciled public limitations. Milestone 7a is active, beginning with consolidation of the duplicated legacy and prepared exact replay paths before numerical-allocation semantics are frozen.
 
 Choose a source through a documented decision, import one canonical snapshot, then grow versioned datasets with provenance, ordering, schema validation, and checksums. Separate dataset changes from algorithm comparisons. The primary benchmark path must consume the composed runtime from the pre-M6 integration gate; legacy component orchestration may be retained only as an explicitly labeled comparison.
 

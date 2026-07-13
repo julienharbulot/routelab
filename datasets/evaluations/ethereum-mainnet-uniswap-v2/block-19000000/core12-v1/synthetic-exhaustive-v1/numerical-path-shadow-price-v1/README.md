@@ -11,6 +11,10 @@ were fixed before numerical output: config 4,650 bytes at
 `sha256:96ceb8b4441e9e81c40b5662f948e91bee661a0205469b70a5dbd4e4bbb4aff6`
 and eligibility 261,915 bytes at
 `sha256:5ed542c5da28a0a03eb88bece5b04cea623877b4760cea1ccdc0b27b5b91bbdc`.
+The decision also binds the 2,721-byte retained forced-failure evidence at
+`sha256:e2a3ccf161ac33b938da45e1e50569fdbe6b28d34268b468b6dfd24a45d2c4e7`
+and its exact 52,464-byte test source at
+`sha256:4f4ca6c3c0d0dd42b4a5ce8731bbdeb9d351e1d59e719ff60ed0f14eafdcb2e2`.
 The evaluation also binds the retained Milestone 6 semantic result at
 `sha256:28fafa1c27fe3c685756b25566ebcc357512b3d35acfdcf06afa01304cb9546e`.
 
@@ -18,8 +22,8 @@ The evaluation also binds the retained Milestone 6 semantic result at
 
 | Artifact | Meaning | Bytes | SHA-256 |
 |---|---|---:|---|
-| `manifest.json` | Closed identities, counts, decision, limitations, and artifact bindings | 2,275 | `b01f7c2ca5ef617882e95f5e0c9c7e26b72f387447e7917b7efb66abb6b6c898` |
-| `semantic-results.json` | All 2,376 cells, exact baseline objectives, complete eligible numerical results, 20 counters, diagnostics, comparisons, and cell hashes | 21,697,979 | `5cea9419623af330f1c05bfa30dadcce3553c6d334de2740655792cfe89a058a` |
+| `manifest.json` | Closed identities, counts, decision, limitations, and artifact bindings | 2,940 | `c01afe75643973ac93a4820b6bb0c66d0bb99b4ddfed39c48c8dea7dffdf732f` |
+| `semantic-results.json` | All 2,376 cells, exact baseline objectives, complete eligible numerical results, 20 counters, diagnostics, comparisons, and evidence-bound cell hashes | 21,698,448 | `96c123b72fd73aed2d6063f17d4f0e6ad90e834cd752959ec693598dec329661` |
 
 The manifest binds the semantic artifact but does not hash itself or this
 README. No timing or environment observation artifact exists.
@@ -42,10 +46,14 @@ README. No timing or environment observation artifact exists.
   candidate set has a terminal typed diagnostic; and at least one eligible
   request has strictly greater exact output than greedy.
 
-The forced-failure clause is supported by the separately retained runtime tests
-for model, convergence, reconstruction, residual replay, authorization replay,
-cap, interruption, deadline, callback, and clock failures. The historical
-evaluation itself does not inject failures into market cells.
+The forced-failure clause is mechanically derived from the ten ordered
+`baseline-preserved` outcomes in the bound evidence document. Generation and
+verification first validate its exact identity, then validate the exact
+retained runtime test source and required test names before any corpus replay.
+Those tests cover model, convergence, reconstruction, residual replay,
+authorization replay, cap, interruption, deadline, callback, and clock
+failures. The historical evaluation itself does not inject failures into
+market cells.
 
 ## Typed work evidence
 

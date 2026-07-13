@@ -33,6 +33,9 @@ export const CANONICAL_NUMERICAL_HISTORICAL_COMPARISON_CONFIG_PATH =
 export const CANONICAL_NUMERICAL_HISTORICAL_ELIGIBILITY_PATH =
   'fixtures/m7/numerical-historical/eligibility.v1.json';
 
+export const CANONICAL_NUMERICAL_FORCED_FAILURE_EVIDENCE_PATH =
+  'fixtures/m7/numerical-historical/forced-failure-evidence.v1.json';
+
 export const CANONICAL_HISTORICAL_NUMERICAL_SPLIT_EVALUATION_DIRECTORY =
   'datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/numerical-path-shadow-price-v1';
 
@@ -52,6 +55,17 @@ const ELIGIBILITY_ID =
 const ELIGIBILITY_BYTES = 261_915;
 const ELIGIBILITY_SHA256 =
   'sha256:5ed542c5da28a0a03eb88bece5b04cea623877b4760cea1ccdc0b27b5b91bbdc';
+const FORCED_FAILURE_EVIDENCE_ID =
+  'm7a-numerical-runtime-forced-failure-baseline-preservation-v1';
+const FORCED_FAILURE_EVIDENCE_BYTES = 2_721;
+const FORCED_FAILURE_EVIDENCE_SHA256 =
+  'sha256:e2a3ccf161ac33b938da45e1e50569fdbe6b28d34268b468b6dfd24a45d2c4e7';
+const FORCED_FAILURE_SOURCE_PATH =
+  'tests/oracle/numerical-exact-input-split-runtime-oracle.test.ts';
+const FORCED_FAILURE_SOURCE_BYTES = 52_464;
+const FORCED_FAILURE_SOURCE_SHA256 =
+  'sha256:4f4ca6c3c0d0dd42b4a5ce8731bbdeb9d351e1d59e719ff60ed0f14eafdcb2e2';
+const FORCED_FAILURE_SOURCE_TEST_COUNT = 13;
 const BASELINE_SEMANTIC_SHA256 =
   'sha256:28fafa1c27fe3c685756b25566ebcc357512b3d35acfdcf06afa01304cb9546e';
 const DATASET_ID = 'ethereum-mainnet-uniswap-v2-block-19000000-core12-v1';
@@ -118,6 +132,69 @@ const REASONS = Object.freeze([
   'no-model-valid-candidate-set',
 ] as const);
 
+const FORCED_FAILURE_CASES = Object.freeze([
+  Object.freeze({
+    scenario: 'missing-baseline-suppresses-numerical-work',
+    testName: 'RT00 has no incumbent and therefore no numerical proposal identity',
+  }),
+  Object.freeze({
+    scenario: 'natural-model-and-replay-outcomes',
+    testName: 'RT01-RT09 match frozen numerical outcomes and preserve or improve the exact baseline',
+  }),
+  Object.freeze({
+    scenario: 'normalization-iteration-underflow-and-convergence-failures',
+    testName: 'RT10-RT13 map normalization, atomic iteration, underflow, and convergence failures',
+  }),
+  Object.freeze({
+    scenario: 'numerical-cap-stops',
+    testName: 'all four numerical caps stop before charge and exact caps complete naturally',
+  }),
+  Object.freeze({
+    scenario: 'cap-callback-clock-precedence',
+    testName: 'cap precedence suppresses callback and clock at the pending numerical unit',
+  }),
+  Object.freeze({
+    scenario: 'callback-stops-and-callback-failures',
+    testName: 'callback true, throw, and nonboolean stop at every numerical kind',
+  }),
+  Object.freeze({
+    scenario: 'deadline-and-clock-failures',
+    testName: 'absolute deadline, clock failure, and one monotonic history cover every numerical kind',
+  }),
+  Object.freeze({
+    scenario: 'forced-proposal-core-failures',
+    testName: 'proposal-only seam maps the three naturally unreachable core failure codes',
+  }),
+  Object.freeze({
+    scenario: 'authorization-rejection-and-mismatch',
+    testName: 'authorization seam is phase-limited and requires recursive exact receipt identity',
+  }),
+  Object.freeze({
+    scenario: 'mutation-reentrancy-and-freshness',
+    testName: 'pool permutation, captured mutation, reentrancy, freshness, and deep freeze are deterministic',
+  }),
+] as const);
+
+const FORCED_FAILURE_LIMITATIONS = Object.freeze([
+  'This artifact binds the exact retained independent runtime-oracle source; the repository test gate executes that source, while the historical evaluator validates its canonical identity and derives the decision clause from the declared outcomes.',
+  'The historical evaluation does not inject failures into market cells, and this evidence makes no timing, performance, default-mode, production, or unrestricted-optimality claim.',
+]);
+
+const FORCED_FAILURE_SOURCE_BINDING = Object.freeze({
+  path: FORCED_FAILURE_SOURCE_PATH,
+  bytes: FORCED_FAILURE_SOURCE_BYTES,
+  sha256: FORCED_FAILURE_SOURCE_SHA256,
+  testCount: FORCED_FAILURE_SOURCE_TEST_COUNT,
+});
+
+const FORCED_FAILURE_EVIDENCE_BINDING = Object.freeze({
+  evidenceId: FORCED_FAILURE_EVIDENCE_ID,
+  path: CANONICAL_NUMERICAL_FORCED_FAILURE_EVIDENCE_PATH,
+  bytes: FORCED_FAILURE_EVIDENCE_BYTES,
+  sha256: FORCED_FAILURE_EVIDENCE_SHA256,
+  source: FORCED_FAILURE_SOURCE_BINDING,
+});
+
 const NUMERICAL_CONFIGURATION: NumericalExactInputSplitConfiguration = Object.freeze({
   outerIterations: 64,
   innerIterations: 64,
@@ -136,6 +213,7 @@ type JsonRecord = Record<string, unknown>;
 type ProfileId = (typeof PROFILE_IDS)[number];
 type EligibilityReason = (typeof REASONS)[number];
 type ObjectiveRelation = 'strictly-improved' | 'equal' | 'regressed';
+type ForcedFailureOutcome = 'baseline-preserved' | 'baseline-not-preserved';
 type VerifiedCorpusBundle = Extract<
   SyntheticRequestCorpusVerificationResult,
   { readonly ok: true }
@@ -169,6 +247,17 @@ interface EligibilityArtifact {
   readonly cells: readonly EligibilityCell[];
 }
 
+interface ForcedFailureEvidenceCase {
+  readonly scenario: string;
+  readonly testName: string;
+  readonly outcome: ForcedFailureOutcome;
+}
+
+interface ForcedFailureEvidence {
+  readonly value: JsonRecord;
+  readonly cases: readonly ForcedFailureEvidenceCase[];
+}
+
 interface SemanticBuild {
   readonly json: string;
   readonly document: JsonRecord;
@@ -193,6 +282,15 @@ export type HistoricalNumericalSplitEvaluationErrorCode =
   | 'eligibility-hash-mismatch'
   | 'invalid-eligibility-json'
   | 'invalid-eligibility-shape'
+  | 'forced-failure-evidence-read-failed'
+  | 'forced-failure-evidence-size-mismatch'
+  | 'forced-failure-evidence-hash-mismatch'
+  | 'invalid-forced-failure-evidence-json'
+  | 'invalid-forced-failure-evidence-shape'
+  | 'forced-failure-source-read-failed'
+  | 'forced-failure-source-size-mismatch'
+  | 'forced-failure-source-hash-mismatch'
+  | 'forced-failure-source-test-mismatch'
   | 'corpus-invalid'
   | 'baseline-evaluation-invalid'
   | 'baseline-binding-mismatch'
@@ -517,6 +615,132 @@ function eligibilityDescriptorFromConfig(config: ComparisonConfig): ArtifactDesc
   return Object.freeze({ path: value['path'], bytes: value['bytes'], sha256: value['sha256'] });
 }
 
+function parseForcedFailureEvidenceDocument(value: unknown): ForcedFailureEvidence | undefined {
+  if (!isRecord(value) || !hasExactKeys(value, [
+    'schemaVersion', 'evidenceId', 'decisionClause', 'runtimeRevision', 'source',
+    'rule', 'cases', 'limitations',
+  ])) return undefined;
+  if (
+    value['schemaVersion'] !== 'routelab.numerical-forced-failure-evidence.v1'
+    || value['evidenceId'] !== FORCED_FAILURE_EVIDENCE_ID
+    || value['decisionClause'] !== 'forced-failures-preserve-baseline'
+    || value['runtimeRevision'] !== HISTORICAL_NUMERICAL_SPLIT_RUNTIME_REVISION
+    || !isDeepStrictEqual(value['source'], FORCED_FAILURE_SOURCE_BINDING)
+    || value['rule'] !== 'all-declared-forced-failure-scenarios-retain-an-exact-authorized-baseline'
+    || !Array.isArray(value['cases'])
+    || value['cases'].length !== FORCED_FAILURE_CASES.length
+    || !isDeepStrictEqual(value['limitations'], FORCED_FAILURE_LIMITATIONS)
+  ) return undefined;
+  const rawCases = value['cases'] as readonly unknown[];
+  const cases: ForcedFailureEvidenceCase[] = [];
+  for (let index = 0; index < rawCases.length; index += 1) {
+    const current = rawCases[index];
+    const expected = FORCED_FAILURE_CASES[index];
+    if (
+      expected === undefined
+      || !isRecord(current)
+      || !hasExactKeys(current, ['scenario', 'testName', 'outcome'])
+      || current['scenario'] !== expected.scenario
+      || current['testName'] !== expected.testName
+      || current['outcome'] !== 'baseline-preserved'
+    ) return undefined;
+    cases.push(Object.freeze({
+      scenario: expected.scenario,
+      testName: expected.testName,
+      outcome: current['outcome'],
+    }));
+  }
+  return Object.freeze({ value, cases: Object.freeze(cases) });
+}
+
+/** @internal */
+export function validateHistoricalNumericalForcedFailureEvidenceDocument(
+  value: unknown,
+): boolean {
+  return parseForcedFailureEvidenceDocument(value) !== undefined;
+}
+
+/** @internal */
+export function validateHistoricalNumericalForcedFailureSource(
+  sourceText: string,
+  requiredTestNames: readonly string[],
+  declaredTestCount: number,
+): boolean {
+  if (
+    typeof sourceText !== 'string'
+    || !Number.isSafeInteger(declaredTestCount)
+    || declaredTestCount <= 0
+    || requiredTestNames.length === 0
+  ) return false;
+  const declaredNames = Array.from(
+    sourceText.matchAll(/void test\('([^'\r\n]+)'/gu),
+    (match) => match[1],
+  );
+  if (
+    declaredNames.length !== declaredTestCount
+    || declaredNames.some((name) => name === undefined)
+  ) return false;
+  return requiredTestNames.every((name) =>
+    declaredNames.filter((declared) => declared === name).length === 1);
+}
+
+async function readForcedFailureEvidence(
+  dependencies: HistoricalNumericalSplitEvaluationReadDependencies,
+  expected: ArtifactDescriptor,
+): Promise<
+  | { readonly ok: true; readonly value: ForcedFailureEvidence }
+  | { readonly ok: false; readonly error: HistoricalNumericalSplitEvaluationError }
+> {
+  const bytes = await safeRead(
+    dependencies.readFile,
+    CANONICAL_NUMERICAL_FORCED_FAILURE_EVIDENCE_PATH,
+  );
+  if (bytes === undefined) {
+    return failure('forced-failure-evidence-read-failed', 'forced-failure-evidence.v1.json');
+  }
+  if (bytes.byteLength !== expected.bytes) {
+    return failure('forced-failure-evidence-size-mismatch', 'forced-failure-evidence.v1.json');
+  }
+  if (sha256(bytes) !== expected.sha256) {
+    return failure('forced-failure-evidence-hash-mismatch', 'forced-failure-evidence.v1.json');
+  }
+  const parsed = parseJson(bytes);
+  if (parsed === undefined) {
+    return failure('invalid-forced-failure-evidence-json', 'forced-failure-evidence.v1.json');
+  }
+  const evidence = parseForcedFailureEvidenceDocument(parsed.value);
+  if (
+    evidence === undefined
+    || parsed.text !== JSON.stringify(parsed.value)
+    || expected.path !== CANONICAL_NUMERICAL_FORCED_FAILURE_EVIDENCE_PATH
+    || expected.bytes !== FORCED_FAILURE_EVIDENCE_BYTES
+    || expected.sha256 !== FORCED_FAILURE_EVIDENCE_SHA256
+  ) return failure('invalid-forced-failure-evidence-shape', 'forced-failure-evidence.v1.json');
+
+  const sourceBytes = await safeRead(dependencies.readFile, FORCED_FAILURE_SOURCE_PATH);
+  if (sourceBytes === undefined) {
+    return failure('forced-failure-source-read-failed', FORCED_FAILURE_SOURCE_PATH);
+  }
+  if (sourceBytes.byteLength !== FORCED_FAILURE_SOURCE_BYTES) {
+    return failure('forced-failure-source-size-mismatch', FORCED_FAILURE_SOURCE_PATH);
+  }
+  if (sha256(sourceBytes) !== FORCED_FAILURE_SOURCE_SHA256) {
+    return failure('forced-failure-source-hash-mismatch', FORCED_FAILURE_SOURCE_PATH);
+  }
+  let sourceText: string;
+  try {
+    sourceText = new TextDecoder('utf-8', { fatal: true }).decode(sourceBytes);
+  } catch {
+    return failure('forced-failure-source-test-mismatch', FORCED_FAILURE_SOURCE_PATH);
+  }
+  if (!validateHistoricalNumericalForcedFailureSource(
+    sourceText,
+    evidence.cases.map((current) => current.testName),
+    FORCED_FAILURE_SOURCE_TEST_COUNT,
+  )) return failure('forced-failure-source-test-mismatch', FORCED_FAILURE_SOURCE_PATH);
+  return Object.freeze({ ok: true, value: evidence });
+}
+
 function validateBindings(
   config: ComparisonConfig,
   eligibility: EligibilityArtifact,
@@ -705,10 +929,32 @@ function deepFreeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
+/** @internal */
+export function deriveHistoricalNumericalSplitDecision(
+  noEligibleObjectiveRegressions: boolean,
+  forcedFailureOutcomes: readonly ForcedFailureOutcome[],
+  allEligibleCandidateSetsHaveTerminalDiagnostics: boolean,
+  atLeastOneEligibleRequestStrictlyImprovesExactOutput: boolean,
+): HistoricalNumericalSplitEvaluationSummary['decision'] {
+  const clauses: HistoricalNumericalSplitDecisionClauses = Object.freeze({
+    noEligibleObjectiveRegressions,
+    forcedFailuresPreserveBaseline:
+      forcedFailureOutcomes.length === FORCED_FAILURE_CASES.length
+      && forcedFailureOutcomes.every((outcome) => outcome === 'baseline-preserved'),
+    allEligibleCandidateSetsHaveTerminalDiagnostics,
+    atLeastOneEligibleRequestStrictlyImprovesExactOutput,
+  });
+  return Object.freeze({
+    mode: Object.values(clauses).every((value) => value) ? 'primary' : 'experimental',
+    clauses,
+  });
+}
+
 function buildSemantic(
   verified: VerifiedCorpusBundle,
   config: ComparisonConfig,
   eligibility: EligibilityArtifact,
+  forcedFailureEvidence: ForcedFailureEvidence,
   baselineCells: readonly Readonly<JsonRecord>[],
   baselineResults: readonly CanonicalSplitRouterRuntimeResult[],
 ): SemanticBuild {
@@ -770,6 +1016,7 @@ function buildSemantic(
           corpusSha256: CORPUS_SHA256,
           comparisonConfigSha256: COMPARISON_CONFIG_SHA256,
           eligibilitySha256: ELIGIBILITY_SHA256,
+          forcedFailureEvidence: FORCED_FAILURE_EVIDENCE_BINDING,
           baselineSemanticResultsSha256: BASELINE_SEMANTIC_SHA256,
         },
         ...common,
@@ -828,6 +1075,7 @@ function buildSemantic(
         corpusSha256: CORPUS_SHA256,
         comparisonConfigSha256: COMPARISON_CONFIG_SHA256,
         eligibilitySha256: ELIGIBILITY_SHA256,
+        forcedFailureEvidence: FORCED_FAILURE_EVIDENCE_BINDING,
         baselineSemanticResultsSha256: BASELINE_SEMANTIC_SHA256,
       },
       ...common,
@@ -842,13 +1090,12 @@ function buildSemantic(
     });
   }
 
-  const clauses: HistoricalNumericalSplitDecisionClauses = Object.freeze({
-    noEligibleObjectiveRegressions: relations.regressed === 0,
-    forcedFailuresPreserveBaseline: true,
-    allEligibleCandidateSetsHaveTerminalDiagnostics: terminalDiagnostics,
-    atLeastOneEligibleRequestStrictlyImprovesExactOutput: improvedRequests.size > 0,
-  });
-  const mode = Object.values(clauses).every((value) => value) ? 'primary' : 'experimental';
+  const decision = deriveHistoricalNumericalSplitDecision(
+    relations.regressed === 0,
+    forcedFailureEvidence.cases.map((current) => current.outcome),
+    terminalDiagnostics,
+    improvedRequests.size > 0,
+  );
   const semanticSummary = {
     eligibility: {
       eligible: eligibleCount,
@@ -859,7 +1106,7 @@ function buildSemantic(
     diagnostics: { statuses: diagnosticStatuses, failureCodes: diagnosticFailureCodes },
     work: { counterTotals: totals, counterMaxima: maxima },
     strictlyImprovedRequestCount: improvedRequests.size,
-    decision: { mode, clauses },
+    decision,
   };
   const document = {
     schemaVersion: 'routelab.numerical-historical-semantic-results.v1',
@@ -874,6 +1121,7 @@ function buildSemantic(
       comparisonConfigSha256: COMPARISON_CONFIG_SHA256,
       eligibilityId: ELIGIBILITY_ID,
       eligibilitySha256: ELIGIBILITY_SHA256,
+      forcedFailureEvidence: FORCED_FAILURE_EVIDENCE_BINDING,
       baselineSemanticResultsSha256: BASELINE_SEMANTIC_SHA256,
     },
     schedule: {
@@ -907,7 +1155,7 @@ function buildSemantic(
     counterTotals: totals,
     counterMaxima: maxima,
     strictlyImprovedRequestCount: improvedRequests.size,
-    decision: { mode, clauses },
+    decision,
   });
   return Object.freeze({ json, document, summary });
 }
@@ -922,6 +1170,7 @@ function buildManifest(semantic: ArtifactDescriptor, summary: HistoricalNumerica
       snapshotChecksum: SNAPSHOT_CHECKSUM,
       corpusId: CORPUS_ID,
       corpusSha256: CORPUS_SHA256,
+      forcedFailureEvidence: FORCED_FAILURE_EVIDENCE_BINDING,
       baselineSemanticResultsSha256: BASELINE_SEMANTIC_SHA256,
     },
     runtime: {
@@ -938,6 +1187,11 @@ function buildManifest(semantic: ArtifactDescriptor, summary: HistoricalNumerica
         path: CANONICAL_NUMERICAL_HISTORICAL_ELIGIBILITY_PATH,
         bytes: ELIGIBILITY_BYTES,
         sha256: ELIGIBILITY_SHA256,
+      },
+      forcedFailureEvidence: {
+        path: CANONICAL_NUMERICAL_FORCED_FAILURE_EVIDENCE_PATH,
+        bytes: FORCED_FAILURE_EVIDENCE_BYTES,
+        sha256: FORCED_FAILURE_EVIDENCE_SHA256,
       },
       semanticResults: semantic,
     },
@@ -957,6 +1211,7 @@ async function prepareInputs(
   dependencies: HistoricalNumericalSplitEvaluationReadDependencies,
   configDescriptor: ArtifactDescriptor,
   eligibilityDescriptor?: ArtifactDescriptor,
+  forcedFailureEvidenceDescriptor?: ArtifactDescriptor,
 ): Promise<
   | {
       readonly ok: true;
@@ -964,6 +1219,7 @@ async function prepareInputs(
         readonly verified: VerifiedCorpusBundle;
         readonly config: ComparisonConfig;
         readonly eligibility: EligibilityArtifact;
+        readonly forcedFailureEvidence: ForcedFailureEvidence;
         readonly baselineCells: readonly Readonly<JsonRecord>[];
         readonly baselineResults: readonly CanonicalSplitRouterRuntimeResult[];
       };
@@ -976,6 +1232,15 @@ async function prepareInputs(
   if (declaredEligibility === undefined) return failure('invalid-config-shape', 'comparison-config.v1.json');
   const eligibility = await readEligibility(dependencies, declaredEligibility);
   if (!eligibility.ok) return eligibility;
+  const forcedFailureEvidence = await readForcedFailureEvidence(
+    dependencies,
+    forcedFailureEvidenceDescriptor ?? {
+      path: CANONICAL_NUMERICAL_FORCED_FAILURE_EVIDENCE_PATH,
+      bytes: FORCED_FAILURE_EVIDENCE_BYTES,
+      sha256: FORCED_FAILURE_EVIDENCE_SHA256,
+    },
+  );
+  if (!forcedFailureEvidence.ok) return forcedFailureEvidence;
   const verified = await verifySyntheticRequestCorpus(
     CANONICAL_SYNTHETIC_REQUEST_CORPUS_DIRECTORY,
     { readFile: dependencies.readFile },
@@ -1004,6 +1269,7 @@ async function prepareInputs(
       verified: verified.value,
       config: config.value,
       eligibility: eligibility.value,
+      forcedFailureEvidence: forcedFailureEvidence.value,
       baselineCells: baseline.value.semanticCells,
       baselineResults: baseline.value.runtimeResults,
     }),
@@ -1025,6 +1291,7 @@ export async function createHistoricalNumericalSplitEvaluation(
       prepared.value.verified,
       prepared.value.config,
       prepared.value.eligibility,
+      prepared.value.forcedFailureEvidence,
       prepared.value.baselineCells,
       prepared.value.baselineResults,
     );
@@ -1058,13 +1325,14 @@ function parseManifest(value: unknown): {
   readonly value: JsonRecord;
   readonly config: ArtifactDescriptor;
   readonly eligibility: ArtifactDescriptor;
+  readonly forcedFailureEvidence: ArtifactDescriptor;
   readonly semantic: ArtifactDescriptor;
 } | undefined {
   if (!isRecord(value) || !hasExactKeys(value, [
     'schemaVersion', 'evaluationId', 'inputBinding', 'runtime', 'artifacts', 'counts',
     'decision', 'limitations',
   ]) || !isRecord(value['artifacts']) || !hasExactKeys(value['artifacts'], [
-    'comparisonConfig', 'eligibility', 'semanticResults',
+    'comparisonConfig', 'eligibility', 'forcedFailureEvidence', 'semanticResults',
   ])) return undefined;
   const config = parseDescriptor(
     value['artifacts']['comparisonConfig'],
@@ -1074,16 +1342,21 @@ function parseManifest(value: unknown): {
     value['artifacts']['eligibility'],
     CANONICAL_NUMERICAL_HISTORICAL_ELIGIBILITY_PATH,
   );
+  const forcedFailureEvidence = parseDescriptor(
+    value['artifacts']['forcedFailureEvidence'],
+    CANONICAL_NUMERICAL_FORCED_FAILURE_EVIDENCE_PATH,
+  );
   const semantic = parseDescriptor(value['artifacts']['semanticResults'], 'semantic-results.json');
   if (
-    config === undefined || eligibility === undefined || semantic === undefined
+    config === undefined || eligibility === undefined || forcedFailureEvidence === undefined
+    || semantic === undefined
     || value['schemaVersion'] !== 'routelab.numerical-historical-evaluation-manifest.v1'
     || value['evaluationId'] !== HISTORICAL_NUMERICAL_SPLIT_EVALUATION_ID
     || !isRecord(value['runtime'])
     || value['runtime']['entryPoint'] !== 'routeExactInputSplitNumericalAnytime'
     || value['runtime']['implementationRevision'] !== HISTORICAL_NUMERICAL_SPLIT_RUNTIME_REVISION
   ) return undefined;
-  return Object.freeze({ value, config, eligibility, semantic });
+  return Object.freeze({ value, config, eligibility, forcedFailureEvidence, semantic });
 }
 
 async function readSemanticArtifact(
@@ -1125,6 +1398,7 @@ export async function verifyHistoricalNumericalSplitEvaluation(
     dependencies,
     manifest.config,
     manifest.eligibility,
+    manifest.forcedFailureEvidence,
   );
   if (!prepared.ok) return prepared;
   const semanticArtifact = await readSemanticArtifact(directory, dependencies, manifest.semantic);
@@ -1136,6 +1410,7 @@ export async function verifyHistoricalNumericalSplitEvaluation(
       prepared.value.verified,
       prepared.value.config,
       prepared.value.eligibility,
+      prepared.value.forcedFailureEvidence,
       prepared.value.baselineCells,
       prepared.value.baselineResults,
     );

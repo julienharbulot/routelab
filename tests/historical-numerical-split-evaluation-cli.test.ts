@@ -21,6 +21,8 @@ const EVALUATION =
 const INPUTS = [
   'fixtures/m7/numerical-historical/comparison-config.v1.json',
   'fixtures/m7/numerical-historical/eligibility.v1.json',
+  'fixtures/m7/numerical-historical/forced-failure-evidence.v1.json',
+  'tests/oracle/numerical-exact-input-split-runtime-oracle.test.ts',
   'fixtures/m6/composed-historical/comparison-config.v3.json',
   'fixtures/m6/composed-historical/observation-config.v2.json',
   path.join(CORPUS, 'manifest.json'),

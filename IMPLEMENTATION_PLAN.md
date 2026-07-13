@@ -95,7 +95,7 @@ Gate: independent tiny-graph and forced-stop evidence proves shared discovery, n
 
 ## Milestone 6 — Historical data and credible evaluation
 
-Status: complete under cumulative review. The completion record is integrated and its exact commit passed CI. The review mapped every outcome and gate clause to the source contract, canonical snapshot/corpus/config identities, direct composed-runtime path, retained exact results and raw environment observations, independent evidence, exact prerequisite integration commits and CI, and reconciled public limitations. Milestone 7a is active. Its exact-replay consolidation prerequisite is integrated and passed exact-commit CI; the accepted numerical-allocation contract now precedes production numerical code.
+Status: complete under cumulative review. The completion record is integrated and its exact commit passed CI. The review mapped every outcome and gate clause to the source contract, canonical snapshot/corpus/config identities, direct composed-runtime path, retained exact results and raw environment observations, independent evidence, exact prerequisite integration commits and CI, and reconciled public limitations. Milestone 7a is also complete under cumulative review; its exact-replay consolidation prerequisite, accepted numerical-allocation contract, bounded implementation, and retained evidence all passed their exact implementation gates.
 
 Choose a source through a documented decision, import one canonical snapshot, then grow versioned datasets with provenance, ordering, schema validation, and checksums. Separate dataset changes from algorithm comparisons. The primary benchmark path must consume the composed runtime from the pre-M6 integration gate; legacy component orchestration may be retained only as an explicitly labeled comparison.
 
@@ -103,7 +103,7 @@ Gate: primary replay remains offline; data provenance and licensing are clear; e
 
 ## Milestone 7a — Path-level numerical allocation
 
-Status: implementation complete pending cumulative review. [ADR 0004](docs/adr/accepted/0004-path-level-numerical-allocation.md) freezes the additive proposal-only numerical model, deterministic reconstruction, exact residual scoring and authorization, typed controls/diagnostics, compatibility boundary, independent evidence obligations, and primary-versus-experimental decision rule. The internal proposal/reconstruction core and additive direct source-module numerical runtime are integrated with independent bounded evidence. The separately versioned identical-input evaluation retains all 2,376 Milestone 6 request/profile cells, executes only the 414 result-blind eligible cells, freshly verifies exact results, and records 318 improved, 96 equal, and zero regressed exact objectives. All four frozen decision clauses hold, so the retained result records numerical mode as primary without creating a default mode or a performance claim. A cumulative Milestone 7a review must still map the complete gate before Milestone 7b becomes eligible.
+Status: complete under cumulative review. The independent completion review mapped every outcome and gate clause to the consolidated exact replay path, [ADR 0004](docs/adr/accepted/0004-path-level-numerical-allocation.md), the proposal/reconstruction core, direct source-module numerical runtime, retained identical-input evaluation, non-circular evidence, exact implementation commits and CI, compatibility surfaces, and public limitations. The separately versioned evaluation retains all 2,376 Milestone 6 request/profile cells, executes only the 414 result-blind eligible cells, freshly verifies exact results, and records 318 improved, 96 equal, and zero regressed exact objectives. All four mechanically derived clauses hold, so the artifact records numerical mode as primary without creating a default mode, performance result, or global-optimality claim. Milestone 7b selection follows the exact completion-commit gate.
 
 Add the missing numerical-allocation stage explicitly rather than allowing the greedy baseline to become the final allocator by omission. Over the bounded pool-disjoint candidate set, implement an approximate path-level shadow-price allocator using normalized `number` values only for proposal generation. Reconstruct a deterministic nonnegative `bigint` allocation whose sum is the exact input, compare residual units using exact replay or exact marginal deltas, and require a distinct full-input exact authorization replay before incumbent replacement.
 
@@ -112,6 +112,10 @@ Retain no-split, equal-split, greedy, and tiny exhaustive modes as fallbacks and
 Gate: the allocator agrees with the independent tiny exhaustive reference within its documented proposal/reconstruction limits; every failure preserves the incumbent; exact allocations sum to the request at arbitrary precision; approximate values never authorize results; and representative M6 cases compare exact output, work, and convergence against equal and greedy without a global-optimality claim.
 
 ## Milestone 7b — Evidence-led acceleration
+
+Status: next after the Milestone 7a completion integration gate. The first task
+must retain an identical-input profile and measured bottleneck before selecting
+or implementing any pruning or shortcut.
 
 Profile the composed bounded baseline on representative snapshots. Add sound pruning first. Consider a PRIME-inspired core/shortcut experiment only when measured expansions or latency justify it, and keep it only if identical-input comparisons earn its complexity.
 

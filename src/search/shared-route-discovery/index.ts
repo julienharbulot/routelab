@@ -75,7 +75,8 @@ export interface SharedCandidateSetFrontier {
 
 interface SharedCandidateSetFrontierState {
   readonly paths: PreparedSimplePathList;
-  readonly maximumCardinality: number;
+  readonly maxRoutes: number;
+  anchorIndex: number;
   targetCardinality: number;
   readonly selectedRoutes: SharedRoute[];
   readonly usedPoolIds: Set<string>;
@@ -184,18 +185,29 @@ function enumerateSharedSplitCandidateSets(
   });
 }
 
-function beginCandidateSetCardinality(state: SharedCandidateSetFrontierState): void {
+function beginAnchoredCardinality(state: SharedCandidateSetFrontierState): void {
   state.selectedRoutes.length = 0;
   state.usedPoolIds.clear();
   state.stack.length = 0;
-  if (state.targetCardinality <= state.maximumCardinality) {
+  if (
+    state.anchorIndex < state.paths.length &&
+    state.targetCardinality <= Math.min(state.maxRoutes, state.anchorIndex + 1)
+  ) {
     state.stack.push({ nextRouteIndex: 0, addedRouteIndex: undefined });
   }
 }
 
 function normalizeCandidateSetFrontier(state: SharedCandidateSetFrontierState): boolean {
-  while (state.targetCardinality <= state.maximumCardinality) {
-    while (state.stack.at(-1)?.nextRouteIndex === state.paths.length) {
+  while (state.anchorIndex < state.paths.length) {
+    const maximumCardinality = Math.min(state.maxRoutes, state.anchorIndex + 1);
+    if (state.targetCardinality > maximumCardinality) {
+      state.anchorIndex += 1;
+      state.targetCardinality = 2;
+      beginAnchoredCardinality(state);
+      continue;
+    }
+    if (state.selectedRoutes.length === state.targetCardinality - 1) return false;
+    while (state.stack.at(-1)?.nextRouteIndex === state.anchorIndex) {
       const exhausted = state.stack.pop();
       if (exhausted?.addedRouteIndex === undefined) continue;
       const removedRoute = state.selectedRoutes.pop();
@@ -206,7 +218,7 @@ function normalizeCandidateSetFrontier(state: SharedCandidateSetFrontierState): 
     }
     if (state.stack.length > 0) return false;
     state.targetCardinality += 1;
-    beginCandidateSetCardinality(state);
+    beginAnchoredCardinality(state);
   }
   return true;
 }
@@ -221,14 +233,15 @@ export function createSharedCandidateSetFrontier(
   }
   const state: SharedCandidateSetFrontierState = {
     paths,
-    maximumCardinality: Math.min(maxRoutes, paths.length),
+    maxRoutes,
+    anchorIndex: 1,
     targetCardinality: 2,
     selectedRoutes: [],
     usedPoolIds: new Set<string>(),
     stack: [],
     candidateSets: [],
   };
-  beginCandidateSetCardinality(state);
+  beginAnchoredCardinality(state);
   const frontier = Object.freeze({}) as SharedCandidateSetFrontier;
   candidateSetFrontiers.set(frontier, state);
   return frontier;
@@ -252,6 +265,23 @@ export function expandSharedCandidateSetFrontier(
   if (normalizeCandidateSetFrontier(state)) {
     throw new Error('Cannot expand a completed candidate-set frontier.');
   }
+  if (state.selectedRoutes.length === state.targetCardinality - 1) {
+    const anchor = state.paths[state.anchorIndex];
+    if (anchor === undefined) {
+      throw new Error('Candidate-set frontier lost its canonical anchor route.');
+    }
+    if (routeIsPoolDisjoint(anchor, state.usedPoolIds)) {
+      state.candidateSets.push(
+        frozenCandidateSet([...state.selectedRoutes, anchor]),
+      );
+    }
+    const removedRoute = state.selectedRoutes.pop();
+    if (removedRoute === undefined) {
+      throw new Error('Anchored frontier lost its selected route.');
+    }
+    removeRoutePools(removedRoute, state.usedPoolIds);
+    return;
+  }
   const frame = state.stack.at(-1);
   if (frame === undefined) throw new Error('Candidate-set frontier lost its active frame.');
   const routeIndex = frame.nextRouteIndex;
@@ -264,16 +294,12 @@ export function expandSharedCandidateSetFrontier(
 
   state.selectedRoutes.push(route);
   addRoutePools(route, state.usedPoolIds);
-  if (state.selectedRoutes.length === state.targetCardinality) {
-    state.candidateSets.push(frozenCandidateSet(state.selectedRoutes));
-    state.selectedRoutes.pop();
-    removeRoutePools(route, state.usedPoolIds);
-    return;
+  if (state.selectedRoutes.length < state.targetCardinality - 1) {
+    state.stack.push({
+      nextRouteIndex: routeIndex + 1,
+      addedRouteIndex: routeIndex,
+    });
   }
-  state.stack.push({
-    nextRouteIndex: routeIndex + 1,
-    addedRouteIndex: routeIndex,
-  });
 }
 
 /** Materializes the exact candidate sets produced by the frontier prefix. @internal */

@@ -3,6 +3,10 @@ import test from 'node:test';
 
 import type { ConstantProductPool, LiquiditySnapshot } from '../src/domain/index.ts';
 import {
+  replayExactInputSplit,
+  type ExactInputSplitReplayRequest,
+} from '../src/replay/exact-input-split/index.ts';
+import {
   routeExactInputSplitAnytime,
   type ExactInputSplitRuntimeControl,
   type ExactInputSplitRuntimeRequest,
@@ -11,6 +15,7 @@ import {
 } from '../src/router/anytime-exact-input-split/index.ts';
 import {
   prepareRoutingContext,
+  replayPreparedExactInputSplit,
   type PreparedRoutingContext,
 } from '../src/runtime/prepared-routing-context/index.ts';
 import { computeCanonicalSnapshotChecksum } from '../src/serialization/canonical-snapshot/index.ts';
@@ -101,6 +106,10 @@ void test('establishes exact direct 50 before controls and authorizes the exact 
   const plan = success(result);
   assert.equal(observed[0]?.kind, 'path-expansion');
   assert.equal(observed[0]?.amountOut, 50n);
+  assert.ok(
+    observed.findIndex(({ kind }) => kind === 'final-authorization-replay') >
+      observed.findLastIndex(({ kind }) => kind === 'greedy-option-replay'),
+  );
   assert.equal(plan.receipt.amountOut, 66n);
   assert.deepEqual(plan.receipt.legs.map(({ allocation }) => allocation), [50n, 50n]);
   assert.deepEqual(plan.search.counters, {
@@ -110,7 +119,7 @@ void test('establishes exact direct 50 before controls and authorizes the exact 
     pathExpansions: 2,
     bestSingleCandidateReplays: 2,
     bestSingleCandidateRejections: 0,
-    candidateSetExpansions: 3,
+    candidateSetExpansions: 2,
     equalProposalReplays: 1,
     equalProposalRejections: 0,
     greedyOptionReplays: 4,
@@ -248,7 +257,7 @@ void test('forces every eligible boundary without accounting the pending unit', 
     const plan = success(result);
     assert.equal(plan.search.termination, 'interrupted');
     assert.deepEqual(plan.search.counters, priorCounters);
-    assert.equal(plan.receipt.amountOut, kind === 'greedy-option-replay' ? 66n : 50n);
+    assert.equal(plan.receipt.amountOut, 50n);
   }
 });
 
@@ -266,13 +275,137 @@ void test('applies cap before callback and treats equality at natural exhaustion
   const exact = routeExactInputSplitAnytime(prepare(value), request(value), control({
     maxPathExpansions: 2,
     maxBestSingleCandidateReplays: 2,
-    maxCandidateSetExpansions: 3,
+    maxCandidateSetExpansions: 2,
     maxEqualProposalReplays: 1,
     maxGreedyOptionReplays: 4,
     maxFinalAuthorizationReplays: 1,
   }));
   assert.equal(success(exact).search.termination, 'complete');
   assert.equal(success(exact).receipt.amountOut, 66n);
+  assert.equal(success(exact).search.counters.finalAuthorizationReplays, 1);
+});
+
+void test('sorts unique proposals best-first so added equal work cannot consume scarce authorization', () => {
+  const value = snapshot([
+    pool('left-ac', 50n, 50n),
+    pool('right-ac', 50n, 100n),
+  ]);
+  const run = (equalCap: number) => routeExactInputSplitAnytime(
+    prepare(value),
+    request(value, { greedyParts: 4 }),
+    control({
+      maxEqualProposalReplays: equalCap,
+      maxGreedyOptionReplays: 8,
+      maxFinalAuthorizationReplays: 1,
+    }),
+  );
+  const withoutEqual = success(run(0));
+  const withEqual = success(run(1));
+  assert.equal(withoutEqual.receipt.amountOut, 76n);
+  assert.equal(withEqual.receipt.amountOut, 76n);
+  assert.equal(withoutEqual.search.counters.finalAuthorizationReplays, 1);
+  assert.equal(withEqual.search.counters.finalAuthorizationReplays, 1);
+
+  const duplicateValue = snapshot(SPLIT_POOLS);
+  const duplicate = success(routeExactInputSplitAnytime(
+    prepare(duplicateValue),
+    request(duplicateValue),
+    control({
+      maxPathExpansions: 2,
+      maxBestSingleCandidateReplays: 2,
+      maxCandidateSetExpansions: 2,
+      maxEqualProposalReplays: 1,
+      maxGreedyOptionReplays: 4,
+      maxFinalAuthorizationReplays: 1,
+    }),
+  ));
+  assert.equal(duplicate.search.termination, 'complete');
+  assert.equal(duplicate.search.counters.finalAuthorizationReplays, 1);
+});
+
+void test('keeps the anchored set frontier prefix stable when discovery appends a path', () => {
+  const value = snapshot([
+    pool('a'),
+    pool('b'),
+    pool('c'),
+    pool('z', 100n, 1n),
+  ]);
+  const run = (pathCap: number) => routeExactInputSplitAnytime(
+    prepare(value),
+    request(value, { maxRoutes: 3 }),
+    control({
+      maxPathExpansions: pathCap,
+      maxCandidateSetExpansions: 9,
+      maxGreedyOptionReplays: 0,
+    }),
+  );
+  const three = success(run(3));
+  const four = success(run(4));
+  assert.equal(three.receipt.amountOut, 73n);
+  assert.equal(four.receipt.amountOut, 73n);
+  assert.equal(three.search.counters.candidateSetExpansions, 9);
+  assert.equal(four.search.counters.candidateSetExpansions, 9);
+
+  const threePathValue = snapshot([pool('a'), pool('b'), pool('c')]);
+  const naturallyExhausted = success(routeExactInputSplitAnytime(
+    prepare(threePathValue),
+    request(threePathValue, { maxRoutes: 3 }),
+    control({
+      maxPathExpansions: 3,
+      maxBestSingleCandidateReplays: 3,
+      maxCandidateSetExpansions: 10,
+    }),
+  ));
+  assert.equal(naturallyExhausted.search.counters.candidateSetExpansions, 10);
+  assert.equal(naturallyExhausted.search.termination, 'complete');
+});
+
+void test('prepared replay matches legacy validation and exact receipts while consuming prepared pools', () => {
+  const value = snapshot([
+    pool('a-direct'),
+    pool('ax', 10n ** 80n, 2n * 10n ** 80n, 'A', 'X'),
+    pool('xc', 2n * 10n ** 80n, 3n * 10n ** 80n, 'X', 'C'),
+    pool('ay', 100n, 100n, 'A', 'Y'),
+    pool('yx', 100n, 100n, 'Y', 'X'),
+    pool('zero', 100n, 1n),
+  ]);
+  const context = prepare(value);
+  const base = {
+    snapshotId: value.snapshotId,
+    snapshotChecksum: value.snapshotChecksum,
+    assetIn: 'A',
+    assetOut: 'C',
+  } as const;
+  const route = [
+    { assetIn: 'A', poolId: 'ax', assetOut: 'X' },
+    { assetIn: 'X', poolId: 'xc', assetOut: 'C' },
+  ] as const;
+  const cases: ExactInputSplitReplayRequest[] = [
+    { ...base, amountIn: 100n, legs: [{ allocation: 100n, route: [{ assetIn: 'A', poolId: 'a-direct', assetOut: 'C' }] }] },
+    { ...base, amountIn: 10n ** 60n, legs: [{ allocation: 10n ** 60n, route }] },
+    { ...base, amountIn: 1n, legs: [{ allocation: 0n, route }, { allocation: 1n, route: [{ assetIn: 'A', poolId: 'a-direct', assetOut: 'C' }] }] },
+    { ...base, amountIn: 2n, legs: [
+      { allocation: 1n, route: [{ assetIn: 'A', poolId: 'zero', assetOut: 'C' }] },
+      { allocation: 1n, route: [{ assetIn: 'A', poolId: 'a-direct', assetOut: 'C' }] },
+    ] },
+    { ...base, amountIn: 1n, legs: [{ allocation: 1n, route: [{ assetIn: 'A', poolId: 'missing', assetOut: 'C' }] }] },
+    { ...base, amountIn: 1n, legs: [{ allocation: 1n, route: [{ assetIn: 'A', poolId: 'zero', assetOut: 'C' }] }] },
+    { ...base, amountIn: 3n, legs: [{ allocation: 2n, route: [{ assetIn: 'A', poolId: 'a-direct', assetOut: 'C' }] }] },
+    { ...base, amountIn: 2n, legs: [
+      { allocation: 1n, route },
+      { allocation: 1n, route: [
+        { assetIn: 'A', poolId: 'ay', assetOut: 'Y' },
+        { assetIn: 'Y', poolId: 'yx', assetOut: 'X' },
+        { assetIn: 'X', poolId: 'xc', assetOut: 'C' },
+      ] },
+    ] },
+  ];
+  for (const replayRequest of cases) {
+    assert.deepEqual(
+      replayPreparedExactInputSplit(context, replayRequest),
+      replayExactInputSplit(value, replayRequest),
+    );
+  }
 });
 
 void test('classifies callback and clock failures with unchanged pre-unit ledgers', () => {

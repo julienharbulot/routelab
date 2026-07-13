@@ -2,12 +2,26 @@ import type {
   ConstantProductPool,
   LiquiditySnapshot,
 } from '../../domain/index.ts';
-import type { DirectionalRouteHop } from '../../replay/exact-input-route/index.ts';
 import {
-  replayExactInputSplit,
+  type ExactInputSplitReplayError,
+  type ExactInputSplitReplayLegReceipt,
+  type ExactInputSplitReplayLegRequest,
   type ExactInputSplitReplayRequest,
+  type ExactInputSplitReplayReceipt,
   type ExactInputSplitReplayResult,
 } from '../../replay/exact-input-split/index.ts';
+import {
+  type DirectionalRouteHop,
+  type ExactInputRouteReplayErrorCode,
+  type ExactInputRouteReplayReceipt,
+  type ExactInputRouteReplayRequest,
+  type ExactInputRouteReplayResult,
+} from '../../replay/exact-input-route/index.ts';
+import {
+  transitionConstantProductExactInput,
+  type ConstantProductExecutionErrorCode,
+  type ConstantProductTransitionReceipt,
+} from '../../pools/constant-product/index.ts';
 import {
   buildDeterministicAdjacency,
   type AdjacencyBucket,
@@ -396,6 +410,359 @@ export function preparedDirectRoutes(
   );
 }
 
+function capturePreparedHop(hop: DirectionalRouteHop): DirectionalRouteHop {
+  return Object.freeze({
+    assetIn: hop.assetIn,
+    poolId: hop.poolId,
+    assetOut: hop.assetOut,
+  });
+}
+
+function capturePreparedSplitRequest(
+  request: ExactInputSplitReplayRequest,
+): ExactInputSplitReplayRequest {
+  return Object.freeze({
+    snapshotId: request.snapshotId,
+    snapshotChecksum: request.snapshotChecksum,
+    assetIn: request.assetIn,
+    assetOut: request.assetOut,
+    amountIn: request.amountIn,
+    legs: Object.freeze(
+      Array.from(request.legs, (leg): ExactInputSplitReplayLegRequest =>
+        Object.freeze({
+          allocation: leg.allocation,
+          route: Object.freeze(Array.from(leg.route, capturePreparedHop)),
+        }),
+      ),
+    ),
+  });
+}
+
+function preparedRouteFailure(
+  code: ExactInputRouteReplayErrorCode,
+  message: string,
+  hopIndex: number | null = null,
+  causeCode: ConstantProductExecutionErrorCode | null = null,
+): ExactInputRouteReplayResult {
+  return Object.freeze({
+    ok: false,
+    error: Object.freeze({ code, message, hopIndex, causeCode }),
+  });
+}
+
+function preparedSplitFailure(
+  code: ExactInputSplitReplayError['code'],
+  message: string,
+  legIndex: number | null = null,
+  causeCode: ExactInputRouteReplayErrorCode | null = null,
+): ExactInputSplitReplayResult {
+  return Object.freeze({
+    ok: false,
+    error: Object.freeze({ code, message, legIndex, causeCode }),
+  });
+}
+
+function emptyPreparedHopIdentifier(
+  hop: DirectionalRouteHop,
+): 'assetIn' | 'poolId' | 'assetOut' | undefined {
+  if (hop.assetIn.length === 0) return 'assetIn';
+  if (hop.poolId.length === 0) return 'poolId';
+  if (hop.assetOut.length === 0) return 'assetOut';
+  return undefined;
+}
+
+function replayPreparedRoute(
+  state: PreparedRoutingContextState,
+  request: ExactInputRouteReplayRequest,
+): ExactInputRouteReplayResult {
+  if (
+    request.snapshotId !== state.snapshot.snapshotId ||
+    request.snapshotChecksum !== state.snapshot.snapshotChecksum
+  ) {
+    return preparedRouteFailure(
+      'snapshot-identity-mismatch',
+      'Request snapshotId and snapshotChecksum must match the supplied snapshot.',
+    );
+  }
+  if (request.assetIn.length === 0) {
+    return preparedRouteFailure('empty-identifier', 'request.assetIn must not be empty.');
+  }
+  if (request.assetOut.length === 0) {
+    return preparedRouteFailure('empty-identifier', 'request.assetOut must not be empty.');
+  }
+  if (request.amountIn <= 0n) {
+    return preparedRouteFailure('nonpositive-input', 'request.amountIn must be positive.');
+  }
+  if (request.assetIn === request.assetOut) {
+    return preparedRouteFailure(
+      'same-asset-request',
+      'request.assetIn and request.assetOut must be distinct.',
+    );
+  }
+  if (request.hops.length === 0) {
+    return preparedRouteFailure('empty-route', 'request.hops must contain at least one hop.');
+  }
+
+  const seenPoolIds = new Set<string>();
+  const seenAssets = new Set<string>([request.assetIn]);
+  let expectedAssetIn = request.assetIn;
+  for (const [index, hop] of request.hops.entries()) {
+    const emptyField = emptyPreparedHopIdentifier(hop);
+    if (emptyField !== undefined) {
+      return preparedRouteFailure(
+        'empty-identifier',
+        `request.hops[${index}].${emptyField} must not be empty.`,
+        index,
+      );
+    }
+    if (hop.assetIn !== expectedAssetIn) {
+      if (index === 0) {
+        return preparedRouteFailure(
+          'route-start-mismatch',
+          'The first hop assetIn must equal request.assetIn.',
+          index,
+        );
+      }
+      return preparedRouteFailure(
+        'noncontiguous-route',
+        `request.hops[${index}].assetIn must equal the prior hop assetOut.`,
+        index,
+      );
+    }
+    if (seenPoolIds.has(hop.poolId)) {
+      return preparedRouteFailure(
+        'duplicate-pool',
+        `request.hops[${index}].poolId repeats an earlier pool.`,
+        index,
+      );
+    }
+    seenPoolIds.add(hop.poolId);
+    if (seenAssets.has(hop.assetOut)) {
+      return preparedRouteFailure(
+        'duplicate-asset',
+        `request.hops[${index}].assetOut repeats an earlier route asset.`,
+        index,
+      );
+    }
+    seenAssets.add(hop.assetOut);
+    expectedAssetIn = hop.assetOut;
+  }
+  if (expectedAssetIn !== request.assetOut) {
+    return preparedRouteFailure(
+      'route-end-mismatch',
+      'The final hop assetOut must equal request.assetOut.',
+      request.hops.length - 1,
+    );
+  }
+
+  const validatedRoute: Array<{
+    readonly hop: DirectionalRouteHop;
+    readonly pool: ConstantProductPool;
+  }> = [];
+  for (const [index, hop] of request.hops.entries()) {
+    const pool = state.poolLookup.get(hop.poolId);
+    if (pool === undefined) {
+      return preparedRouteFailure(
+        'unknown-pool',
+        `request.hops[${index}].poolId does not exist in the supplied snapshot.`,
+        index,
+      );
+    }
+    const directionMatches =
+      (hop.assetIn === pool.asset0 && hop.assetOut === pool.asset1) ||
+      (hop.assetIn === pool.asset1 && hop.assetOut === pool.asset0);
+    if (!directionMatches) {
+      return preparedRouteFailure(
+        'pool-direction-mismatch',
+        `request.hops[${index}] does not match either direction of pool ${pool.poolId}.`,
+        index,
+      );
+    }
+    validatedRoute.push({ hop, pool });
+  }
+
+  const localPoolState = new Map(validatedRoute.map(({ pool }) => [pool.poolId, pool]));
+  const hopReceipts: ConstantProductTransitionReceipt[] = [];
+  let amountIn = request.amountIn;
+  for (const [index, { hop, pool: initialPool }] of validatedRoute.entries()) {
+    const pool = localPoolState.get(hop.poolId) ?? initialPool;
+    const transition = transitionConstantProductExactInput(pool, hop.assetIn, amountIn);
+    if (!transition.ok) {
+      return preparedRouteFailure(
+        'hop-transition-failed',
+        `Transition failed for request.hops[${index}]: ${transition.error.message}`,
+        index,
+        transition.error.code,
+      );
+    }
+    localPoolState.set(hop.poolId, transition.value.pool);
+    hopReceipts.push(transition.value.receipt);
+    amountIn = transition.value.receipt.amountOut;
+  }
+  const value: ExactInputRouteReplayReceipt = Object.freeze({
+    snapshotId: request.snapshotId,
+    snapshotChecksum: request.snapshotChecksum,
+    assetIn: request.assetIn,
+    assetOut: request.assetOut,
+    amountIn: request.amountIn,
+    amountOut: amountIn,
+    hops: Object.freeze([...hopReceipts]),
+  });
+  return Object.freeze({ ok: true, value });
+}
+
+function comparePreparedRawUtf16(left: string, right: string): number {
+  if (left < right) return -1;
+  if (left > right) return 1;
+  return 0;
+}
+
+function comparePreparedRoutes(
+  left: readonly DirectionalRouteHop[],
+  right: readonly DirectionalRouteHop[],
+): number {
+  const sharedLength = Math.min(left.length, right.length);
+  for (let index = 0; index < sharedLength; index += 1) {
+    const leftHop = left[index];
+    const rightHop = right[index];
+    if (leftHop === undefined || rightHop === undefined) {
+      throw new Error('Route comparison reached an unavailable hop.');
+    }
+    const comparison =
+      comparePreparedRawUtf16(leftHop.assetIn, rightHop.assetIn) ||
+      comparePreparedRawUtf16(leftHop.poolId, rightHop.poolId) ||
+      comparePreparedRawUtf16(leftHop.assetOut, rightHop.assetOut);
+    if (comparison !== 0) return comparison;
+  }
+  return left.length - right.length;
+}
+
+function replayPreparedSplit(
+  state: PreparedRoutingContextState,
+  request: ExactInputSplitReplayRequest,
+): ExactInputSplitReplayResult {
+  if (
+    request.snapshotId !== state.snapshot.snapshotId ||
+    request.snapshotChecksum !== state.snapshot.snapshotChecksum
+  ) {
+    return preparedSplitFailure(
+      'snapshot-identity-mismatch',
+      'Request snapshotId and snapshotChecksum must match the supplied snapshot.',
+    );
+  }
+  if (request.assetIn.length === 0) {
+    return preparedSplitFailure('empty-identifier', 'request.assetIn must not be empty.');
+  }
+  if (request.assetOut.length === 0) {
+    return preparedSplitFailure('empty-identifier', 'request.assetOut must not be empty.');
+  }
+  if (typeof request.amountIn !== 'bigint' || request.amountIn <= 0n) {
+    return preparedSplitFailure('nonpositive-input', 'request.amountIn must be a positive bigint.');
+  }
+  if (request.assetIn === request.assetOut) {
+    return preparedSplitFailure(
+      'same-asset-request',
+      'request.assetIn and request.assetOut must be distinct.',
+    );
+  }
+  if (request.legs.length === 0) {
+    return preparedSplitFailure('empty-legs', 'request.legs must contain at least one leg.');
+  }
+
+  let allocationSum = 0n;
+  for (const [index, leg] of request.legs.entries()) {
+    if (typeof leg.allocation !== 'bigint' || leg.allocation <= 0n) {
+      return preparedSplitFailure(
+        'nonpositive-allocation',
+        `request.legs[${index}].allocation must be a positive bigint.`,
+        index,
+      );
+    }
+    if (leg.route.length === 0) {
+      return preparedSplitFailure(
+        'empty-route',
+        `request.legs[${index}].route must contain at least one hop.`,
+        index,
+      );
+    }
+    allocationSum += leg.allocation;
+  }
+  if (allocationSum !== request.amountIn) {
+    return preparedSplitFailure(
+      'allocation-sum-mismatch',
+      'Leg allocations must sum exactly to request.amountIn.',
+    );
+  }
+  for (const [index, leg] of request.legs.entries()) {
+    if (index === 0) continue;
+    const prior = request.legs[index - 1];
+    if (prior === undefined) throw new Error('Split validation lost its prior leg.');
+    const comparison = comparePreparedRoutes(prior.route, leg.route);
+    if (comparison === 0) {
+      return preparedSplitFailure(
+        'duplicate-route',
+        `request.legs[${index}].route duplicates the prior canonical route.`,
+        index,
+      );
+    }
+    if (comparison > 0) {
+      return preparedSplitFailure(
+        'noncanonical-route-order',
+        'request.legs routes must be sorted by raw UTF-16 directional route order.',
+        index,
+      );
+    }
+  }
+  const priorLegPoolIds = new Set<string>();
+  for (const [index, leg] of request.legs.entries()) {
+    const currentLegPoolIds = new Set<string>();
+    for (const { poolId } of leg.route) {
+      if (priorLegPoolIds.has(poolId)) {
+        return preparedSplitFailure(
+          'shared-pool',
+          `request.legs[${index}] reuses pool ${poolId} from another leg.`,
+          index,
+        );
+      }
+      currentLegPoolIds.add(poolId);
+    }
+    for (const poolId of currentLegPoolIds) priorLegPoolIds.add(poolId);
+  }
+
+  const receiptLegs: ExactInputSplitReplayLegReceipt[] = [];
+  let amountOut = 0n;
+  for (const [index, leg] of request.legs.entries()) {
+    const replay = replayPreparedRoute(state, {
+      snapshotId: request.snapshotId,
+      snapshotChecksum: request.snapshotChecksum,
+      assetIn: request.assetIn,
+      assetOut: request.assetOut,
+      amountIn: leg.allocation,
+      hops: leg.route,
+    });
+    if (!replay.ok) {
+      return preparedSplitFailure(
+        'leg-replay-failed',
+        `Exact replay failed for request.legs[${index}]: ${replay.error.message}`,
+        index,
+        replay.error.code,
+      );
+    }
+    receiptLegs.push(Object.freeze({ allocation: leg.allocation, receipt: replay.value }));
+    amountOut += replay.value.amountOut;
+  }
+  const value: ExactInputSplitReplayReceipt = Object.freeze({
+    snapshotId: request.snapshotId,
+    snapshotChecksum: request.snapshotChecksum,
+    assetIn: request.assetIn,
+    assetOut: request.assetOut,
+    amountIn: request.amountIn,
+    amountOut,
+    legs: Object.freeze(receiptLegs),
+  });
+  return Object.freeze({ ok: true, value });
+}
+
 /** Fresh exact replay against the exclusively owned prepared snapshot. @internal */
 export function replayPreparedExactInputSplit(
   context: PreparedRoutingContext,
@@ -405,7 +772,7 @@ export function replayPreparedExactInputSplit(
   if (state === undefined) {
     throw new TypeError('PreparedRoutingContext was not created by prepareRoutingContext.');
   }
-  return replayExactInputSplit(state.snapshot, request);
+  return replayPreparedSplit(state, capturePreparedSplitRequest(request));
 }
 
 /** Creates one opaque, request-local simple-path frontier. @internal */

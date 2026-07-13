@@ -370,6 +370,27 @@ function positiveLegs(routes: readonly (readonly DirectionalRouteHop[])[], alloc
   return Object.freeze(routes.flatMap((route, index) => allocations[index] === 0n ? [] : [Object.freeze({ allocation: allocations[index]!, route })]));
 }
 
+interface SplitProposal {
+  readonly key: string;
+  readonly receipt: ExactInputSplitReplayReceipt;
+  readonly legs: readonly ExactInputSplitReplayLegRequest[];
+}
+
+function proposalKey(legs: readonly ExactInputSplitReplayLegRequest[]): string {
+  return JSON.stringify(legs.map((leg) => ({
+    allocation: leg.allocation.toString(10),
+    route: leg.route.map(({ assetIn, poolId, assetOut }) => ({ assetIn, poolId, assetOut })),
+  })));
+}
+
+function compareProposals(left: SplitProposal, right: SplitProposal): number {
+  if (isStrictlyBetterSplitReceipt(left.receipt, right.receipt)) return -1;
+  if (isStrictlyBetterSplitReceipt(right.receipt, left.receipt)) return 1;
+  if (left.key < right.key) return -1;
+  if (left.key > right.key) return 1;
+  return 0;
+}
+
 export function routeExactInputSplitAnytime(context: PreparedRoutingContext, sourceRequest: ExactInputSplitRuntimeRequest, sourceControl: ExactInputSplitRuntimeControl): ExactInputSplitRuntimeResult {
   const capturedRequest = captureRequest(sourceRequest);
   if ('status' in capturedRequest) return capturedRequest;
@@ -382,8 +403,8 @@ export function routeExactInputSplitAnytime(context: PreparedRoutingContext, sou
   let incumbent: ExactInputSplitReplayReceipt | undefined;
   let hadCandidate = false;
   let workLimited = false;
-  let finalAuthorizationOpen = true;
   const priorClock: { value: bigint | undefined } = { value: undefined };
+  const proposals = new Map<string, SplitProposal>();
 
   const directRoutes = preparedDirectRoutes(context, capturedRequest.assetIn, capturedRequest.assetOut);
   for (const route of directRoutes) {
@@ -395,16 +416,12 @@ export function routeExactInputSplitAnytime(context: PreparedRoutingContext, sou
     else if (incumbent === undefined || isStrictlyBetterSplitReceipt(replay.value, incumbent)) incumbent = replay.value;
   }
 
-  const authorize = (proposal: ExactInputSplitReplayReceipt, legs: readonly ExactInputSplitReplayLegRequest[]): ExactInputSplitRuntimeResult | undefined => {
-    if (!finalAuthorizationOpen || (incumbent !== undefined && !isStrictlyBetterSplitReceipt(proposal, incumbent))) return undefined;
-    const stop = boundary('final-authorization-replay', capturedControl, counters, incumbent, priorClock);
-    if (stop.outcome === 'cap') { workLimited = true; finalAuthorizationOpen = false; return undefined; }
-    if (stop.outcome === 'result') return stop.result;
-    counters.finalAuthorizationReplays += 1;
-    const replay = replayPreparedExactInputSplit(context, fullReplayRequest(capturedRequest, legs));
-    if (!replay.ok) counters.finalAuthorizationRejections += 1;
-    else if (incumbent === undefined || isStrictlyBetterSplitReceipt(replay.value, incumbent)) incumbent = replay.value;
-    return undefined;
+  const collectProposal = (
+    receipt: ExactInputSplitReplayReceipt,
+    legs: readonly ExactInputSplitReplayLegRequest[],
+  ): void => {
+    const key = proposalKey(legs);
+    if (!proposals.has(key)) proposals.set(key, Object.freeze({ key, receipt, legs }));
   };
 
   const pathFrontier = createPreparedSimplePathFrontier(context, capturedRequest);
@@ -451,10 +468,7 @@ export function routeExactInputSplitAnytime(context: PreparedRoutingContext, sou
     counters.equalProposalReplays += 1;
     const replay = replayPreparedExactInputSplit(context, fullReplayRequest(capturedRequest, legs));
     if (!replay.ok) counters.equalProposalRejections += 1;
-    else {
-      const stopped = authorize(replay.value, legs);
-      if (stopped !== undefined) return stopped;
-    }
+    else collectProposal(replay.value, legs);
   }
 
   candidateSets: for (const { routes } of candidateSets) {
@@ -487,8 +501,34 @@ export function routeExactInputSplitAnytime(context: PreparedRoutingContext, sou
     }
     if (allocated !== capturedRequest.amountIn || finalProposal === undefined) continue;
     const legs = positiveLegs(routes, allocations);
-    const stopped = authorize(finalProposal, legs);
-    if (stopped !== undefined) return stopped;
+    collectProposal(finalProposal, legs);
+  }
+
+  const orderedProposals = [...proposals.values()].sort(compareProposals);
+  for (const proposal of orderedProposals) {
+    if (
+      incumbent !== undefined &&
+      !isStrictlyBetterSplitReceipt(proposal.receipt, incumbent)
+    ) continue;
+    const stop = boundary(
+      'final-authorization-replay',
+      capturedControl,
+      counters,
+      incumbent,
+      priorClock,
+    );
+    if (stop.outcome === 'cap') { workLimited = true; break; }
+    if (stop.outcome === 'result') return stop.result;
+    counters.finalAuthorizationReplays += 1;
+    const replay = replayPreparedExactInputSplit(
+      context,
+      fullReplayRequest(capturedRequest, proposal.legs),
+    );
+    if (!replay.ok) counters.finalAuthorizationRejections += 1;
+    else if (
+      incumbent === undefined ||
+      isStrictlyBetterSplitReceipt(replay.value, incumbent)
+    ) incumbent = replay.value;
   }
 
   return finish(counters, workLimited ? 'work-limit' : 'complete', incumbent, hadCandidate);

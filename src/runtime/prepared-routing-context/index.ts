@@ -4,6 +4,11 @@ import type {
 } from '../../domain/index.ts';
 import type { DirectionalRouteHop } from '../../replay/exact-input-route/index.ts';
 import {
+  replayExactInputSplit,
+  type ExactInputSplitReplayRequest,
+  type ExactInputSplitReplayResult,
+} from '../../replay/exact-input-split/index.ts';
+import {
   buildDeterministicAdjacency,
   type AdjacencyBucket,
   type DeterministicAdjacencyIndex,
@@ -90,6 +95,19 @@ interface PreparedRoutingContextState {
 }
 
 const preparedStates = new WeakMap<PreparedRoutingContext, PreparedRoutingContextState>();
+
+declare const preparedSimplePathFrontierBrand: unique symbol;
+
+/** @internal */
+export interface PreparedSimplePathFrontier {
+  readonly [preparedSimplePathFrontierBrand]: typeof preparedSimplePathFrontierBrand;
+}
+
+const preparedPathFrontiers = new WeakMap<
+  PreparedSimplePathFrontier,
+  SimplePathTraversalState
+>();
+const preparedPathLists = new WeakSet<readonly (readonly DirectionalRouteHop[])[]>();
 
 function capturePool(pool: ConstantProductPool): ConstantProductPool {
   const poolId = pool.poolId;
@@ -330,4 +348,135 @@ export function discoverPreparedSimplePaths(
     termination,
   });
   return Object.freeze({ ok: true, value });
+}
+
+/** Capability guard for additive runtimes. It exposes no prepared state. @internal */
+export function isPreparedRoutingContext(
+  context: PreparedRoutingContext,
+): boolean {
+  return preparedStates.has(context);
+}
+
+/** Identity check for additive runtimes. It exposes no prepared state. @internal */
+export function preparedRoutingContextMatchesIdentity(
+  context: PreparedRoutingContext,
+  snapshotId: string,
+  snapshotChecksum: string,
+): boolean {
+  const state = preparedStates.get(context);
+  return (
+    state !== undefined &&
+    state.snapshot.snapshotId === snapshotId &&
+    state.snapshot.snapshotChecksum === snapshotChecksum
+  );
+}
+
+/** Asset-membership check for additive runtimes. It exposes no prepared state. @internal */
+export function preparedRoutingContextHasAsset(
+  context: PreparedRoutingContext,
+  asset: string,
+): boolean {
+  return preparedStates.get(context)?.knownAssets.has(asset) ?? false;
+}
+
+/** Canonical eligible direct routes, captured without exposing adjacency. @internal */
+export function preparedDirectRoutes(
+  context: PreparedRoutingContext,
+  assetIn: string,
+  assetOut: string,
+): readonly (readonly DirectionalRouteHop[])[] {
+  const state = preparedStates.get(context);
+  if (state === undefined) return Object.freeze([]);
+  const bucket = state.adjacencyLookup.get(assetIn);
+  if (bucket === undefined) return Object.freeze([]);
+  return Object.freeze(
+    bucket.edges
+      .filter((edge) => edge.assetOut === assetOut)
+      .map((edge) => Object.freeze([edge])),
+  );
+}
+
+/** Fresh exact replay against the exclusively owned prepared snapshot. @internal */
+export function replayPreparedExactInputSplit(
+  context: PreparedRoutingContext,
+  request: ExactInputSplitReplayRequest,
+): ExactInputSplitReplayResult {
+  const state = preparedStates.get(context);
+  if (state === undefined) {
+    throw new TypeError('PreparedRoutingContext was not created by prepareRoutingContext.');
+  }
+  return replayExactInputSplit(state.snapshot, request);
+}
+
+/** Creates one opaque, request-local simple-path frontier. @internal */
+export function createPreparedSimplePathFrontier(
+  context: PreparedRoutingContext,
+  request: Pick<PreparedRouteDiscoveryRequest, 'assetIn' | 'assetOut' | 'maxHops'>,
+): PreparedSimplePathFrontier {
+  const state = preparedStates.get(context);
+  if (state === undefined) {
+    throw new TypeError('PreparedRoutingContext was not created by prepareRoutingContext.');
+  }
+  const initialBucket = state.adjacencyLookup.get(request.assetIn);
+  if (initialBucket === undefined) {
+    throw new Error('Prepared frontier requires a known input asset.');
+  }
+  const traversal: SimplePathTraversalState = {
+    request: Object.freeze({
+      assetIn: request.assetIn,
+      assetOut: request.assetOut,
+      maxHops: request.maxHops,
+    }),
+    bucketsByAsset: state.adjacencyLookup,
+    stack: [
+      {
+        path: [],
+        visitedAssets: new Set([request.assetIn]),
+        visitedPools: new Set(),
+        edges: initialBucket.edges,
+        nextEdgeIndex: 0,
+      },
+    ],
+    completePaths: [],
+    expansions: 0,
+  };
+  const frontier = Object.freeze({}) as PreparedSimplePathFrontier;
+  preparedPathFrontiers.set(frontier, traversal);
+  return frontier;
+}
+
+/** Reports whether a path-expansion unit is pending after free normalization. @internal */
+export function hasPreparedSimplePathExpansion(
+  frontier: PreparedSimplePathFrontier,
+): boolean {
+  const traversal = preparedPathFrontiers.get(frontier);
+  if (traversal === undefined) throw new TypeError('Unknown prepared path frontier.');
+  return !normalizeSimplePathTraversal(traversal);
+}
+
+/** Executes exactly one atomic path-expansion unit. @internal */
+export function expandPreparedSimplePathFrontier(
+  frontier: PreparedSimplePathFrontier,
+): void {
+  const traversal = preparedPathFrontiers.get(frontier);
+  if (traversal === undefined) throw new TypeError('Unknown prepared path frontier.');
+  expandSimplePathTraversal(traversal);
+}
+
+/** Materializes the completed prefix in accepted canonical order. @internal */
+export function materializePreparedSimplePaths(
+  frontier: PreparedSimplePathFrontier,
+): readonly (readonly DirectionalRouteHop[])[] {
+  const traversal = preparedPathFrontiers.get(frontier);
+  if (traversal === undefined) throw new TypeError('Unknown prepared path frontier.');
+  const paths = Object.freeze([...traversal.completePaths].sort(comparePaths));
+  preparedPathLists.add(paths);
+  return paths;
+}
+
+/** Capability guard for path lists minted by a prepared frontier. @internal */
+export function isPreparedSimplePathList(
+  paths: readonly (readonly DirectionalRouteHop[])[],
+): boolean {
+  return preparedPathLists.has(paths);
 }

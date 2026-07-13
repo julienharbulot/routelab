@@ -1,5 +1,6 @@
 import {
   discoverPreparedSimplePaths,
+  isPreparedSimplePathList,
   type PreparedRouteDiscoveryError,
   type PreparedRouteDiscoveryErrorCode,
   type PreparedRouteDiscoveryErrorField,
@@ -64,6 +65,28 @@ interface CandidateSetCombinationFrame {
   nextRouteIndex: number;
   readonly addedRouteIndex: number | undefined;
 }
+
+declare const sharedCandidateSetFrontierBrand: unique symbol;
+
+/** @internal */
+export interface SharedCandidateSetFrontier {
+  readonly [sharedCandidateSetFrontierBrand]: typeof sharedCandidateSetFrontierBrand;
+}
+
+interface SharedCandidateSetFrontierState {
+  readonly paths: PreparedSimplePathList;
+  readonly maximumCardinality: number;
+  targetCardinality: number;
+  readonly selectedRoutes: SharedRoute[];
+  readonly usedPoolIds: Set<string>;
+  readonly stack: CandidateSetCombinationFrame[];
+  readonly candidateSets: PoolDisjointRouteCandidateSet[];
+}
+
+const candidateSetFrontiers = new WeakMap<
+  SharedCandidateSetFrontier,
+  SharedCandidateSetFrontierState
+>();
 
 interface SharedCandidateSetEnumerationValue {
   readonly candidateSets: readonly PoolDisjointRouteCandidateSet[];
@@ -159,6 +182,107 @@ function enumerateSharedSplitCandidateSets(
     expansions,
     termination,
   });
+}
+
+function beginCandidateSetCardinality(state: SharedCandidateSetFrontierState): void {
+  state.selectedRoutes.length = 0;
+  state.usedPoolIds.clear();
+  state.stack.length = 0;
+  if (state.targetCardinality <= state.maximumCardinality) {
+    state.stack.push({ nextRouteIndex: 0, addedRouteIndex: undefined });
+  }
+}
+
+function normalizeCandidateSetFrontier(state: SharedCandidateSetFrontierState): boolean {
+  while (state.targetCardinality <= state.maximumCardinality) {
+    while (state.stack.at(-1)?.nextRouteIndex === state.paths.length) {
+      const exhausted = state.stack.pop();
+      if (exhausted?.addedRouteIndex === undefined) continue;
+      const removedRoute = state.selectedRoutes.pop();
+      if (removedRoute === undefined) {
+        throw new Error('Combination frontier lost its selected route.');
+      }
+      removeRoutePools(removedRoute, state.usedPoolIds);
+    }
+    if (state.stack.length > 0) return false;
+    state.targetCardinality += 1;
+    beginCandidateSetCardinality(state);
+  }
+  return true;
+}
+
+/** Creates one opaque combination frontier over the supplied canonical path list. @internal */
+export function createSharedCandidateSetFrontier(
+  paths: PreparedSimplePathList,
+  maxRoutes: number,
+): SharedCandidateSetFrontier {
+  if (!isPreparedSimplePathList(paths)) {
+    throw new TypeError('Candidate-set frontier requires a prepared path-list capability.');
+  }
+  const state: SharedCandidateSetFrontierState = {
+    paths,
+    maximumCardinality: Math.min(maxRoutes, paths.length),
+    targetCardinality: 2,
+    selectedRoutes: [],
+    usedPoolIds: new Set<string>(),
+    stack: [],
+    candidateSets: [],
+  };
+  beginCandidateSetCardinality(state);
+  const frontier = Object.freeze({}) as SharedCandidateSetFrontier;
+  candidateSetFrontiers.set(frontier, state);
+  return frontier;
+}
+
+/** Reports whether a combination-expansion unit is pending after free normalization. @internal */
+export function hasSharedCandidateSetExpansion(
+  frontier: SharedCandidateSetFrontier,
+): boolean {
+  const state = candidateSetFrontiers.get(frontier);
+  if (state === undefined) throw new TypeError('Unknown candidate-set frontier.');
+  return !normalizeCandidateSetFrontier(state);
+}
+
+/** Executes exactly one atomic pool-disjoint combination expansion. @internal */
+export function expandSharedCandidateSetFrontier(
+  frontier: SharedCandidateSetFrontier,
+): void {
+  const state = candidateSetFrontiers.get(frontier);
+  if (state === undefined) throw new TypeError('Unknown candidate-set frontier.');
+  if (normalizeCandidateSetFrontier(state)) {
+    throw new Error('Cannot expand a completed candidate-set frontier.');
+  }
+  const frame = state.stack.at(-1);
+  if (frame === undefined) throw new Error('Candidate-set frontier lost its active frame.');
+  const routeIndex = frame.nextRouteIndex;
+  frame.nextRouteIndex += 1;
+  const route = state.paths[routeIndex];
+  if (route === undefined) {
+    throw new Error('Combination frontier reached an unavailable route.');
+  }
+  if (!routeIsPoolDisjoint(route, state.usedPoolIds)) return;
+
+  state.selectedRoutes.push(route);
+  addRoutePools(route, state.usedPoolIds);
+  if (state.selectedRoutes.length === state.targetCardinality) {
+    state.candidateSets.push(frozenCandidateSet(state.selectedRoutes));
+    state.selectedRoutes.pop();
+    removeRoutePools(route, state.usedPoolIds);
+    return;
+  }
+  state.stack.push({
+    nextRouteIndex: routeIndex + 1,
+    addedRouteIndex: routeIndex,
+  });
+}
+
+/** Materializes the exact candidate sets produced by the frontier prefix. @internal */
+export function materializeSharedCandidateSets(
+  frontier: SharedCandidateSetFrontier,
+): readonly PoolDisjointRouteCandidateSet[] {
+  const state = candidateSetFrontiers.get(frontier);
+  if (state === undefined) throw new TypeError('Unknown candidate-set frontier.');
+  return Object.freeze([...state.candidateSets]);
 }
 
 /**

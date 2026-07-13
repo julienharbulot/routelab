@@ -1,0 +1,196 @@
+{
+  "schemaVersion": "routelab.supported-regime-snapshot-suite-config.v1",
+  "suiteId": "m7b-core12-supported-regime-suite-v1",
+  "acceptedBaseRevision": "5408d509c3118cc7edc4f82ecfed37f4dcfc3032",
+  "source": {
+    "classification": "historical-stored-reserve-anchor",
+    "datasetId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1",
+    "snapshotId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1",
+    "snapshotChecksum": "sha256:5d21166cf218997776efc23b203c2f70637b1fb822807fb236bfc6fd0bf3e755",
+    "manifest": {
+      "path": "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/manifest.json",
+      "bytes": 6197,
+      "sha256": "sha256:7b135513c29a719ecfd1750077cae567e8a592c3515aa5a88e25c7e17061b03c"
+    },
+    "snapshot": {
+      "path": "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/snapshot.json",
+      "bytes": 18502,
+      "sha256": "sha256:4c43d4920f0edb487a262f1d321ba4790d07c7563e2a3b0157c5b51122fb3478"
+    },
+    "requiredPoolCount": 54,
+    "requiredAssetCount": 12
+  },
+  "caseOrder": [
+    "historical-anchor",
+    "synthetic-dual-spanning-tree",
+    "synthetic-reserve-compressed-1e12",
+    "synthetic-reserve-amplified-1e60"
+  ],
+  "cases": [
+    {
+      "caseId": "historical-anchor",
+      "classification": "historical-stored-reserve-anchor",
+      "snapshotId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1",
+      "snapshotChecksum": "sha256:5d21166cf218997776efc23b203c2f70637b1fb822807fb236bfc6fd0bf3e755",
+      "poolCount": 54,
+      "transformation": {
+        "kind": "reference-source-snapshot-unchanged"
+      }
+    },
+    {
+      "caseId": "synthetic-dual-spanning-tree",
+      "classification": "synthetic-topology-work-stress",
+      "snapshotId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1-synthetic-dual-spanning-tree-v1",
+      "snapshotChecksum": "sha256:76a6d1b90541af4b799c2aa7a9fa6bdf49a7bac0398fba4d9ee32bb1c81f6832",
+      "poolCount": 22,
+      "transformation": {
+        "kind": "two-edge-disjoint-raw-utf16-pool-id-kruskal-spanning-trees",
+        "assetOrder": "raw-utf16-ascending",
+        "edgeOrder": "raw-utf16-pool-id-ascending",
+        "unionFindRule": "accept-edge-only-when-endpoint-roots-differ-attach-first-root-to-second-root",
+        "firstTreeRequiredEdgeCount": 11,
+        "removeFirstTreeEdgesBeforeSecondPass": true,
+        "secondTreeRequiredEdgeCount": 11,
+        "requireNoReusedPoolId": true,
+        "requireAllTwelveAssetsInEachTree": true,
+        "outputPoolOrder": "raw-utf16-pool-id-ascending",
+        "firstTreePoolIds": [
+          "0x004375dff511095cc5a197a54140a24efef3a416",
+          "0x0d4a11d5eeaac28ec3f61d100daf4d40471f1852",
+          "0x0de0fa91b6dbab8c8503aaa2d1dfa91a192cb149",
+          "0x1f447690a6ddf18400533b705516159e1312f892",
+          "0x210a97ba874a8e279c95b350ae8ba143a143c159",
+          "0x231b7589426ffe1b75405526fc32ac09d44364c4",
+          "0x2fdbadf3c4d5a8666bc06645b8358ab803996e28",
+          "0x340a5a2f73ebaa181ec2826802fdf8ed21fc759a",
+          "0x5ac13261c181a9c3938bfe1b649e65d10f98566b",
+          "0x6d4fd456edeca58cf53a8b586cd50754547dbdb2",
+          "0x6f81d90e771b551451382b4c8b41c86b978d3420"
+        ],
+        "secondTreePoolIds": [
+          "0x3041cbd36888becc7bbcbc0045e3b1f144466f5f",
+          "0x38e12fdd8dc51e48830863151e1afa7799e6fe97",
+          "0x3cd132ac73a4043bb4f1674369e70be6f88edd73",
+          "0x3da1313ae46132a397d90d95b1424a9a7e3e0fce",
+          "0x3eed0af1c5f350c6571525d9e3eeea7d2608af81",
+          "0x48978ef5beb2d69e27def9c046cebe18ab5708ad",
+          "0x517f9dd285e75b599234f7221227339478d0fcc8",
+          "0x674e114dad81838d151d9beda2271228eeae0e8b",
+          "0x71aa44cbed2ca17077aee7c5087e86a53fc01f6e",
+          "0x72ef722d2a6c3b72e6113b6f3f1c62c75aa152e5",
+          "0x8a01ba64fbc7b12ee13f817dfa862881fec531b8"
+        ]
+      }
+    },
+    {
+      "caseId": "synthetic-reserve-compressed-1e12",
+      "classification": "synthetic-floor-and-activation-stress",
+      "snapshotId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1-synthetic-reserve-compressed-1e12-v1",
+      "snapshotChecksum": "sha256:bc28e5ef7cbe5709995c4dba56e2313996334df0107775e10218c9fe0878deb1",
+      "poolCount": 54,
+      "transformation": {
+        "kind": "independent-exact-reserve-floor-division-with-positive-clamp",
+        "divisor": "1000000000000",
+        "formula": "max-one-of-floor-source-reserve-divided-by-divisor",
+        "preservePoolIdsAssetsFeesAndOrder": true
+      }
+    },
+    {
+      "caseId": "synthetic-reserve-amplified-1e60",
+      "classification": "synthetic-arbitrary-precision-magnitude-stress",
+      "snapshotId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1-synthetic-reserve-amplified-1e60-v1",
+      "snapshotChecksum": "sha256:40c3abaa585d2bb48a5e167577afc9ac17f3dec7944967536fd375c7bb501575",
+      "poolCount": 54,
+      "transformation": {
+        "kind": "independent-exact-reserve-multiplication",
+        "multiplier": "1000000000000000000000000000000000000000000000000000000000000",
+        "formula": "source-reserve-times-multiplier",
+        "preservePoolIdsAssetsFeesAndOrder": true
+      }
+    }
+  ],
+  "requests": {
+    "schemaVersion": "routelab.supported-regime-request-corpus-config.v1",
+    "corpusId": "m7b-core12-supported-regime-exhaustive-requests-v1",
+    "caseOrder": "suite-case-order",
+    "assetOrder": "raw-utf16-ascending-distinct-assets-from-each-case",
+    "pairOrder": "asset-in-then-asset-out",
+    "amountBucketOrder": [
+      "max-reserve-1-in-100000",
+      "max-reserve-1-in-10000",
+      "max-reserve-1-in-1000"
+    ],
+    "amountRule": "max-one-of-floor-maximum-incident-reserve-for-asset-in-divided-by-denominator",
+    "amountDenominators": [
+      "100000",
+      "10000",
+      "1000"
+    ],
+    "topologyOrder": [
+      "direct-edge-present",
+      "direct-edge-absent-common-neighbor-present",
+      "direct-edge-absent-no-common-neighbor"
+    ],
+    "topologyRule": "graph-only-no-router-execution",
+    "requestIdentity": {
+      "caseIdentityField": "caseId",
+      "localRequestIdFormat": "request-four-digit-one-based-zero-padded",
+      "localRequestIdRange": [
+        "request-0001",
+        "request-0396"
+      ],
+      "orderedCellIdentity": [
+        "caseId",
+        "requestId"
+      ],
+      "requestRecordFieldOrder": [
+        "requestId",
+        "assetIn",
+        "assetOut",
+        "amountBucket",
+        "amountIn",
+        "topology"
+      ]
+    },
+    "requestCountPerCase": 396,
+    "totalRequestCount": 1584,
+    "historicalAnchorMustReproduceAcceptedOrderedRequestProjectionExactly": {
+      "path": "datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/requests.json",
+      "bytes": 99301,
+      "sha256": "sha256:c470f0a33b5d03cdd1ac8d88c92a8e2ec79b78f7d488541c0f4a321ff3e03173"
+    },
+    "resultBlindness": "snapshot-structure-and-exact-reserves-only-no-route-output-diagnostic-work-timing-or-samples"
+  },
+  "serialization": {
+    "exactIntegerEncoding": "canonical-unsigned-decimal-strings",
+    "snapshotPoolOrder": "raw-utf16-pool-id-ascending",
+    "snapshotChecksum": "canonical-routelab-snapshot-v1-financial-content",
+    "configEncoding": "utf8-json-with-one-trailing-line-feed",
+    "unknownFields": "reject",
+    "derivedArtifacts": "reconstruct-from-source-and-compare-exact-bytes-and-checksum"
+  },
+  "artifactPaths": {
+    "suiteManifest": "datasets/stress/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/manifest.json",
+    "derivedSnapshots": {
+      "synthetic-dual-spanning-tree": "datasets/stress/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/synthetic-dual-spanning-tree.snapshot.json",
+      "synthetic-reserve-compressed-1e12": "datasets/stress/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/synthetic-reserve-compressed-1e12.snapshot.json",
+      "synthetic-reserve-amplified-1e60": "datasets/stress/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/synthetic-reserve-amplified-1e60.snapshot.json"
+    },
+    "requestManifest": "datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/manifest.json",
+    "requests": "datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/requests.json"
+  },
+  "claims": {
+    "representativeMeaning": "supported-structural-and-numerical-stress-regimes-only",
+    "historicalCaseCount": 1,
+    "syntheticStressCaseCount": 3,
+    "forbidden": [
+      "additional-historical-snapshot",
+      "historical-demand",
+      "equal-value-notional",
+      "deployed-protocol-feasibility",
+      "transaction-behavior",
+      "statistical-representativeness",
+      "production-traffic"
+    ]
+  }
+}

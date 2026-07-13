@@ -80,7 +80,7 @@ function gitBuffer(root: string, args: string[]): Buffer {
   return execFileSync('git', args, {
     cwd: root,
     encoding: 'buffer',
-    maxBuffer: 32 * 1024 * 1024,
+    maxBuffer: 160 * 1024 * 1024,
   });
 }
 

@@ -1,0 +1,337 @@
+{
+  "schemaVersion": "routelab.numerical-representative-profile-protocol-config.v1",
+  "profileConfigId": "m7b-core12-supported-regime-numerical-preacceleration-profile-protocol-config-v1",
+  "acceptedBaseRevision": "5408d509c3118cc7edc4f82ecfed37f4dcfc3032",
+  "suiteConfig": {
+    "path": "fixtures/m7/numerical-representative-profile/snapshot-suite-config.v1.json",
+    "bytes": 8842,
+    "sha256": "sha256:c2391d79a230d532918339a390b9150a58789a9263a906cae1ea4192219361c1"
+  },
+  "baselineConfig": {
+    "path": "fixtures/m7/numerical-representative-profile/baseline-config.v1.json",
+    "bytes": 6813,
+    "sha256": "sha256:fb35f57912007bb4a72835cb1aecb49c3110049e5f097dca029960f65bcfb73a"
+  },
+  "baselineBinding": {
+    "requiredBeforeObservation": true,
+    "source": "accepted-timing-free-baseline-manifest-semantic-results-and-eligibility",
+    "freezeExactPathsBytesHashesCountsAndOrderedEligibleCellIdentities": true,
+    "caseCohortsRemainSeparate": true,
+    "requireNonzeroEligibleCellsPerCase": true,
+    "requirePositiveCandidateSetExpansionsPerCase": true,
+    "maximumEligibleCellCountPerCase": 396,
+    "maximumTotalEligibleCellCount": 1584,
+    "thisProtocolConfigAuthorizesObservation": false,
+    "requiredFinalConfigSchema": "routelab.numerical-representative-profile-config.v1",
+    "requiredFinalConfigAdditionalFields": "exact-suite-request-baseline-artifact-descriptors-per-case-eligible-counts-and-ordered-cohort-hash",
+    "finalConfigRequiresIndependentByteReviewBeforeObservation": true
+  },
+  "executionRuntime": {
+    "nodeVersion": "v24.18.0",
+    "v8Version": "13.6.233.17-node.50",
+    "uvVersion": "1.52.1",
+    "mismatch": "reject-before-profiler-connect-or-any-runtime-call"
+  },
+  "runtime": {
+    "entryPoint": "routeExactInputSplitNumericalAnytime",
+    "source": {
+      "path": "src/router/numerical-exact-input-split/index.ts",
+      "bytes": 55869,
+      "sha256": "sha256:f43365addfa4378eea98d2af2027eafbac2eebc173482a07a06604bd963c8305"
+    },
+    "preparedContext": "one-checksum-verified-context-per-snapshot-never-reused-across-snapshots",
+    "controlMode": "fresh-work-caps-only-control-per-call-no-callback-no-interruption-no-deadline",
+    "resultCheck": "complete-exact-result-receipt-counter-and-diagnostic-identity-with-frozen-timing-free-baseline"
+  },
+  "observationProtocol": {
+    "phaseOrder": [
+      "verify-all-bound-inputs-and-freshly-replay-every-eligible-cell-in-case-order",
+      "per-case-unprofiled-forward-timing-warmup",
+      "per-case-five-unprofiled-call-timing-sweeps",
+      "connect-enable-and-configure-profiler-once",
+      "per-case-profiler-enabled-non-recorded-forward-warmup",
+      "per-case-three-separate-recorded-cpu-sweeps",
+      "disable-and-disconnect-profiler",
+      "validate-normalize-analyze-and-serialize"
+    ],
+    "caseOrder": [
+      "historical-anchor",
+      "synthetic-dual-spanning-tree",
+      "synthetic-reserve-compressed-1e12",
+      "synthetic-reserve-amplified-1e60"
+    ],
+    "eligibleOrderWithinCase": "frozen-baseline-eligibility-source-order",
+    "callTiming": {
+      "clock": "process.hrtime.bigint",
+      "timingScope": "routeExactInputSplitNumericalAnytime-direct-call-only-unprofiled",
+      "warmupSweepsPerCase": 1,
+      "warmupOrder": [
+        "forward"
+      ],
+      "measuredSweepsPerCase": 5,
+      "measuredSweepOrder": [
+        "forward",
+        "reverse",
+        "forward",
+        "reverse",
+        "forward"
+      ],
+      "sampleCountFormula": "five-times-total-eligible-cell-count",
+      "maximumSampleCount": 7920,
+      "resultCheck": "outside-timed-region-after-each-call",
+      "crossCaseElapsedComparison": "forbidden"
+    },
+    "cpuProfiler": {
+      "api": "node:inspector/promises",
+      "domain": "Profiler",
+      "samplingIntervalMicroseconds": 1000,
+      "sessionCount": 1,
+      "enableAndConfigureCount": 1,
+      "warmupSweepsPerCase": 1,
+      "warmupOrder": [
+        "forward"
+      ],
+      "warmupRecording": "enabled-not-recording",
+      "recordedSweepsPerCase": 3,
+      "recordedSweepOrder": [
+        "forward",
+        "reverse",
+        "forward"
+      ],
+      "profileOrder": "case-order-then-recorded-sweep-order",
+      "cpuProfileCount": 12,
+      "profiledCallCountFormula": "three-times-total-eligible-cell-count",
+      "maximumProfiledCallCount": 4752,
+      "startStopPairPerProfile": true,
+      "prepareClosureAndFreshControlsBeforeStart": true,
+      "retainResultsDuringRecording": true,
+      "resultCheck": "after-stop-before-next-profile",
+      "requiredProfileFields": [
+        "nodes",
+        "startTime",
+        "endTime",
+        "samples",
+        "timeDeltas"
+      ],
+      "requireNonemptyEqualLengthSamplesAndTimeDeltas": true,
+      "requirePositiveSafeTotalSampledMicroseconds": true,
+      "integerEncoding": "ids-counts-timestamps-deltas-script-ids-child-ids-and-position-ticks-safe-nonnegative-canonical-decimal-strings-line-and-column-safe-signed-canonical-decimal-strings-allow-minus-one-reject-minus-zero",
+      "graphValidation": "unique-node-ids-valid-child-and-sample-references-no-duplicate-parents-cycles-self-edges-or-unreachable-nodes-exactly-one-root",
+      "population": "all-sample-time-delta-pairs-returned-between-each-successful-profiler-start-and-matching-stop",
+      "rootMembershipFilter": "none"
+    },
+    "callCount": {
+      "formula": "eleven-times-total-eligible-cell-count",
+      "components": "one-semantic-verification-plus-one-timing-warmup-plus-five-timing-plus-one-profiler-warmup-plus-three-profiled-per-eligible-cell",
+      "maximum": 17424
+    },
+    "environmentFields": [
+      "nodeVersion",
+      "v8Version",
+      "uvVersion",
+      "profilerApi",
+      "samplingIntervalMicroseconds",
+      "platform",
+      "arch",
+      "endianness",
+      "osType",
+      "osRelease",
+      "cpuModel",
+      "cpuSpeedMHz",
+      "logicalCpuCount",
+      "availableParallelism",
+      "totalMemoryBytes",
+      "execArgv",
+      "nodeOptionsState",
+      "mainThread"
+    ],
+    "environmentRequirements": {
+      "execArgv": [],
+      "nodeOptionsState": [
+        "unset",
+        "empty"
+      ],
+      "mainThread": true
+    },
+    "serialization": {
+      "semanticAndObservationHashes": "separate",
+      "repositoryFileUrlNormalization": "repository-relative-posix-path",
+      "unexpectedAbsoluteOrTraversalFileUrl": "reject",
+      "timingClocksAndResultChecksOutsideDirectCallWindows": true,
+      "output": "canonical-minified-utf8-json-with-one-trailing-line-feed",
+      "atomicWrite": "fresh-sibling-staging-directory-exclusive-files-then-rename-no-overwrite"
+    }
+  },
+  "attribution": {
+    "method": "leaf-sample-time-delta-first-match",
+    "timeDeltaUnit": "microseconds",
+    "decisionPopulation": "all-recorded-samples-with-no-stack-root-filter",
+    "retainRawNodesSamplesTimeDeltasAndSignedPositions": true,
+    "categories": [
+      {
+        "id": "garbage-collection",
+        "functionNames": [
+          "(garbage collector)"
+        ]
+      },
+      {
+        "id": "candidate-set-discovery",
+        "paths": [
+          "src/search/shared-route-discovery/index.ts"
+        ]
+      },
+      {
+        "id": "path-discovery",
+        "paths": [
+          "src/search/simple-paths/index.ts",
+          "src/search/simple-paths/traversal.ts"
+        ],
+        "pathFunctionNames": [
+          "createPreparedSimplePathFrontier",
+          "hasPreparedSimplePathExpansion",
+          "expandPreparedSimplePathFrontier",
+          "materializePreparedSimplePaths"
+        ]
+      },
+      {
+        "id": "path-shadow-price-core",
+        "paths": [
+          "src/allocation/path-shadow-price/index.ts"
+        ],
+        "pathFunctionNames": [
+          "resolvePreparedPathShadowPriceRoutes"
+        ]
+      },
+      {
+        "id": "exact-replay-and-pool-transition",
+        "pathPrefixes": [
+          "src/replay/"
+        ],
+        "paths": [
+          "src/pools/constant-product/index.ts"
+        ],
+        "pathFunctionNames": [
+          "replayPreparedExactInputSplit"
+        ]
+      },
+      {
+        "id": "prepared-context-adapter",
+        "paths": [
+          "src/runtime/prepared-routing-context/index.ts"
+        ]
+      },
+      {
+        "id": "objective-comparison",
+        "paths": [
+          "src/router/split-exact-input/objective.ts"
+        ]
+      },
+      {
+        "id": "numerical-runtime-orchestration",
+        "paths": [
+          "src/router/numerical-exact-input-split/index.ts"
+        ]
+      },
+      {
+        "id": "profile-harness",
+        "paths": [
+          "src/benchmark/representative-numerical-profile/index.ts",
+          "cli/run-representative-numerical-baseline.ts",
+          "cli/verify-representative-numerical-baseline.ts",
+          "cli/run-representative-numerical-profile.ts",
+          "cli/verify-representative-numerical-profile.ts"
+        ]
+      },
+      {
+        "id": "other-project",
+        "pathPrefixes": [
+          "src/",
+          "cli/"
+        ]
+      },
+      {
+        "id": "idle",
+        "functionNames": [
+          "(idle)"
+        ]
+      },
+      {
+        "id": "node-runtime-or-dependency",
+        "urlPrefixes": [
+          "node:",
+          "node_modules/"
+        ],
+        "functionNames": [
+          "(root)",
+          "(program)"
+        ]
+      },
+      {
+        "id": "unattributed",
+        "fallback": true
+      }
+    ],
+    "categoryExclusion": "none",
+    "profilesRemainSeparate": true,
+    "snapshotsRemainSeparate": true,
+    "poolingOrAveraging": "forbidden"
+  },
+  "decision": {
+    "method": "candidate-set-strict-unique-leader-in-every-profile-of-every-case",
+    "candidateCategory": "candidate-set-discovery",
+    "requiredCpuProfileCount": 12,
+    "requireAllSemanticParity": true,
+    "requirePositiveWorkCounterPerCase": "candidateSetExpansions",
+    "requirePositiveAttributedMicrosecondsPerProfile": true,
+    "compareMetric": "all-recorded-sample-leaf-attributed-microseconds",
+    "compareAgainstEveryCategoryIncludingHarnessGarbageCollectionNativeIdleOtherAndFallback": true,
+    "poolProfiles": false,
+    "tieBreak": "none",
+    "recommendation": "design-one-sound-candidate-set-pruning-experiment",
+    "decline": "decline-sound-pruning-selection-from-this-supported-regime-suite",
+    "recommendationScope": "later-proof-oriented-identical-case-base-head-contract-only-no-implementation",
+    "noFallbackCategoryOrExperimentSelection": true
+  },
+  "outputs": {
+    "paths": {
+      "semanticWork": "datasets/profiles/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-path-shadow-price-preacceleration-v1/semantic-work.json",
+      "timingObservations": "datasets/profiles/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-path-shadow-price-preacceleration-v1/timing-observations.json",
+      "cpuProfileObservations": "datasets/profiles/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-path-shadow-price-preacceleration-v1/cpu-profile-observations.json",
+      "analysis": "datasets/profiles/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-path-shadow-price-preacceleration-v1/analysis.json",
+      "manifest": "datasets/profiles/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-path-shadow-price-preacceleration-v1/manifest.json"
+    },
+    "semanticWorkSchema": "routelab.numerical-representative-profile-semantic-work.v1",
+    "timingSchema": "routelab.numerical-representative-profile-timing-observations.v1",
+    "cpuSchema": "routelab.numerical-representative-profile-cpu-observations.v1",
+    "analysisSchema": "routelab.numerical-representative-profile-analysis.v1",
+    "manifestSchema": "routelab.numerical-representative-profile-manifest.v1"
+  },
+  "resourceCaps": {
+    "maxSamplesPerProfile": 1000000,
+    "maxNodesPerProfile": 250000,
+    "maxSemanticWorkBytes": 8388608,
+    "maxTimingObservationBytes": 16777216,
+    "maxCpuProfileObservationBytes": 201326592,
+    "maxAnalysisBytes": 4194304,
+    "maxManifestBytes": 1048576,
+    "maxTotalArtifactBytes": 402653184
+  },
+  "claims": {
+    "cases": "one-historical-anchor-and-three-deterministic-synthetic-supported-regime-stresses",
+    "rawObservations": "jit-gc-scheduler-native-source-map-and-profiler-affected",
+    "forbidden": [
+      "latency-guarantee",
+      "percentile",
+      "speedup",
+      "scaling",
+      "cross-case-elapsed-comparison",
+      "historical-demand",
+      "additional-historical-snapshots",
+      "production",
+      "global-optimality",
+      "heuristic-pruning",
+      "shortcut-selection",
+      "research-equivalence"
+    ]
+  }
+}

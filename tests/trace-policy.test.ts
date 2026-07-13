@@ -196,6 +196,14 @@ void test('index check reads the staged blob rather than harmless working-tree c
   assert.equal(errors.some((error) => error.startsWith('public.txt: contains an obvious secret marker')), true);
 });
 
+void test('index check accepts staged public blobs above the former subprocess buffer', () => {
+  const root = temporaryRepository();
+  mkdirSync(path.join(root, 'docs'), { recursive: true });
+  writeFileSync(path.join(root, 'docs/large-evidence.json'), Buffer.alloc(32 * 1024 * 1024 + 1, 0x61));
+  git(root, ['add', '.']);
+  assert.deepEqual(runCheck(root, 'index'), []);
+});
+
 void test('schema version 3 rejects a staged policy with a missing enforcement field', () => {
   const root = temporaryRepository();
   const incomplete = { schemaVersion: 3, ...minimalPolicy } as Record<string, unknown>;

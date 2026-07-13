@@ -1,0 +1,142 @@
+{
+  "schemaVersion": "routelab.numerical-representative-baseline-config.v1",
+  "baselineConfigId": "m7b-core12-supported-regime-numerical-baseline-config-v1",
+  "acceptedBaseRevision": "5408d509c3118cc7edc4f82ecfed37f4dcfc3032",
+  "suiteConfig": {
+    "path": "fixtures/m7/numerical-representative-profile/snapshot-suite-config.v1.json",
+    "bytes": 8842,
+    "sha256": "sha256:c2391d79a230d532918339a390b9150a58789a9263a906cae1ea4192219361c1"
+  },
+  "executionRuntime": {
+    "nodeVersion": "v24.18.0",
+    "v8Version": "13.6.233.17-node.50",
+    "uvVersion": "1.52.1",
+    "mismatch": "reject-before-any-baseline-call"
+  },
+  "runtime": {
+    "entryPoint": "routeExactInputSplitNumericalAnytime",
+    "source": {
+      "path": "src/router/numerical-exact-input-split/index.ts",
+      "bytes": 55869,
+      "sha256": "sha256:f43365addfa4378eea98d2af2027eafbac2eebc173482a07a06604bd963c8305"
+    },
+    "acceptedNumericalComparisonConfig": {
+      "path": "fixtures/m7/numerical-historical/comparison-config.v1.json",
+      "bytes": 4650,
+      "sha256": "sha256:96ceb8b4441e9e81c40b5662f948e91bee661a0205469b70a5dbd4e4bbb4aff6"
+    },
+    "request": {
+      "maxHops": 2,
+      "maxRoutes": 2,
+      "greedyParts": 16,
+      "numerical": {
+        "outerIterations": 64,
+        "innerIterations": 64,
+        "convergenceTolerance": 9.094947017729282e-13
+      }
+    },
+    "workProfile": {
+      "profileId": "structural-complete",
+      "workCaps": {
+        "maxPathExpansions": 121,
+        "maxBestSingleCandidateReplays": 11,
+        "maxCandidateSetExpansions": 110,
+        "maxEqualProposalReplays": 55,
+        "maxGreedyOptionReplays": 1760,
+        "maxFinalAuthorizationReplays": 110,
+        "maxNumericalProposals": 55,
+        "maxNumericalIterations": 3520,
+        "maxNumericalResidualReplays": 110,
+        "maxNumericalAuthorizationReplays": 55
+      }
+    },
+    "controlMode": "work-caps-only-no-callback-no-interruption-no-deadline",
+    "freshControlPerCall": true,
+    "preparedContext": "one-checksum-verified-context-per-snapshot-never-reused-across-snapshots"
+  },
+  "schedule": {
+    "caseOrder": "snapshot-suite-case-order",
+    "requestOrder": "case-corpus-source-order",
+    "cellCountPerCase": 396,
+    "totalCellCount": 1584,
+    "retainEveryCell": true,
+    "execution": "one-timing-free-call-per-cell-after-input-verification",
+    "historicalAnchorCrossCheck": {
+      "eligibility": {
+        "path": "fixtures/m7/numerical-historical/eligibility.v1.json",
+        "bytes": 261915,
+        "sha256": "sha256:5ed542c5da28a0a03eb88bece5b04cea623877b4760cea1ccdc0b27b5b91bbdc"
+      },
+      "semanticResults": {
+        "path": "datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/numerical-path-shadow-price-v1/semantic-results.json",
+        "bytes": 21698448,
+        "sha256": "sha256:96c123b72fd73aed2d6063f17d4f0e6ad90e834cd752959ec693598dec329661"
+      },
+      "profileId": "structural-complete",
+      "requiredCellCount": 396,
+      "requiredEligibleCellCount": 396,
+      "match": "complete-exact-result-counter-and-diagnostic-identity"
+    }
+  },
+  "eligibility": {
+    "schemaVersion": "routelab.numerical-representative-eligibility.v1",
+    "deriveAfterTimingFreeBaselineBeforeAnyObservation": true,
+    "retainIneligibleCells": true,
+    "precedence": [
+      "baseline-no-authorized-incumbent",
+      "path-discovery-incomplete",
+      "candidate-set-discovery-incomplete",
+      "no-model-valid-candidate-set",
+      "eligible"
+    ],
+    "eligibleDefinition": "authorized-exact-baseline-and-complete-path-and-candidate-set-discovery-and-at-least-one-model-valid-cardinality-two-or-more-candidate-set",
+    "forbiddenInputs": [
+      "exact-output-value",
+      "improvement-magnitude",
+      "diagnostic-terminal-outcome-after-proposal",
+      "work-ranking",
+      "timing",
+      "sampled-attribution"
+    ],
+    "requireNonzeroEligibleCellsPerCase": true,
+    "requirePositiveCandidateSetExpansionsPerEligibleCaseCohort": true,
+    "cohortsRemainSeparate": true,
+    "noIntersectionSubsetting": true,
+    "freezeExactBytesHashCountsAndOrderedCellIdentitiesBeforeObservation": true
+  },
+  "outputs": {
+    "paths": {
+      "stressSuiteManifest": "datasets/stress/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/manifest.json",
+      "syntheticDualSpanningTreeSnapshot": "datasets/stress/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/synthetic-dual-spanning-tree.snapshot.json",
+      "syntheticReserveCompressedSnapshot": "datasets/stress/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/synthetic-reserve-compressed-1e12.snapshot.json",
+      "syntheticReserveAmplifiedSnapshot": "datasets/stress/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/synthetic-reserve-amplified-1e60.snapshot.json",
+      "requestManifest": "datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/manifest.json",
+      "requests": "datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/requests.json",
+      "baselineManifest": "datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-preprofile-baseline-v1/manifest.json",
+      "semanticResults": "datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-preprofile-baseline-v1/semantic-results.json",
+      "eligibility": "datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-preprofile-baseline-v1/eligibility.json"
+    },
+    "stressSuiteManifestSchema": "routelab.supported-regime-snapshot-suite-manifest.v1",
+    "requestManifestSchema": "routelab.supported-regime-request-corpus-manifest.v1",
+    "semanticResultsSchema": "routelab.numerical-representative-semantic-results.v1",
+    "eligibilitySchema": "routelab.numerical-representative-eligibility.v1",
+    "manifestSchema": "routelab.numerical-representative-baseline-manifest.v1",
+    "serialization": "canonical-minified-utf8-json-with-one-trailing-line-feed",
+    "atomicWrite": "fresh-sibling-staging-directory-exclusive-files-then-rename-no-overwrite"
+  },
+  "resourceCaps": {
+    "maxStressSuiteBytes": 524288,
+    "maxRequestCorpusBytes": 1048576,
+    "maxSemanticResultsBytes": 134217728,
+    "maxEligibilityBytes": 8388608,
+    "maxManifestBytes": 1048576,
+    "maxTotalOutputBytes": 150994944
+  },
+  "claims": {
+    "outputsAreTimingFree": true,
+    "exactReplayAloneAuthorizes": true,
+    "workKindsRemainSeparate": true,
+    "syntheticCasesNeverBecomeHistorical": true,
+    "noPerformanceOrRepresentativeDemandClaim": true
+  }
+}

@@ -113,9 +113,12 @@ Gate: the allocator agrees with the independent tiny exhaustive reference within
 
 ## Milestone 7b — Evidence-led acceleration
 
-Status: next after the Milestone 7a completion integration gate. The first task
-must retain an identical-input profile and measured bottleneck before selecting
-or implementing any pruning or shortcut.
+Status: active. The first pre-acceleration profile is retained and independently
+reviewed. Its frozen decision population contains no samples in any of the three
+profiles, so it declines to select sound pruning or any other acceleration. A
+separately frozen representative-snapshot measurement follow-up must address the
+absent formal population without rewriting that negative result. No pruning or
+shortcut may be selected before qualifying evidence exists.
 
 Profile the composed bounded baseline on representative snapshots. Add sound pruning first. Consider a PRIME-inspired core/shortcut experiment only when measured expansions or latency justify it, and keep it only if identical-input comparisons earn its complexity.
 

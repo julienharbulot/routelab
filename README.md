@@ -33,7 +33,9 @@ Every returned plan is tied to both the snapshot ID and checksum, consumes the e
 
 ```mermaid
 flowchart LR
-    A[Immutable pool snapshot] --> P[Checksum-verified prepared context]
+    R[Untrusted snapshot input] --> V[Strict schema and domain validation]
+    V --> P[Checksum-verified prepared context]
+    A[Already domain-valid snapshot] --> P
     B[Exact-input request and typed controls] --> C[One shared path frontier]
     P --> C
     C --> D[Exact best-single replay]
@@ -47,7 +49,7 @@ flowchart LR
     G --> I
 ```
 
-The core layers are immutable domain validation, exact constant-product transitions, exact sequential route replay, canonical bounded search, deterministic incumbent selection, and canonical serialization. The prepared factory defensively captures and verifies a snapshot before building hidden reusable lookups and adjacency. One composed split request owns one path frontier, derives pool-disjoint sets without singleton split work, and uses six heterogeneous cumulative cap/counter kinds without recharge. Direct establishment finishes before controls are observed; equal and greedy receipts remain proposals until a distinct fresh authorization replay succeeds under the complete split objective. Cooperative stops occur between atomic work units and expose only an authorized exact incumbent or typed no-plan. Process-local resume remains single-path-only.
+The core layers are immutable domain validation, exact constant-product transitions, exact sequential route replay, canonical bounded search, deterministic incumbent selection, and canonical serialization. Untrusted snapshot-shaped input enters through `parseAndPrepareRoutingContext`, which applies strict schema/domain parsing before checksum verification and preparation. The lower-level `prepareRoutingContext` factory accepts an already domain-validated snapshot, defensively captures it, and verifies its canonical checksum before building hidden reusable lookups and adjacency. One composed split request owns one path frontier, derives pool-disjoint sets without singleton split work, and uses six heterogeneous cumulative cap/counter kinds without recharge. Direct establishment finishes before controls are observed; equal and greedy receipts remain proposals until a distinct fresh authorization replay succeeds under the complete split objective. Cooperative stops occur between atomic work units and expose only an authorized exact incumbent or typed no-plan. Process-local resume remains single-path-only.
 
 ## Verification strategy
 
@@ -77,10 +79,11 @@ CI uses the same pinned pnpm version, performs a frozen install, and runs `pnpm 
 - `pnpm replay:cases` remains a single-observation verification harness. `pnpm measure:anytime` uses one fixed offline input, warmups, alternating repeated samples, environment metadata, and raw observations, but performs no statistical inference and supports no speedup, threshold, scaling, or production-latency claim.
 - The executable split demo and `pnpm replay:split-cases` cover one fixed offline two-pool fixture. They support no scaling, latency, throughput, production, or unrestricted-optimality conclusion.
 - Legacy Milestone 2–5 routers remain standalone compatibility and component-test surfaces. The additive high-level split runtime is the composed path with a verified context, one request-local discovery frontier, and one non-recharged typed ledger.
+- `prepareRoutingContext` is a lower-level typed compatibility surface and assumes its `LiquiditySnapshot` is already domain-validated; untrusted JavaScript or imported data must use `parseAndPrepareRoutingContext`. No historical source or dataset has been selected or imported.
 
 ## Roadmap
 
-The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 remain integrated and cumulatively reviewed complete for their accepted component gates, and the additive pre-Milestone 6 composed-runtime gate is complete. Milestone 6 historical source selection and canonical data import are next; no data work has started. Path-level numerical allocation remains after data setup and before acceleration. Services, protocol adapters, and learned ordering remain later gated work.
+The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 remain integrated and cumulatively reviewed complete for their accepted component gates, and the additive pre-Milestone 6 composed-runtime gate is complete. The first Milestone 6 prerequisite now enforces schema/domain parsing before checksum verification and preparation; historical source selection and one-snapshot canonical import are next, and no dataset exists. Path-level numerical allocation remains after data setup and before acceleration. Services, protocol adapters, and learned ordering remain later gated work.
 
 See the [technical roadmap](IMPLEMENTATION_PLAN.md), [current release gate](STATUS.md), [accepted invariants](docs/invariants.md), [Milestone 0 fixture derivations](fixtures/m0/README.md), and [research references](docs/references.md).
 

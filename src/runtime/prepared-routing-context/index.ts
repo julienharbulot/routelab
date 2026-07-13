@@ -1,6 +1,8 @@
-import type {
-  ConstantProductPool,
-  LiquiditySnapshot,
+import {
+  parseLiquiditySnapshot,
+  type ConstantProductPool,
+  type LiquiditySnapshot,
+  type SnapshotValidationError,
 } from '../../domain/index.ts';
 import {
   type ExactInputSplitReplayError,
@@ -45,6 +47,14 @@ export interface PreparedRoutingContext {
 
 export type PrepareRoutingContextResult =
   | { readonly ok: true; readonly value: PreparedRoutingContext }
+  | {
+      readonly ok: false;
+      readonly error: CanonicalSnapshotChecksumMismatchError;
+    };
+
+export type ParseAndPrepareRoutingContextResult =
+  | { readonly ok: true; readonly value: PreparedRoutingContext }
+  | { readonly ok: false; readonly errors: readonly SnapshotValidationError[] }
   | {
       readonly ok: false;
       readonly error: CanonicalSnapshotChecksumMismatchError;
@@ -303,6 +313,14 @@ export function prepareRoutingContext(
   const context = Object.freeze({}) as PreparedRoutingContext;
   preparedStates.set(context, state);
   return Object.freeze({ ok: true, value: context });
+}
+
+export function parseAndPrepareRoutingContext(
+  input: unknown,
+): ParseAndPrepareRoutingContextResult {
+  const parsed = parseLiquiditySnapshot(input);
+  if (!parsed.ok) return parsed;
+  return prepareRoutingContext(parsed.value);
 }
 
 /**

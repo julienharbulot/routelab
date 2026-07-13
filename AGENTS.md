@@ -4,7 +4,7 @@
 
 RouteLab is a small, correct, measurable TypeScript liquidity router. The first supported intent is exact-input routing over immutable snapshots of two-asset constant-product pools. RouteLab grows through verified vertical slices. See `STATUS.md` for currently integrated capabilities and the current release gate.
 
-Do not claim transaction submission, custody, production financial execution, unrestricted global optimality, or equivalence with cited research. Splitting, acceleration, services, protocol adapters, and learned ordering follow only after their stated prerequisites.
+Do not claim transaction submission, custody, production financial execution, unrestricted global optimality, or equivalence with cited research. Historical data, numerical allocation, acceleration, services, protocol adapters, and learned ordering follow only after their stated prerequisites.
 
 ## Sources of truth
 
@@ -52,6 +52,10 @@ The lead owns contracts, task selection, integration, public claims, and final g
 
 Use at most four concurrent threads including the lead, one delegation level, and at most two writers. Concurrent writers require isolated worktrees, frozen contracts, non-overlapping write sets, and a declared integration order. High-risk financial, replay, search, allocation, interruption, hashing, or release work requires independent evidence. Agents do not merge, push, rewrite history, or approve their own work.
 
+## Commit titles
+
+Title every commit as `<task code> <Title>`, for example `RLT-060 Enforce raw snapshot validation`. The title after the task code must begin with a capital letter.
+
 ## Canonical commands
 
 Use the pinned Node.js and pnpm versions without modifying the host environment:
@@ -64,6 +68,7 @@ pnpm typecheck
 pnpm test
 pnpm demo
 pnpm replay:cases
+pnpm replay:split-cases
 pnpm check
 ```
 

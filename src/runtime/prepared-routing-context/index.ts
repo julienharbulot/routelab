@@ -28,6 +28,10 @@ import {
   verifyCanonicalSnapshotChecksum,
   type CanonicalSnapshotChecksumMismatchError,
 } from '../../serialization/canonical-snapshot/index.ts';
+import type {
+  PathShadowPriceResolvedHop,
+  PathShadowPriceResolvedRoute,
+} from '../../allocation/path-shadow-price/index.ts';
 
 declare const preparedRoutingContextBrand: unique symbol;
 
@@ -467,6 +471,174 @@ export function replayPreparedExactInputSplit(
     state.replayResolver,
     capturePreparedSplitRequest(request),
   );
+}
+
+/** @internal */
+export type PreparedPathShadowPriceResolutionResult =
+  | {
+      readonly ok: true;
+      readonly value: readonly PathShadowPriceResolvedRoute[];
+    }
+  | {
+      readonly ok: false;
+    };
+
+function invalidPreparedPathShadowPriceRoutes(): PreparedPathShadowPriceResolutionResult {
+  return Object.freeze({ ok: false });
+}
+
+function captureDirectionalHop(value: unknown): DirectionalRouteHop | undefined {
+  if ((typeof value !== 'object' && typeof value !== 'function') || value === null) {
+    return undefined;
+  }
+  let assetIn: unknown;
+  let poolId: unknown;
+  let assetOut: unknown;
+  try {
+    assetIn = Reflect.get(value, 'assetIn');
+    poolId = Reflect.get(value, 'poolId');
+    assetOut = Reflect.get(value, 'assetOut');
+  } catch {
+    return undefined;
+  }
+  if (
+    typeof assetIn !== 'string' ||
+    assetIn.length === 0 ||
+    typeof poolId !== 'string' ||
+    poolId.length === 0 ||
+    typeof assetOut !== 'string' ||
+    assetOut.length === 0 ||
+    assetIn === assetOut
+  ) {
+    return undefined;
+  }
+  return Object.freeze({ assetIn, poolId, assetOut });
+}
+
+function captureDirectionalRoutes(
+  value: unknown,
+): readonly (readonly DirectionalRouteHop[])[] | undefined {
+  try {
+    if (!Array.isArray(value)) return undefined;
+  } catch {
+    return undefined;
+  }
+  let routeCount: number;
+  try {
+    routeCount = value.length;
+  } catch {
+    return undefined;
+  }
+  if (!Number.isSafeInteger(routeCount) || routeCount < 2) return undefined;
+  const routes: Array<readonly DirectionalRouteHop[]> = [];
+  try {
+    for (let routeIndex = 0; routeIndex < routeCount; routeIndex += 1) {
+      const sourceRoute: unknown = value[routeIndex];
+      if (!Array.isArray(sourceRoute)) return undefined;
+      const hopCount = sourceRoute.length;
+      if (!Number.isSafeInteger(hopCount) || hopCount < 1) return undefined;
+      const route: DirectionalRouteHop[] = [];
+      for (let hopIndex = 0; hopIndex < hopCount; hopIndex += 1) {
+        const hop = captureDirectionalHop(sourceRoute[hopIndex]);
+        if (hop === undefined) return undefined;
+        route.push(hop);
+      }
+      routes.push(Object.freeze(route));
+    }
+  } catch {
+    return undefined;
+  }
+  return Object.freeze(routes);
+}
+
+/**
+ * Resolves a canonical prepared candidate set into fresh identifier-free financial hops.
+ * @internal
+ */
+export function resolvePreparedPathShadowPriceRoutes(
+  context: PreparedRoutingContext,
+  sourceRoutes: readonly (readonly DirectionalRouteHop[])[],
+): PreparedPathShadowPriceResolutionResult {
+  const state = preparedStates.get(context);
+  if (state === undefined) {
+    throw new TypeError('PreparedRoutingContext was not created by prepareRoutingContext.');
+  }
+  const routes = captureDirectionalRoutes(sourceRoutes);
+  if (routes === undefined) return invalidPreparedPathShadowPriceRoutes();
+
+  const firstRoute = routes[0];
+  const firstHop = firstRoute?.[0];
+  const lastHop = firstRoute?.at(-1);
+  if (firstHop === undefined || lastHop === undefined) {
+    return invalidPreparedPathShadowPriceRoutes();
+  }
+  const commonAssetIn = firstHop.assetIn;
+  const commonAssetOut = lastHop.assetOut;
+  const usedPoolIds = new Set<string>();
+  const resolvedRoutes: PathShadowPriceResolvedRoute[] = [];
+
+  for (let routeIndex = 0; routeIndex < routes.length; routeIndex += 1) {
+    const route = routes[routeIndex];
+    if (route === undefined) return invalidPreparedPathShadowPriceRoutes();
+    if (routeIndex > 0) {
+      const previous = routes[routeIndex - 1];
+      if (previous === undefined || comparePaths(previous, route) >= 0) {
+        return invalidPreparedPathShadowPriceRoutes();
+      }
+    }
+    if (route[0]?.assetIn !== commonAssetIn || route.at(-1)?.assetOut !== commonAssetOut) {
+      return invalidPreparedPathShadowPriceRoutes();
+    }
+
+    const visitedAssets = new Set<string>([commonAssetIn]);
+    const resolvedHops: PathShadowPriceResolvedHop[] = [];
+    for (let hopIndex = 0; hopIndex < route.length; hopIndex += 1) {
+      const hop = route[hopIndex];
+      if (
+        hop === undefined ||
+        (hopIndex > 0 && route[hopIndex - 1]?.assetOut !== hop.assetIn) ||
+        usedPoolIds.has(hop.poolId) ||
+        visitedAssets.has(hop.assetOut)
+      ) {
+        return invalidPreparedPathShadowPriceRoutes();
+      }
+      const pool = state.poolLookup.get(hop.poolId);
+      if (pool === undefined) return invalidPreparedPathShadowPriceRoutes();
+      let reserveIn: bigint;
+      let reserveOut: bigint;
+      if (pool.asset0 === hop.assetIn && pool.asset1 === hop.assetOut) {
+        reserveIn = pool.reserve0;
+        reserveOut = pool.reserve1;
+      } else if (pool.asset1 === hop.assetIn && pool.asset0 === hop.assetOut) {
+        reserveIn = pool.reserve1;
+        reserveOut = pool.reserve0;
+      } else {
+        return invalidPreparedPathShadowPriceRoutes();
+      }
+      if (
+        reserveIn <= 0n ||
+        reserveOut <= 0n ||
+        pool.feeDenominator <= 0n ||
+        pool.feeChargedNumerator < 0n ||
+        pool.feeChargedNumerator >= pool.feeDenominator
+      ) {
+        return invalidPreparedPathShadowPriceRoutes();
+      }
+      usedPoolIds.add(hop.poolId);
+      visitedAssets.add(hop.assetOut);
+      resolvedHops.push(
+        Object.freeze({
+          reserveIn,
+          reserveOut,
+          feeChargedNumerator: pool.feeChargedNumerator,
+          feeDenominator: pool.feeDenominator,
+        }),
+      );
+    }
+    resolvedRoutes.push(Object.freeze(resolvedHops));
+  }
+
+  return Object.freeze({ ok: true, value: Object.freeze(resolvedRoutes) });
 }
 
 /** Creates one opaque, request-local simple-path frontier. @internal */

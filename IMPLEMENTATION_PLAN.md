@@ -73,6 +73,8 @@ Gate: exact-sum reconstruction, fallback, large integer, and exhaustive tiny com
 
 ## Pre-Milestone 6 integration gate — Composed split runtime
 
+Status: complete under cumulative review. The integrated gate provides the verified prepared context, composed anytime split runtime, additive canonical split evidence, fixed fallback/improvement cases, and executable demo required before Milestone 6. Historical data work has not started.
+
 Milestone 5 remains complete for its accepted component scope: exact split replay and bounded no-split, equal-split, and greedy baselines. Before those components become the subject of historical evaluation or a service boundary, RouteLab must compose them with the Milestone 4 runtime guarantees rather than benchmarking a chain of independently invoked APIs. This gate is additive and does not rewrite the archived Milestone 5 completion result.
 
 The composed path must:

@@ -2,7 +2,7 @@
 
 RouteLab is a small, exact TypeScript liquidity router. Given an immutable snapshot of two-asset constant-product pools and an exact-input request, it deterministically searches within explicit hop and work limits, exactly replays every complete candidate, and returns a validated plan under exact output and deterministic tie-breaking.
 
-It also supports canonical snapshot, run, and case records; deterministic interruption and process-local resume; immediate exact-replayed direct incumbents; injected cooperative deadlines; separate anytime quality/latency observations; and exact pool-disjoint no-split/equal/greedy baselines with a safe single-path fallback. See [current public status](STATUS.md) for the precise integrated boundary.
+It also supports canonical snapshot, single-path run/case, and additive split run/case records; checksum-verified prepared contexts; a composed anytime split runtime with one shared discovery pass and request-wide typed controls; deterministic interruption and process-local single-path resume; immediate exact-replayed direct incumbents; injected cooperative deadlines; and exact pool-disjoint no-split/equal/greedy policies with a safe fallback. See [current public status](STATUS.md) for the precise integrated boundary.
 
 ## A 30-second executable example
 
@@ -13,11 +13,15 @@ corepack enable
 corepack install --global pnpm@11.12.0
 pnpm install --frozen-lockfile
 pnpm replay:cases
+pnpm replay:split-cases
+pnpm demo
 ```
 
 `pnpm replay:cases` reads three fixed offline cases, freshly replays their bounded router runs, verifies the canonical results and determinism hashes, and emits one JSON verification report. The success case routes `100` atomic units from asset `A` to `B` and reproduces an exact output of `90`; the other cases demonstrate typed `no-route` and work-limited `no-plan` outcomes.
 
 The emitted JSON still uses the versioned `routelab.benchmark-report.v1` schema identifier. That identifier does not give its timing fields statistical meaning: they remain single observations, not benchmark results.
+
+`pnpm replay:split-cases` freshly verifies two deterministic cap-driven split records. On the fixed two-pool fixture, full work reproduces exact input `100`, best single output `50`, allocations `50/50`, and split output `66`; zero discretionary caps preserve the exact direct fallback `50`. `pnpm demo` executes both composed-runtime requests against one verified prepared context and reports the exact improvement `16`. These are fixture facts, not performance or unrestricted-optimality claims.
 
 ## Why exact replay matters
 
@@ -29,21 +33,21 @@ Every returned plan is tied to both the snapshot ID and checksum, consumes the e
 
 ```mermaid
 flowchart LR
-    A[Immutable pool snapshot] --> C[Canonical bounded search]
-    B[Exact-input request] --> C
-    C --> D[Complete route proposal]
-    D --> E[Fresh exact replay]
-    E -->|valid receipt| F[Exact objective and tie-break]
-    F --> G[Validated plan]
-    E -->|invalid| H[Preserve incumbent]
-    A --> I[Canonical snapshot, run, and case records]
+    A[Immutable pool snapshot] --> P[Checksum-verified prepared context]
+    B[Exact-input request and typed controls] --> C[One shared path frontier]
+    P --> C
+    C --> D[Exact best-single replay]
+    C --> J[Cardinality-two-or-more disjoint sets]
+    J --> K[Equal and greedy exact proposals]
+    D --> F[Exact incumbent objective]
+    K --> E[Distinct fresh authorization replay]
+    E --> F
+    F --> G[Validated monotonic plan]
+    P --> I[Canonical snapshot and additive run/case records]
     G --> I
-    C --> J[Pool-disjoint route sets]
-    J --> K[Exact-sum baseline and greedy allocations]
-    K --> E
 ```
 
-The core layers are immutable domain validation, exact constant-product transitions, exact sequential route replay, canonical bounded search, deterministic incumbent selection, and canonical serialization. Pool-disjoint split replay evaluates each positive leg against the same captured original snapshot, exposes a receipt only after every leg succeeds, and requires allocations to sum exactly to the request. Split routing starts with an exact single-path/equal fallback; a bounded greedy policy scores exact chunk assignments but admits only a distinct fresh full-input replay under the complete split objective. Interruptible routing exact-replays every canonical direct candidate before its first user-controlled stop, then carries the best valid baseline and separate establishment accounting through reusable checkpoints. Resume and deadline adapters operate at explicit search boundaries without weakening exact replay.
+The core layers are immutable domain validation, exact constant-product transitions, exact sequential route replay, canonical bounded search, deterministic incumbent selection, and canonical serialization. The prepared factory defensively captures and verifies a snapshot before building hidden reusable lookups and adjacency. One composed split request owns one path frontier, derives pool-disjoint sets without singleton split work, and uses six heterogeneous cumulative cap/counter kinds without recharge. Direct establishment finishes before controls are observed; equal and greedy receipts remain proposals until a distinct fresh authorization replay succeeds under the complete split objective. Cooperative stops occur between atomic work units and expose only an authorized exact incumbent or typed no-plan. Process-local resume remains single-path-only.
 
 ## Verification strategy
 
@@ -51,11 +55,12 @@ The repository combines hand-auditable fixtures, focused unit tests, independent
 
 ```bash
 pnpm replay:cases       # Verify fixed offline router cases and emit JSON evidence.
+pnpm replay:split-cases # Verify deterministic exact split records with no timing state.
 pnpm measure:anytime    # Emit separate quality/work and repeated raw latency observations.
 pnpm lint               # Run typed ESLint rules.
 pnpm typecheck          # Run strict TypeScript checks without emitting files.
 pnpm test               # Run production and independent-oracle tests.
-pnpm demo               # Print deterministic offline capability status.
+pnpm demo               # Execute and report the fixed composed split fixture.
 pnpm check              # Run the complete local gate.
 pnpm trace:check:head   # Verify the current commit's public surface.
 ```
@@ -66,16 +71,16 @@ CI uses the same pinned pnpm version, performs a frozen install, and runs `pnpm 
 
 - Routing is bounded. Split routing evaluates exact no-split, canonical equal-split, and configured chunk-greedy policies over enumerated pool-disjoint route sets. Flooring and zero-output activation can make even unit chunks miss the tiny exhaustive optimum, so no unrestricted global-optimality claim is made.
 - The project does not submit transactions, hold funds, integrate a deployed protocol, or provide a service.
-- Checkpoints are process-local and non-serializable. Deadline adapters require an injected monotonic clock and provide no hard-latency guarantee.
+- Checkpoints are process-local and non-serializable. Current reusable checkpoints are single-path; the composed split runtime has no resume surface. Deadline adapters require an injected monotonic clock and provide no hard-latency guarantee.
 - Immediate establishment is limited to exact-replayable one-hop candidates. With no eligible direct route, a zero search cap or already-reached deadline can still return typed no-plan.
 - Non-interruptible routing and canonical router-run/case v1 retain their existing zero-expansion behavior and hashes; immediate establishment is exposed by the interruptible, resumable, and deadline runtime APIs.
 - `pnpm replay:cases` remains a single-observation verification harness. `pnpm measure:anytime` uses one fixed offline input, warmups, alternating repeated samples, environment metadata, and raw observations, but performs no statistical inference and supports no speedup, threshold, scaling, or production-latency claim.
-- The offline demo reports capability status only; use replay cases and tests for executable financial evidence.
-- The exact split APIs are currently standalone Milestone 5 components rather than one composed Milestone 4 anytime runtime: they do not yet share a prepared verified context, one discovery pass, one request-wide control/ledger, or split-aware canonical run records.
+- The executable split demo and `pnpm replay:split-cases` cover one fixed offline two-pool fixture. They support no scaling, latency, throughput, production, or unrestricted-optimality conclusion.
+- Legacy Milestone 2–5 routers remain standalone compatibility and component-test surfaces. The additive high-level split runtime is the composed path with a verified context, one request-local discovery frontier, and one non-recharged typed ledger.
 
 ## Roadmap
 
-The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 remain integrated and cumulatively reviewed complete for their accepted component gates. A pre-Milestone 6 integration gate is next: compose anytime controls and split allocation under one verified request context, shared discovery, non-recharged controls, canonical split evidence, and an executable split demo. Historical data follows that gate; path-level numerical allocation is now explicit after data setup and before acceleration. Services, protocol adapters, and learned ordering remain later gated work.
+The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 remain integrated and cumulatively reviewed complete for their accepted component gates, and the additive pre-Milestone 6 composed-runtime gate is complete. Milestone 6 historical source selection and canonical data import are next; no data work has started. Path-level numerical allocation remains after data setup and before acceleration. Services, protocol adapters, and learned ordering remain later gated work.
 
 See the [technical roadmap](IMPLEMENTATION_PLAN.md), [current release gate](STATUS.md), [accepted invariants](docs/invariants.md), [Milestone 0 fixture derivations](fixtures/m0/README.md), and [research references](docs/references.md).
 

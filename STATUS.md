@@ -32,39 +32,45 @@ Last updated: 2026-07-13
 - Deterministic bounded split routing with an exact single-path fallback plus canonical equal-split proposals, exact remainder reconstruction, fresh split replay, explicit fallback/structural/allocation counters, and a complete split-plan tie key.
 - Oracle-first bounded greedy allocation over canonical pool-disjoint route sets: exact quotient/remainder chunks, exact partial scoring, explicit evaluation caps/frontiers, a distinct full-input authorization replay, fallback-preserving failures, and full-objective incumbent updates.
 - A standalone tiny exhaustive allocation oracle and black-box production comparison covering exact compositions, quality bounds, a named unit-chunk optimum, a coarse suboptimal case, a zero-output activation barrier, arbitrary-precision reconstruction, and the allocation-vector tie.
+- Public opaque `PreparedRoutingContext` construction that defensively captures a snapshot, verifies its canonical checksum before derived state exists, and owns hidden reusable pool, asset, and deterministic-adjacency lookups.
+- Additive composed anytime split routing with mandatory exact direct establishment, one request-local shared path frontier, cardinality-two-or-more derived disjoint sets, six typed cumulative work caps, 13 counters, cooperative stops at every discretionary kind, and a monotonic exact incumbent.
+- Additive canonical `routelab.split-router-run.v1` and `routelab.split-router-case.v1` records that contain cap-driven deterministic semantics only and accept supplied results/hashes only after strict reconstruction and fresh composed-runtime replay.
+- Two fixed canonical split cases and deterministic `pnpm replay:split-cases` evidence for exact input `100`, best single/fallback `50`, allocations `50/50`, split output `66`, and unchanged single-path v1 hashes.
+- An executable deterministic demo that runs full and zero-cap requests against one verified context and reports exact improvement `16`, both ledgers, and explicit fixture-only limitations.
 - Machine-checked public/private trace boundary and manifest-only engineering-log promotion.
 
 ## Current release gate
 
-Milestones 0–5 remain integrated and cumulatively reviewed complete for their accepted component gates. A newly added pre-Milestone 6 integration gate is now active: the Milestone 4 anytime controls and Milestone 5 split components must be composed under one canonically verified prepared context, shared discovery, non-recharged request controls, canonical split evidence, and an executable split demo. Milestone 6 historical data and credible evaluation is blocked until that gate closes. No serialized split checkpoint, cross-process resume, default router clock, general statistical performance conclusion, historical dataset, service, protocol adapter, numerical allocator, or learned ordering exists.
+Milestones 0–5 remain integrated and cumulatively reviewed complete for their accepted component gates. The additive pre-Milestone 6 integration gate is also complete under cumulative review: Milestone 4 anytime controls and Milestone 5 split policies now compose under one verified prepared context, shared discovery, non-recharged request controls, canonical split evidence, and an executable split demo. Milestone 6 historical source selection and canonical data import are next eligible; no M6 work has started. No split checkpoint/resume, default router clock, general statistical performance conclusion, historical dataset, service, protocol adapter, numerical allocator, or learned ordering exists.
 
 ## Public evidence
 
 - [Exact financial and deterministic invariants](docs/invariants.md)
 - [Milestone 0 fixture derivations](fixtures/m0/README.md)
 - [Fixture evidence classification](fixtures/m0/MANIFEST.md)
+- [Canonical split replay fixtures](fixtures/pre-m6/split-router-cases/README.md)
 - [Engineering log](docs/engineering-log/README.md)
 - [Technical roadmap](IMPLEMENTATION_PLAN.md)
 
 ## Next technical milestone
 
-The pre-Milestone 6 composed-runtime gate is next. It must add a canonically verified prepared snapshot context, shared path and candidate-set discovery, non-recharged request controls spanning split allocation, exact incumbent preservation under interruption/deadline, canonical split run/case evidence, and an executable offline split demo. Historical source selection may be researched privately, but no M6 benchmark or data-integration claim is eligible until this gate closes.
+Milestone 6 historical data and credible evaluation is next. Source selection must be documented before importing one canonical snapshot with provenance, licensing, ordering, schema validation, and checksums. The primary measurement path must use the composed runtime and identical request-scoped controls; no benchmark or data-integration claim exists yet.
 
 ## Known limitations
 
-- The demo reports repository capability only; it does not execute a snapshot, quote, transition, replay, or route.
-- The Milestone 4 anytime runtime and Milestone 5 split routers are exact but not yet composed. The split entry points independently rebuild/discover structural work, use stage-local caps that can be charged again by a caller chain, and expose no single request-wide deadline, cancellation control, or incumbent progression.
-- Canonical router-run/case v1 and `pnpm replay:cases` remain single-path-only; no split plan currently has a canonical determinism record.
+- The executable demo and split replay command cover one fixed offline two-pool fixture; they support no performance, scaling, production, or unrestricted-optimality conclusion.
+- Legacy Milestone 2–5 router entry points remain standalone compatibility/component surfaces. The additive high-level runtime is the composed split path; it does not add split resume or change legacy behavior.
+- Canonical router-run/case v1 and `pnpm replay:cases` remain single-path-only and unchanged. Split evidence uses the additive `routelab.split-router-run.v1` / `routelab.split-router-case.v1` family and `pnpm replay:split-cases`.
 - A work-limited success is best only among already-complete explored candidates; it makes no completeness or unrestricted optimality claim.
 - Split routing is limited to pool-disjoint routes and configured no-split/equal/chunk-greedy policies. Greedy parts and evaluation work are explicitly bounded; integer flooring and zero-output eligibility can make unit chunks miss the tiny exhaustive optimum. No global allocation or route optimality is claimed, and RouteLab does not submit transactions, hold funds, or model a deployed protocol.
-- Fixture JSON is hand-auditable evidence, not a public snapshot or replay schema.
-- Domain parsing and general routing still accept caller-supplied opaque checksum identity; canonical computation/verification is explicit and never silently rewrites it. Canonical run creation is the narrower verified execution boundary.
+- Milestone 0 fixture JSON is hand-auditable evidence, not a public snapshot or replay schema; the pre-M6 split fixtures are canonical split case records.
+- Domain parsing and legacy general routing still accept caller-supplied opaque checksum identity; canonical computation/verification is explicit and never silently rewrites it. Prepared-context creation and canonical single/split run creation are verified execution boundaries.
 - Research references describe possible later directions and do not imply implementation or equivalence.
 - Replay-case timings remain one observation per fixed M3 case with no warmup, repetition, comparison, threshold, statistical interpretation, output persistence, migration, or JSON resource-limit policy. The separate M4 anytime harness does not change their meaning.
 - Immediate establishment covers canonical exact-replayable one-hop candidates only. With no eligible direct baseline, a zero search cap or already-reached deadline retains typed no-plan behavior.
 - Non-interruptible bounded routing and canonical router-run/case v1 preserve their existing zero-expansion semantics and hashes; establishment accounting belongs to the interruptible, resumable, and deadline runtime APIs.
 - Anytime latency samples cover one fixed offline input and two one-shot runtime variants. They are observational, retain raw values and environment metadata, and support no scaling, threshold, speedup, or general performance claim.
 - Interruption predicates are operational controls only: replay is atomic, in-memory tokens are not serializable/persistable or valid across processes, and paused outcomes do not enter `routelab.router-run.v1` hashes.
-- Deadline adapters require an injected monotonic clock, check only between expansions, make no hard-latency guarantee, and expose no clock samples or configuration in semantic results.
+- Deadline adapters require an injected monotonic clock and make no hard-latency guarantee. Legacy single-path adapters check between expansions; the composed split runtime checks before all six discretionary work kinds. Clock observations never enter canonical semantic records.
 - Pool-disjoint set ordering is structural enumeration, not a financial preference. Candidate sets become financially eligible only after an explicit exact allocation reconstructs the input and exact split replay succeeds; the implemented baseline policies are not a global allocation search.
 - Greedy partial replay receipts are scoring evidence only, including a final score that may cover the full amount. Only a distinct post-selection full-input replay can replace the exact fallback. Defensive final-replay failure accounting is retained, although disagreement with an identical successful final score is unreachable under the current captured pure model.

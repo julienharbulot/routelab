@@ -15,6 +15,7 @@ import {
 } from '../../src/router/anytime-exact-input-split/index.ts';
 import {
   prepareRoutingContext,
+  replayPreparedExactInputSplit,
   type PreparedRoutingContext,
 } from '../../src/runtime/prepared-routing-context/index.ts';
 
@@ -320,26 +321,62 @@ function disjointSets(routes: readonly (readonly Hop[])[], maxRoutes: number): H
   return output;
 }
 
-// Each visited combination-tree edge is one candidate-set expansion.
-function candidateSetExpansionCount(routes: readonly (readonly Hop[])[], maxRoutes: number): number {
+interface AnchoredSetPrefix {
+  readonly candidateSets: readonly (readonly (readonly Hop[])[])[];
+  readonly expansions: number;
+  readonly complete: boolean;
+}
+
+// This local frontier assigns each combination to its maximum route index. A
+// newly appended route therefore only appends anchored work and cannot reorder
+// an already available prefix. Selecting a prefix route and testing the fixed
+// maximum-index anchor are separate expansion units.
+function anchoredSetPrefix(
+  routes: readonly (readonly Hop[])[],
+  maxRoutes: number,
+  cap = Number.MAX_SAFE_INTEGER,
+): AnchoredSetPrefix {
+  const candidateSets: Array<readonly (readonly Hop[])[]> = [];
   let expansions = 0;
-  for (let cardinality = 2; cardinality <= Math.min(maxRoutes, routes.length); cardinality += 1) {
-    function visit(start: number, selected: readonly (readonly Hop[])[], usedPools: ReadonlySet<string>): void {
-      for (let index = start; index < routes.length; index += 1) {
-        expansions += 1;
-        const route = routes[index]!;
-        if (route.some((hop) => usedPools.has(hop.poolId))) continue;
-        if (selected.length + 1 === cardinality) continue;
-        visit(
-          index + 1,
-          [...selected, route],
-          new Set([...usedPools, ...route.map((hop) => hop.poolId)]),
-        );
+  let complete = true;
+  anchors: for (let anchorIndex = 1; anchorIndex < routes.length; anchorIndex += 1) {
+    for (let cardinality = 2; cardinality <= Math.min(maxRoutes, anchorIndex + 1); cardinality += 1) {
+      function visit(
+        start: number,
+        selected: readonly (readonly Hop[])[],
+        usedPools: ReadonlySet<string>,
+      ): boolean {
+        for (let index = start; index < anchorIndex; index += 1) {
+          if (expansions === cap) return false;
+          expansions += 1;
+          const route = routes[index]!;
+          if (route.some((hop) => usedPools.has(hop.poolId))) continue;
+          const nextSelected = [...selected, route];
+          const nextPools = new Set([...usedPools, ...route.map((hop) => hop.poolId)]);
+          if (nextSelected.length === cardinality - 1) {
+            if (expansions === cap) return false;
+            expansions += 1;
+            const anchor = routes[anchorIndex]!;
+            if (anchor.every((hop) => !nextPools.has(hop.poolId))) {
+              candidateSets.push([...nextSelected, anchor]);
+            }
+          } else if (!visit(index + 1, nextSelected, nextPools)) {
+            return false;
+          }
+        }
+        return true;
+      }
+      if (!visit(0, [], new Set())) {
+        complete = false;
+        break anchors;
       }
     }
-    visit(0, [], new Set());
   }
-  return expansions;
+  return { candidateSets, expansions, complete };
+}
+
+function candidateSetExpansionCount(routes: readonly (readonly Hop[])[], maxRoutes: number): number {
+  return anchoredSetPrefix(routes, maxRoutes).expansions;
 }
 
 function directionalPool(poolValue: ConstantProductPool, assetIn: string) {
@@ -383,6 +420,52 @@ function replayRoute(
     amount = amountOut;
   }
   return amount;
+}
+
+function replayRouteTrace(
+  pools: readonly ConstantProductPool[],
+  route: readonly Hop[],
+  amountIn: bigint,
+) {
+  const state = new Map(pools.map((candidate) => [candidate.poolId, { ...candidate }]));
+  const receipts: Array<{
+    readonly poolId: string;
+    readonly assetIn: string;
+    readonly assetOut: string;
+    readonly amountIn: bigint;
+    readonly amountOut: bigint;
+    readonly reserveInBefore: bigint;
+    readonly reserveOutBefore: bigint;
+    readonly reserveInAfter: bigint;
+    readonly reserveOutAfter: bigint;
+  }> = [];
+  let amount = amountIn;
+  for (const hop of route) {
+    const current = state.get(hop.poolId);
+    if (current === undefined) return undefined;
+    const direction = directionalPool(current, hop.assetIn);
+    const amountOut = quote(amount, current, hop.assetIn);
+    if (direction === undefined || amountOut === undefined || amountOut === 0n) return undefined;
+    receipts.push({
+      poolId: hop.poolId,
+      assetIn: hop.assetIn,
+      assetOut: hop.assetOut,
+      amountIn: amount,
+      amountOut,
+      reserveInBefore: direction.reserveIn,
+      reserveOutBefore: direction.reserveOut,
+      reserveInAfter: direction.reserveIn + amount,
+      reserveOutAfter: direction.reserveOut - amountOut,
+    });
+    state.set(
+      hop.poolId,
+      direction.reverse
+        ? { ...current, reserve1: current.reserve1 + amount, reserve0: current.reserve0 - amountOut }
+        : { ...current, reserve0: current.reserve0 + amount, reserve1: current.reserve1 - amountOut },
+    );
+    amount = amountOut;
+  }
+  return receipts;
 }
 
 function replayPlan(
@@ -490,6 +573,18 @@ function assertMatchesReference(
   );
 }
 
+function planFromResult(result: ExactInputSplitRuntimeResult): ReferencePlan {
+  const receipt = success(result).receipt;
+  return {
+    amountOut: receipt.amountOut,
+    legs: receipt.legs.map((leg) => ({
+      allocation: leg.allocation,
+      route: leg.receipt.hops.map(({ assetIn, poolId, assetOut }) => ({ assetIn, poolId, assetOut })),
+      amountOut: leg.receipt.amountOut,
+    })),
+  };
+}
+
 function counters(overrides: Partial<ExactInputSplitWorkCounters> = {}): ExactInputSplitWorkCounters {
   return { ...ZERO_ADVANCED_COUNTERS, ...overrides };
 }
@@ -501,13 +596,12 @@ const TRACE_BOUNDARIES: readonly ExpectedBoundary[] = [
   { kind: 'best-single-candidate-replay', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 1 }), incumbentAmountOut: 50n },
   { kind: 'candidate-set-expansion', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2 }), incumbentAmountOut: 50n },
   { kind: 'candidate-set-expansion', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 1 }), incumbentAmountOut: 50n },
-  { kind: 'candidate-set-expansion', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 2 }), incumbentAmountOut: 50n },
-  { kind: 'equal-proposal-replay', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 3 }), incumbentAmountOut: 50n },
-  { kind: 'final-authorization-replay', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 3, equalProposalReplays: 1 }), incumbentAmountOut: 50n },
-  { kind: 'greedy-option-replay', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 3, equalProposalReplays: 1, finalAuthorizationReplays: 1 }), incumbentAmountOut: 66n },
-  { kind: 'greedy-option-replay', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 3, equalProposalReplays: 1, greedyOptionReplays: 1, finalAuthorizationReplays: 1 }), incumbentAmountOut: 66n },
-  { kind: 'greedy-option-replay', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 3, equalProposalReplays: 1, greedyOptionReplays: 2, finalAuthorizationReplays: 1 }), incumbentAmountOut: 66n },
-  { kind: 'greedy-option-replay', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 3, equalProposalReplays: 1, greedyOptionReplays: 3, finalAuthorizationReplays: 1 }), incumbentAmountOut: 66n },
+  { kind: 'equal-proposal-replay', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 2 }), incumbentAmountOut: 50n },
+  { kind: 'greedy-option-replay', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 2, equalProposalReplays: 1 }), incumbentAmountOut: 50n },
+  { kind: 'greedy-option-replay', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 2, equalProposalReplays: 1, greedyOptionReplays: 1 }), incumbentAmountOut: 50n },
+  { kind: 'greedy-option-replay', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 2, equalProposalReplays: 1, greedyOptionReplays: 2 }), incumbentAmountOut: 50n },
+  { kind: 'greedy-option-replay', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 2, equalProposalReplays: 1, greedyOptionReplays: 3 }), incumbentAmountOut: 50n },
+  { kind: 'final-authorization-replay', counters: counters({ pathExpansions: 2, bestSingleCandidateReplays: 2, candidateSetExpansions: 2, equalProposalReplays: 1, greedyOptionReplays: 4 }), incumbentAmountOut: 50n },
 ];
 
 const SPLIT_POOLS = [pool('left-ac'), pool('right-ac')];
@@ -517,7 +611,7 @@ void test('independent exact model derives 100 -> direct 50 -> split 66 and ever
   const runtimeRequest = request(value);
   const routes = simpleRoutes(SPLIT_POOLS, 'A', 'C', 1);
   assert.equal(pathExpansionCount(SPLIT_POOLS, 'A', 'C', 1), 2);
-  assert.equal(candidateSetExpansionCount(routes, 2), 3);
+  assert.equal(candidateSetExpansionCount(routes, 2), 2);
   assert.equal(replayRoute(SPLIT_POOLS, [routes[0]![0]!], 100n), 50n);
   assert.equal(equalPlan(SPLIT_POOLS, routes, 100n)?.amountOut, 66n);
 
@@ -527,7 +621,7 @@ void test('independent exact model derives 100 -> direct 50 -> split 66 and ever
     counters: counters({
       pathExpansions: 2,
       bestSingleCandidateReplays: 2,
-      candidateSetExpansions: 3,
+      candidateSetExpansions: 2,
       equalProposalReplays: 1,
       greedyOptionReplays: 4,
       finalAuthorizationReplays: 1,
@@ -593,10 +687,15 @@ void test('equal and greedy exact improvements match independent reconstruction,
   assert.deepEqual(greedy?.legs.map(({ allocation }) => allocation), [25n, 75n]);
   const improved = routeExactInputSplitAnytime(prepare(asymmetric), asymmetricRequest, control());
   assertMatchesReference(asymmetricPools, asymmetricRequest, improved);
-  assert.equal(success(improved).search.counters.finalAuthorizationReplays, 2);
+  assert.equal(success(improved).search.counters.finalAuthorizationReplays, 1);
   assert.equal(success(improved).search.counters.greedyOptionReplays, 8);
 
   const symmetric = snapshot(SPLIT_POOLS, 'greedy-tie');
+  const symmetricRoutes = simpleRoutes(SPLIT_POOLS, 'A', 'C', 1);
+  assert.deepEqual(
+    greedyPlan(SPLIT_POOLS, symmetricRoutes, 100n, 2),
+    equalPlan(SPLIT_POOLS, symmetricRoutes, 100n),
+  );
   const tied = routeExactInputSplitAnytime(prepare(symmetric), request(symmetric), control());
   assert.deepEqual(success(tied).receipt.legs.map(({ allocation }) => allocation), [50n, 50n]);
   assert.equal(success(tied).search.counters.finalAuthorizationReplays, 1);
@@ -617,6 +716,55 @@ void test('reconstructs huge bigint inputs exactly without number coercion', () 
   assert.equal(typeof plan.receipt.amountIn, 'bigint');
   assert.equal(typeof plan.receipt.amountOut, 'bigint');
   for (const leg of plan.receipt.legs) assert.equal(typeof leg.allocation, 'bigint');
+});
+
+void test('prepared replay receipts match independent exact transitions and rejection semantics', () => {
+  const unit = 10n ** 70n;
+  const pools = [
+    pool('ax', unit, 2n * unit, 'A', 'X'),
+    pool('xc', 2n * unit, 3n * unit, 'X', 'C'),
+    pool('direct', 100n, 100n),
+    pool('zero', 100n, 1n),
+  ];
+  const value = snapshot(pools, 'prepared-replay-parity');
+  const context = prepare(value);
+  const route = [
+    { assetIn: 'A', poolId: 'ax', assetOut: 'X' },
+    { assetIn: 'X', poolId: 'xc', assetOut: 'C' },
+  ] as const;
+  const amountIn = 10n ** 50n;
+  const expectedTrace = replayRouteTrace(pools, route, amountIn);
+  assert.ok(expectedTrace !== undefined);
+  const replay = replayPreparedExactInputSplit(context, {
+    snapshotId: value.snapshotId,
+    snapshotChecksum: value.snapshotChecksum,
+    assetIn: 'A',
+    assetOut: 'C',
+    amountIn,
+    legs: [{ allocation: amountIn, route }],
+  });
+  assert.equal(replay.ok, true);
+  if (replay.ok) {
+    assert.equal(replay.value.amountOut, expectedTrace.at(-1)?.amountOut);
+    assert.deepEqual(replay.value.legs[0]?.receipt.hops, expectedTrace);
+  }
+
+  const rejected = replayPreparedExactInputSplit(context, {
+    snapshotId: value.snapshotId,
+    snapshotChecksum: value.snapshotChecksum,
+    assetIn: 'A',
+    assetOut: 'C',
+    amountIn: 1n,
+    legs: [{
+      allocation: 1n,
+      route: [{ assetIn: 'A', poolId: 'zero', assetOut: 'C' }],
+    }],
+  });
+  assert.equal(rejected.ok, false);
+  if (!rejected.ok) {
+    assert.equal(rejected.error.code, 'leg-replay-failed');
+    assert.equal(rejected.error.causeCode, 'hop-transition-failed');
+  }
 });
 
 void test('uses raw UTF-16 route order and is invariant to input pool permutation', () => {
@@ -655,7 +803,7 @@ void test('one captured context and one shared frontier match independent expans
   const plan = success(result);
   assert.equal(plan.receipt.amountOut, 66n);
   assert.equal(plan.search.counters.pathExpansions, 2);
-  assert.equal(plan.search.counters.candidateSetExpansions, 3);
+  assert.equal(plan.search.counters.candidateSetExpansions, 2);
   assert.equal(plan.search.counters.bestSingleCandidateReplays, 1);
   assert.equal(plan.search.counters.directCandidateReplays, 2);
   assert.equal(plan.search.counters.greedyOptionReplays, 4);
@@ -745,7 +893,7 @@ void test('tests every independent cap from zero through natural exhaustion and 
   const cases = [
     { field: 'maxPathExpansions', counter: 'pathExpansions', natural: 2 },
     { field: 'maxBestSingleCandidateReplays', counter: 'bestSingleCandidateReplays', natural: 2 },
-    { field: 'maxCandidateSetExpansions', counter: 'candidateSetExpansions', natural: 3 },
+    { field: 'maxCandidateSetExpansions', counter: 'candidateSetExpansions', natural: 2 },
     { field: 'maxEqualProposalReplays', counter: 'equalProposalReplays', natural: 1 },
     { field: 'maxGreedyOptionReplays', counter: 'greedyOptionReplays', natural: 4 },
     { field: 'maxFinalAuthorizationReplays', counter: 'finalAuthorizationReplays', natural: 1 },
@@ -842,55 +990,156 @@ void test('increasing heterogeneous caps is monotonic under the complete split o
   }
 });
 
-void test('best-single authorizes directly; equal and greedy scoring receipts never authorize', () => {
+void test('componentwise heterogeneous-cap increases preserve the complete objective', () => {
+  const pools = [pool('a'), pool('b'), pool('c'), pool('z', 100n, 1n)];
+  const value = snapshot(pools, 'componentwise-cap-lattice');
+  const runtimeRequest = request(value, { maxRoutes: 3 });
+  const capFields = [
+    'maxPathExpansions',
+    'maxBestSingleCandidateReplays',
+    'maxCandidateSetExpansions',
+    'maxEqualProposalReplays',
+    'maxGreedyOptionReplays',
+    'maxFinalAuthorizationReplays',
+  ] as const;
+  const choices = {
+    maxPathExpansions: [3, 4],
+    maxBestSingleCandidateReplays: [0, 4],
+    maxCandidateSetExpansions: [8, 9],
+    maxEqualProposalReplays: [0, 4],
+    maxGreedyOptionReplays: [0, 100],
+    maxFinalAuthorizationReplays: [0, 1],
+  } as const;
+  const points: Array<{ readonly caps: ExactInputSplitWorkCaps; readonly plan: ReferencePlan }> = [];
+
+  function build(index: number, partial: Partial<ExactInputSplitWorkCaps>): void {
+    const field = capFields[index];
+    if (field === undefined) {
+      const caps = partial as ExactInputSplitWorkCaps;
+      const result = routeExactInputSplitAnytime(prepare(value), runtimeRequest, { workCaps: caps });
+      points.push({ caps, plan: planFromResult(result) });
+      return;
+    }
+    for (const cap of choices[field]) build(index + 1, { ...partial, [field]: cap });
+  }
+  build(0, {});
+  assert.equal(points.length, 64);
+
+  const componentwiseAtMost = (
+    left: ExactInputSplitWorkCaps,
+    right: ExactInputSplitWorkCaps,
+  ): boolean => capFields.every((field) => left[field] <= right[field]);
+  let comparablePairs = 0;
+  for (const left of points) {
+    for (const right of points) {
+      if (!componentwiseAtMost(left.caps, right.caps)) continue;
+      comparablePairs += 1;
+      assert.ok(
+        comparePlan(right.plan, left.plan) <= 0,
+        `${JSON.stringify(left.caps)} -> ${JSON.stringify(right.caps)}`,
+      );
+    }
+  }
+  assert.ok(comparablePairs > points.length);
+});
+
+void test('equal-cap reviewer reproducer retains independently derived greedy output 76', () => {
+  const pools = [pool('left-ac', 50n, 50n), pool('right-ac', 50n, 100n)];
+  const value = snapshot(pools, 'equal-cap-reproducer');
+  const runtimeRequest = request(value, { greedyParts: 4 });
+  const routes = simpleRoutes(pools, 'A', 'C', 1);
+  const independentlyBest = greedyPlan(pools, routes, 100n, 4);
+  assert.equal(independentlyBest?.amountOut, 76n);
+  assert.deepEqual(independentlyBest?.legs.map(({ allocation }) => allocation), [25n, 75n]);
+
+  const run = (equalCap: number) => routeExactInputSplitAnytime(
+    prepare(value),
+    runtimeRequest,
+    control({
+      maxEqualProposalReplays: equalCap,
+      maxGreedyOptionReplays: 8,
+      maxFinalAuthorizationReplays: 1,
+    }),
+  );
+  const withoutEqual = run(0);
+  const withEqual = run(1);
+  assert.equal(success(withoutEqual).receipt.amountOut, 76n);
+  assert.equal(success(withEqual).receipt.amountOut, 76n);
+  assert.equal(success(withoutEqual).search.counters.finalAuthorizationReplays, 1);
+  assert.equal(success(withEqual).search.counters.finalAuthorizationReplays, 1);
+  assert.ok(comparePlan(planFromResult(withEqual), planFromResult(withoutEqual)) <= 0);
+});
+
+void test('maximum-index anchored set prefixes retain output 73 when path cap grows 3 to 4', () => {
+  const pools = [pool('a'), pool('b'), pool('c'), pool('z', 100n, 1n)];
+  const value = snapshot(pools, 'anchored-path-reproducer');
+  const allRoutes = simpleRoutes(pools, 'A', 'C', 1);
+  const threeRoutes = allRoutes.slice(0, 3);
+  const threePrefix = anchoredSetPrefix(threeRoutes, 3, 9);
+  const fourPrefix = anchoredSetPrefix(allRoutes, 3, 9);
+  assert.equal(threePrefix.expansions, 9);
+  assert.equal(fourPrefix.expansions, 9);
+  assert.equal(threePrefix.complete, false);
+  assert.equal(fourPrefix.complete, false);
+  assert.deepEqual(fourPrefix.candidateSets, threePrefix.candidateSets);
+  assert.equal(threePrefix.candidateSets.length, 4);
+  const expected = threePrefix.candidateSets
+    .map((routes) => equalPlan(pools, routes, 100n))
+    .filter((plan): plan is ReferencePlan => plan !== undefined)
+    .sort(comparePlan)[0];
+  assert.equal(expected?.amountOut, 73n);
+  assert.deepEqual(expected?.legs.map(({ allocation }) => allocation), [34n, 33n, 33n]);
+
+  const run = (pathCap: number) => routeExactInputSplitAnytime(
+    prepare(value),
+    request(value, { maxRoutes: 3 }),
+    control({
+      maxPathExpansions: pathCap,
+      maxCandidateSetExpansions: 9,
+      maxGreedyOptionReplays: 0,
+    }),
+  );
+  const three = run(3);
+  const four = run(4);
+  assert.equal(success(three).receipt.amountOut, 73n);
+  assert.equal(success(four).receipt.amountOut, 73n);
+  assert.equal(success(three).search.counters.candidateSetExpansions, 9);
+  assert.equal(success(four).search.counters.candidateSetExpansions, 9);
+  assert.ok(comparePlan(planFromResult(four), planFromResult(three)) <= 0);
+
+  const naturallyComplete = anchoredSetPrefix(threeRoutes, 3, 10);
+  assert.equal(naturallyComplete.complete, true);
+  assert.equal(naturallyComplete.expansions, 10);
+});
+
+void test('best-first unique authorization prevents equal and greedy scoring receipts from authorizing', () => {
   const pools = [pool('left-ac', 50n, 50n), pool('right-ac', 50n, 100n)];
   const value = snapshot(pools, 'authorization-separation');
   const runtimeRequest = request(value, { greedyParts: 4 });
+  const routes = simpleRoutes(pools, 'A', 'C', 1);
+  const equal = equalPlan(pools, routes, 100n);
+  const greedy = greedyPlan(pools, routes, 100n, 4);
+  assert.ok(equal !== undefined && greedy !== undefined);
+  assert.equal(equal.amountOut, 75n);
+  assert.equal(greedy.amountOut, 76n);
+  assert.ok(comparePlan(greedy, equal) < 0);
 
-  let finalOccurrences = 0;
-  const beforeEqualAuthorization = routeExactInputSplitAnytime(prepare(value), runtimeRequest, {
+  const beforeAuthorization = routeExactInputSplitAnytime(prepare(value), runtimeRequest, {
     workCaps: COMPLETE_CAPS,
     shouldInterrupt(checkpoint) {
       if (checkpoint.nextWorkKind !== 'final-authorization-replay') return false;
-      finalOccurrences += 1;
-      return finalOccurrences === 1;
+      assert.equal(checkpoint.counters.equalProposalReplays, 1);
+      assert.equal(checkpoint.counters.greedyOptionReplays, 8);
+      assert.equal(checkpoint.counters.finalAuthorizationReplays, 0);
+      return true;
     },
   });
-  assert.equal(success(beforeEqualAuthorization).receipt.amountOut, 66n);
-  assert.equal(success(beforeEqualAuthorization).search.counters.equalProposalReplays, 1);
-  assert.equal(success(beforeEqualAuthorization).search.counters.finalAuthorizationReplays, 0);
-
-  finalOccurrences = 0;
-  const beforeGreedyAuthorization = routeExactInputSplitAnytime(prepare(value), runtimeRequest, {
-    workCaps: COMPLETE_CAPS,
-    shouldInterrupt(checkpoint) {
-      if (checkpoint.nextWorkKind !== 'final-authorization-replay') return false;
-      finalOccurrences += 1;
-      return finalOccurrences === 2;
-    },
-  });
-  assert.equal(success(beforeGreedyAuthorization).receipt.amountOut, 75n);
-  assert.equal(success(beforeGreedyAuthorization).search.counters.greedyOptionReplays, 8);
-  assert.equal(success(beforeGreedyAuthorization).search.counters.finalAuthorizationReplays, 1);
-
-  const oneAuthorization = routeExactInputSplitAnytime(
-    prepare(value),
-    runtimeRequest,
-    control({ maxFinalAuthorizationReplays: 1 }),
-  );
-  assert.equal(success(oneAuthorization).receipt.amountOut, 75n);
-  assert.equal(success(oneAuthorization).search.termination, 'work-limit');
-  const twoAuthorizations = routeExactInputSplitAnytime(
-    prepare(value),
-    runtimeRequest,
-    control({ maxFinalAuthorizationReplays: 2 }),
-  );
-  assert.equal(success(twoAuthorizations).receipt.amountOut, 76n);
-  assert.equal(success(twoAuthorizations).search.termination, 'complete');
+  assert.equal(success(beforeAuthorization).receipt.amountOut, 66n);
+  assert.equal(success(beforeAuthorization).search.counters.finalAuthorizationReplays, 0);
 
   for (const [cap, amountOut, termination] of [
     [0, 66n, 'work-limit'],
-    [1, 75n, 'work-limit'],
+    [1, 76n, 'complete'],
     [2, 76n, 'complete'],
   ] as const) {
     const capped = routeExactInputSplitAnytime(
@@ -900,21 +1149,21 @@ void test('best-single authorizes directly; equal and greedy scoring receipts ne
     );
     assert.equal(success(capped).receipt.amountOut, amountOut);
     assert.equal(success(capped).search.termination, termination);
-    assert.equal(success(capped).search.counters.finalAuthorizationReplays, cap);
+    assert.equal(success(capped).search.counters.finalAuthorizationReplays, Math.min(cap, 1));
   }
 
   let samples = 0;
-  const beforeSecondAuthorization = routeExactInputSplitAnytime(prepare(value), runtimeRequest, {
+  const deadlineBeforeAuthorization = routeExactInputSplitAnytime(prepare(value), runtimeRequest, {
     workCaps: COMPLETE_CAPS,
     deadline: {
-      deadlineNanoseconds: 17n,
+      deadlineNanoseconds: 15n,
       nowNanoseconds: () => BigInt(samples++),
     },
   });
-  assert.equal(success(beforeSecondAuthorization).search.termination, 'deadline');
-  assert.equal(success(beforeSecondAuthorization).receipt.amountOut, 75n);
-  assert.equal(success(beforeSecondAuthorization).search.counters.greedyOptionReplays, 8);
-  assert.equal(success(beforeSecondAuthorization).search.counters.finalAuthorizationReplays, 1);
+  assert.equal(success(deadlineBeforeAuthorization).search.termination, 'deadline');
+  assert.equal(success(deadlineBeforeAuthorization).receipt.amountOut, 66n);
+  assert.equal(success(deadlineBeforeAuthorization).search.counters.greedyOptionReplays, 8);
+  assert.equal(success(deadlineBeforeAuthorization).search.counters.finalAuthorizationReplays, 0);
 });
 
 void test('classifies callback failures and keeps frozen pre-unit state unchanged', () => {

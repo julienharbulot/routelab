@@ -124,12 +124,22 @@ const ELIGIBILITY_ID =
   'm7a-core12-synthetic-exhaustive-numerical-path-shadow-price-eligibility-v1';
 const ELIGIBILITY_SHA256 =
   'sha256:5ed542c5da28a0a03eb88bece5b04cea623877b4760cea1ccdc0b27b5b91bbdc';
+const FORCED_FAILURE_EVIDENCE_ID =
+  'm7a-numerical-runtime-forced-failure-baseline-preservation-v1';
+const FORCED_FAILURE_EVIDENCE_PATH =
+  'fixtures/m7/numerical-historical/forced-failure-evidence.v1.json';
+const FORCED_FAILURE_EVIDENCE_SHA256 =
+  'sha256:e2a3ccf161ac33b938da45e1e50569fdbe6b28d34268b468b6dfd24a45d2c4e7';
+const FORCED_FAILURE_SOURCE_PATH =
+  'tests/oracle/numerical-exact-input-split-runtime-oracle.test.ts';
+const FORCED_FAILURE_SOURCE_SHA256 =
+  'sha256:4f4ca6c3c0d0dd42b4a5ce8731bbdeb9d351e1d59e719ff60ed0f14eafdcb2e2';
 const EVALUATION_ID =
   'm7a-core12-synthetic-exhaustive-numerical-path-shadow-price-evaluation-v1';
 const SEMANTIC_SHA256 =
-  'sha256:5cea9419623af330f1c05bfa30dadcce3553c6d334de2740655792cfe89a058a';
+  'sha256:96c123b72fd73aed2d6063f17d4f0e6ad90e834cd752959ec693598dec329661';
 const MANIFEST_SHA256 =
-  'sha256:b01f7c2ca5ef617882e95f5e0c9c7e26b72f387447e7917b7efb66abb6b6c898';
+  'sha256:c01afe75643973ac93a4820b6bb0c66d0bb99b4ddfed39c48c8dea7dffdf732f';
 const IMPLEMENTATION_REVISION = 'cdc5a83b47ca35e9173a41e95f7e32e81e4f9d85';
 
 const PROFILE_IDS = [
@@ -190,6 +200,75 @@ const NUMERICAL_CONFIGURATION = {
   innerIterations: 64,
   convergenceTolerance: 2 ** -40,
 } as const;
+const FORCED_FAILURE_CASES = [
+  {
+    scenario: 'missing-baseline-suppresses-numerical-work',
+    testName: 'RT00 has no incumbent and therefore no numerical proposal identity',
+    outcome: 'baseline-preserved',
+  },
+  {
+    scenario: 'natural-model-and-replay-outcomes',
+    testName: 'RT01-RT09 match frozen numerical outcomes and preserve or improve the exact baseline',
+    outcome: 'baseline-preserved',
+  },
+  {
+    scenario: 'normalization-iteration-underflow-and-convergence-failures',
+    testName: 'RT10-RT13 map normalization, atomic iteration, underflow, and convergence failures',
+    outcome: 'baseline-preserved',
+  },
+  {
+    scenario: 'numerical-cap-stops',
+    testName: 'all four numerical caps stop before charge and exact caps complete naturally',
+    outcome: 'baseline-preserved',
+  },
+  {
+    scenario: 'cap-callback-clock-precedence',
+    testName: 'cap precedence suppresses callback and clock at the pending numerical unit',
+    outcome: 'baseline-preserved',
+  },
+  {
+    scenario: 'callback-stops-and-callback-failures',
+    testName: 'callback true, throw, and nonboolean stop at every numerical kind',
+    outcome: 'baseline-preserved',
+  },
+  {
+    scenario: 'deadline-and-clock-failures',
+    testName: 'absolute deadline, clock failure, and one monotonic history cover every numerical kind',
+    outcome: 'baseline-preserved',
+  },
+  {
+    scenario: 'forced-proposal-core-failures',
+    testName: 'proposal-only seam maps the three naturally unreachable core failure codes',
+    outcome: 'baseline-preserved',
+  },
+  {
+    scenario: 'authorization-rejection-and-mismatch',
+    testName: 'authorization seam is phase-limited and requires recursive exact receipt identity',
+    outcome: 'baseline-preserved',
+  },
+  {
+    scenario: 'mutation-reentrancy-and-freshness',
+    testName: 'pool permutation, captured mutation, reentrancy, freshness, and deep freeze are deterministic',
+    outcome: 'baseline-preserved',
+  },
+] as const;
+const FORCED_FAILURE_LIMITATIONS = [
+  'This artifact binds the exact retained independent runtime-oracle source; the repository test gate executes that source, while the historical evaluator validates its canonical identity and derives the decision clause from the declared outcomes.',
+  'The historical evaluation does not inject failures into market cells, and this evidence makes no timing, performance, default-mode, production, or unrestricted-optimality claim.',
+] as const;
+const FORCED_FAILURE_SOURCE_BINDING = {
+  path: FORCED_FAILURE_SOURCE_PATH,
+  bytes: 52_464,
+  sha256: FORCED_FAILURE_SOURCE_SHA256,
+  testCount: 13,
+} as const;
+const FORCED_FAILURE_EVIDENCE_BINDING = {
+  evidenceId: FORCED_FAILURE_EVIDENCE_ID,
+  path: FORCED_FAILURE_EVIDENCE_PATH,
+  bytes: 2_721,
+  sha256: FORCED_FAILURE_EVIDENCE_SHA256,
+  source: FORCED_FAILURE_SOURCE_BINDING,
+} as const;
 const LIMITATIONS = [
   'One frozen block, venue, 12-asset allowlist, synthetic exhaustive request grid, and result-blind eligibility cohort only.',
   'Exact comparisons are request/profile-local; outputs are never summed across assets.',
@@ -241,6 +320,70 @@ function safeInteger(value: unknown): number {
 
 function sha256(value: string | Uint8Array): string {
   return `sha256:${createHash('sha256').update(value).digest('hex')}`;
+}
+
+function expectedForcedFailureEvidence(): JsonRecord {
+  return {
+    schemaVersion: 'routelab.numerical-forced-failure-evidence.v1',
+    evidenceId: FORCED_FAILURE_EVIDENCE_ID,
+    decisionClause: 'forced-failures-preserve-baseline',
+    runtimeRevision: IMPLEMENTATION_REVISION,
+    source: FORCED_FAILURE_SOURCE_BINDING,
+    rule: 'all-declared-forced-failure-scenarios-retain-an-exact-authorized-baseline',
+    cases: FORCED_FAILURE_CASES,
+    limitations: FORCED_FAILURE_LIMITATIONS,
+  };
+}
+
+function deriveDecision(
+  noEligibleObjectiveRegressions: boolean,
+  forcedFailureOutcomes: readonly string[],
+  allEligibleCandidateSetsHaveTerminalDiagnostics: boolean,
+  atLeastOneEligibleRequestStrictlyImprovesExactOutput: boolean,
+): JsonRecord {
+  const clauses = {
+    noEligibleObjectiveRegressions,
+    forcedFailuresPreserveBaseline:
+      forcedFailureOutcomes.length === FORCED_FAILURE_CASES.length
+      && forcedFailureOutcomes.every((outcome) => outcome === 'baseline-preserved'),
+    allEligibleCandidateSetsHaveTerminalDiagnostics,
+    atLeastOneEligibleRequestStrictlyImprovesExactOutput,
+  };
+  return {
+    mode: Object.values(clauses).every((value) => value) ? 'primary' : 'experimental',
+    clauses,
+  };
+}
+
+function reconstructForcedFailureEvidence(): readonly string[] {
+  const evidenceRaw = text(FORCED_FAILURE_EVIDENCE_PATH);
+  assert.equal(Buffer.byteLength(evidenceRaw), 2_721);
+  assert.equal(sha256(evidenceRaw), FORCED_FAILURE_EVIDENCE_SHA256);
+  assert.equal(evidenceRaw.endsWith('\n'), false);
+  assert.equal(JSON.stringify(expectedForcedFailureEvidence()), evidenceRaw);
+
+  const evidence = record(JSON.parse(evidenceRaw) as unknown);
+  const cases = array(evidence['cases']).map(record);
+  assert.equal(cases.length, 10);
+  assert.deepEqual(cases, FORCED_FAILURE_CASES);
+  const outcomes = cases.map((current) => String(current['outcome']));
+  assert.ok(outcomes.length > 0);
+
+  const sourceRaw = text(FORCED_FAILURE_SOURCE_PATH);
+  assert.equal(Buffer.byteLength(sourceRaw), 52_464);
+  assert.equal(sha256(sourceRaw), FORCED_FAILURE_SOURCE_SHA256);
+  const declaredTestNames = [...sourceRaw.matchAll(/^void test\('([^']+)'/gmu)]
+    .map((match) => match[1] ?? '');
+  assert.equal(declaredTestNames.length, 13);
+  assert.equal(new Set(declaredTestNames).size, 13);
+  const requiredTestNames = cases.map((current) => String(current['testName']));
+  const requiredTestNameSet = new Set(requiredTestNames);
+  assert.equal(requiredTestNameSet.size, 10);
+  assert.deepEqual(
+    declaredTestNames.filter((name) => requiredTestNameSet.has(name)),
+    requiredTestNames,
+  );
+  return outcomes;
 }
 
 function assertNoObservationKeys(value: unknown): void {
@@ -1090,6 +1233,7 @@ function expectedManifest(summary: JsonRecord): JsonRecord {
       snapshotChecksum: SNAPSHOT_CHECKSUM,
       corpusId: CORPUS_ID,
       corpusSha256: CORPUS_SHA256,
+      forcedFailureEvidence: FORCED_FAILURE_EVIDENCE_BINDING,
       baselineSemanticResultsSha256: BASELINE_SEMANTIC_SHA256,
     },
     runtime: {
@@ -1107,9 +1251,14 @@ function expectedManifest(summary: JsonRecord): JsonRecord {
         bytes: 261_915,
         sha256: ELIGIBILITY_SHA256,
       },
+      forcedFailureEvidence: {
+        path: FORCED_FAILURE_EVIDENCE_PATH,
+        bytes: 2_721,
+        sha256: FORCED_FAILURE_EVIDENCE_SHA256,
+      },
       semanticResults: {
         path: 'semantic-results.json',
-        bytes: 21_697_979,
+        bytes: 21_698_448,
         sha256: SEMANTIC_SHA256,
       },
     },
@@ -1125,7 +1274,34 @@ function expectedManifest(summary: JsonRecord): JsonRecord {
   };
 }
 
+void test('independently binds retained forced-failure evidence to the mode decision', () => {
+  const outcomes = reconstructForcedFailureEvidence();
+  assert.deepEqual(deriveDecision(true, outcomes, true, true), {
+    mode: 'primary',
+    clauses: {
+      noEligibleObjectiveRegressions: true,
+      forcedFailuresPreserveBaseline: true,
+      allEligibleCandidateSetsHaveTerminalDiagnostics: true,
+      atLeastOneEligibleRequestStrictlyImprovesExactOutput: true,
+    },
+  });
+
+  const unfavorableOutcomes = [...outcomes];
+  unfavorableOutcomes[4] = 'baseline-not-preserved';
+  assert.deepEqual(deriveDecision(true, unfavorableOutcomes, true, true), {
+    mode: 'experimental',
+    clauses: {
+      noEligibleObjectiveRegressions: true,
+      forcedFailuresPreserveBaseline: false,
+      allEligibleCandidateSetsHaveTerminalDiagnostics: true,
+      atLeastOneEligibleRequestStrictlyImprovesExactOutput: true,
+    },
+  });
+  assert.equal(deriveDecision(true, [], true, true)['mode'], 'experimental');
+});
+
 void test('independently reconstructs the frozen historical numerical evaluation', () => {
+  const forcedFailureOutcomes = reconstructForcedFailureEvidence();
   const snapshotRaw = parse(`${DATASET}/snapshot.json`);
   assert.equal(snapshotRaw['snapshotId'], DATASET_ID);
   assert.equal(snapshotRaw['snapshotChecksum'], SNAPSHOT_CHECKSUM);
@@ -1275,7 +1451,7 @@ void test('independently reconstructs the frozen historical numerical evaluation
   assert.equal(JSON.stringify(expectedEligibility), eligibilityRaw);
 
   const semanticRaw = text(`${EVALUATION}/semantic-results.json`);
-  assert.equal(Buffer.byteLength(semanticRaw), 21_697_979);
+  assert.equal(Buffer.byteLength(semanticRaw), 21_698_448);
   assert.equal(sha256(semanticRaw), SEMANTIC_SHA256);
   assert.equal(semanticRaw.endsWith('\n'), false);
   assert.equal(semanticRaw.includes('implementationRevision'), false);
@@ -1338,6 +1514,7 @@ void test('independently reconstructs the frozen historical numerical evaluation
       corpusSha256: CORPUS_SHA256,
       comparisonConfigSha256: COMPARISON_CONFIG_SHA256,
       eligibilitySha256: ELIGIBILITY_SHA256,
+      forcedFailureEvidence: FORCED_FAILURE_EVIDENCE_BINDING,
       baselineSemanticResultsSha256: BASELINE_SEMANTIC_SHA256,
     };
 
@@ -1423,13 +1600,22 @@ void test('independently reconstructs the frozen historical numerical evaluation
   assert.deepEqual(failureCounts, { 'non-convergence': 1_381, 'residual-options-exhausted': 1_487 });
   assert.equal(strictlyImprovedRequests.size, 307);
   assert.equal(terminalDiagnostics, true);
-  const clauses = {
-    noEligibleObjectiveRegressions: relationCounts.regressed === 0,
-    forcedFailuresPreserveBaseline: true,
-    allEligibleCandidateSetsHaveTerminalDiagnostics: terminalDiagnostics,
-    atLeastOneEligibleRequestStrictlyImprovesExactOutput: strictlyImprovedRequests.size > 0,
-  };
-  assert.deepEqual(clauses, {
+  const decision = deriveDecision(
+    relationCounts.regressed === 0,
+    forcedFailureOutcomes,
+    terminalDiagnostics,
+    strictlyImprovedRequests.size > 0,
+  );
+  assert.deepEqual(decision, {
+    mode: 'primary',
+    clauses: {
+      noEligibleObjectiveRegressions: true,
+      forcedFailuresPreserveBaseline: true,
+      allEligibleCandidateSetsHaveTerminalDiagnostics: true,
+      atLeastOneEligibleRequestStrictlyImprovesExactOutput: true,
+    },
+  });
+  assert.deepEqual(record(decision['clauses']), {
     noEligibleObjectiveRegressions: true,
     forcedFailuresPreserveBaseline: true,
     allEligibleCandidateSetsHaveTerminalDiagnostics: true,
@@ -1451,7 +1637,7 @@ void test('independently reconstructs the frozen historical numerical evaluation
       counterMaxima: Object.fromEntries(COUNTER_FIELDS.map((field) => [field, maxima[field]])),
     },
     strictlyImprovedRequestCount: strictlyImprovedRequests.size,
-    decision: { mode: 'primary', clauses },
+    decision,
   };
   const expectedSemantic = {
     schemaVersion: 'routelab.numerical-historical-semantic-results.v1',
@@ -1466,6 +1652,7 @@ void test('independently reconstructs the frozen historical numerical evaluation
       comparisonConfigSha256: COMPARISON_CONFIG_SHA256,
       eligibilityId: ELIGIBILITY_ID,
       eligibilitySha256: ELIGIBILITY_SHA256,
+      forcedFailureEvidence: FORCED_FAILURE_EVIDENCE_BINDING,
       baselineSemanticResultsSha256: BASELINE_SEMANTIC_SHA256,
     },
     schedule: {
@@ -1482,7 +1669,7 @@ void test('independently reconstructs the frozen historical numerical evaluation
   assert.equal(JSON.stringify(expectedSemantic), semanticRaw);
 
   const manifestRaw = text(`${EVALUATION}/manifest.json`);
-  assert.equal(Buffer.byteLength(manifestRaw), 2_275);
+  assert.equal(Buffer.byteLength(manifestRaw), 2_940);
   assert.equal(sha256(manifestRaw), MANIFEST_SHA256);
   assert.equal(manifestRaw.endsWith('\n'), false);
   assert.equal(JSON.stringify(expectedManifest(summary)), manifestRaw);

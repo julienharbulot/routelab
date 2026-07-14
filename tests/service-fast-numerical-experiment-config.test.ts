@@ -16,9 +16,9 @@ const ARTIFACT_SCHEMA = path.join(
   'fixtures/m7c/service-fast-numerical/experiment-artifact-schema.v1.json',
 );
 const VERIFIER = path.join(ROOT, 'cli/verify-service-fast-numerical-experiment-config.ts');
-const EXPECTED_CONFIG_BYTES = 62_014;
+const EXPECTED_CONFIG_BYTES = 64_077;
 const EXPECTED_CONFIG_SHA256 =
-  '191bce2ff6a39cc7cbef5ce233c3b322b6eb04747e41965e7764298cb206edac';
+  'bbbda3f30749d62489c63484ddfdfb063b72f4837b4f9137386759e99dcf9c12';
 const EXPECTED_ARTIFACT_SCHEMA_BYTES = 64_860;
 const EXPECTED_ARTIFACT_SCHEMA_SHA256 =
   'ab4291f2fdb4fe3640b865e584a27ccbb6894b5f7cc8ee987fc8234e08c9fe1d';
@@ -178,4 +178,20 @@ void test('the compact semantic record has an output-independent uniform cap pro
   assert.equal(recordBytes, envelope.maximumSemanticRecordBytesIncludingLineFeed);
   assert.equal(recordBytes * envelope.semanticRecordCount, 264_629_376);
   assert.ok(recordBytes * envelope.semanticRecordCount <= envelope.semanticFileCapBytes);
+});
+
+void test('the pre-output counter accounting is closed and non-overlapping', () => {
+  const config = JSON.parse(readFileSync(CONFIG, 'utf8')) as {
+    readonly semanticEvidence: {
+      readonly counterOrder: readonly string[];
+      readonly counterSemantics: Readonly<Record<string, string>>;
+    };
+  };
+  const { counterOrder, counterSemantics } = config.semanticEvidence;
+  assert.deepEqual(Object.keys(counterSemantics).slice(0, 12), counterOrder);
+  assert.match(counterSemantics['shareActions'] ?? '', /every-endpoint-or-method-core/u);
+  assert.match(counterSemantics['methodActions'] ?? '', /excluding-the-common-endpoint/u);
+  assert.match(counterSemantics['outerUpdates'] ?? '', /final-recomputed-sample-is-not/u);
+  assert.match(counterSemantics['counterMutation'] ?? '', /pending-action-is-uncharged/u);
+  assert.match(counterSemantics['aggregateAccounting'] ?? '', /not-double-counted/u);
 });

@@ -691,6 +691,22 @@
       "proposals",
       "diagnostics"
     ],
+    "counterSemantics": {
+      "methodActions": "charge-before-every-method-core-share-action-success-or-failure-excluding-the-common-endpoint-actions-includes-bisection-inner-and-final-pinned-formula-and-newton-normalization-update-and-finalization-never-added-again-to-the-aggregate-cap",
+      "outerUpdates": "increment-only-when-one-complete-outer-sample-over-all-routes-updates-the-lambda-bracket-final-recomputed-sample-is-not-an-outer-update",
+      "shareActions": "charge-before-every-endpoint-or-method-core-share-action-success-or-failure-this-is-the-counter-governed-by-each-driver-maximumShareActions-and-counted-once-in-the-aggregate-cap",
+      "reconstructionSteps": "charge-before-each-route-pass-reconstruction-action-success-or-failure",
+      "residualReplays": "charge-before-each-current-residual-option-exact-scoring-replay-success-or-failure",
+      "residualRejections": "increment-when-a-charged-current-residual-option-exact-scoring-replay-rejects",
+      "repairReplays": "charge-before-each-complete-repair-neighbor-exact-scoring-replay-success-or-failure",
+      "repairRejections": "increment-when-a-charged-repair-neighbor-exact-scoring-replay-rejects",
+      "authorizationReplays": "charge-before-each-distinct-fresh-full-input-authorization-replay-success-or-failure",
+      "authorizationRejections": "increment-when-a-charged-authorization-replay-rejects-or-mismatches",
+      "proposals": "increment-once-when-a-model-resolved-candidate-set-enters-its-policy-proposal-state-before-its-first-share-action",
+      "diagnostics": "increment-once-when-a-retained-candidate-set-reaches-and-retains-one-terminal-typed-diagnostic",
+      "counterMutation": "every-charged-counter-increments-before-its-action-and-the-pending-action-is-uncharged-on-a-pre-action-stop",
+      "aggregateAccounting": "aggregate-is-the-sum-of-shareActions-reconstructionSteps-residualReplays-repairReplays-authorizationReplays-and-proposals-only-methodActions-outerUpdates-rejections-and-diagnostics-are-projections-and-are-not-double-counted"
+    },
     "candidateFailureCodes": [
       "invalid-route-model",
       "non-finite-normalization",

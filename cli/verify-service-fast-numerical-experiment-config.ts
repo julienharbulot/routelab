@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const EXPECTED_CONFIG_BYTES = 62_014;
+const EXPECTED_CONFIG_BYTES = 64_077;
 const EXPECTED_CONFIG_SHA256 =
-  'sha256:191bce2ff6a39cc7cbef5ce233c3b322b6eb04747e41965e7764298cb206edac';
+  'sha256:bbbda3f30749d62489c63484ddfdfb063b72f4837b4f9137386759e99dcf9c12';
 const CONFIG_PATH = 'fixtures/m7c/service-fast-numerical/experiment-config.v1.json';
 
 type KnownJsonKey =
@@ -402,6 +402,58 @@ function verifyActionAndArtifactArithmetic(config: JsonObject): void {
   if (integer(semantic.cellCount, 'semantic cell count') !== 1584 * 24) {
     fail('semantic record count formula mismatch.');
   }
+  same(
+    semantic['counterOrder'],
+    [
+      'methodActions',
+      'outerUpdates',
+      'shareActions',
+      'reconstructionSteps',
+      'residualReplays',
+      'residualRejections',
+      'repairReplays',
+      'repairRejections',
+      'authorizationReplays',
+      'authorizationRejections',
+      'proposals',
+      'diagnostics',
+    ],
+    'semantic counter order',
+  );
+  same(
+    semantic['counterSemantics'],
+    {
+      methodActions:
+        'charge-before-every-method-core-share-action-success-or-failure-excluding-the-common-endpoint-actions-includes-bisection-inner-and-final-pinned-formula-and-newton-normalization-update-and-finalization-never-added-again-to-the-aggregate-cap',
+      outerUpdates:
+        'increment-only-when-one-complete-outer-sample-over-all-routes-updates-the-lambda-bracket-final-recomputed-sample-is-not-an-outer-update',
+      shareActions:
+        'charge-before-every-endpoint-or-method-core-share-action-success-or-failure-this-is-the-counter-governed-by-each-driver-maximumShareActions-and-counted-once-in-the-aggregate-cap',
+      reconstructionSteps:
+        'charge-before-each-route-pass-reconstruction-action-success-or-failure',
+      residualReplays:
+        'charge-before-each-current-residual-option-exact-scoring-replay-success-or-failure',
+      residualRejections:
+        'increment-when-a-charged-current-residual-option-exact-scoring-replay-rejects',
+      repairReplays:
+        'charge-before-each-complete-repair-neighbor-exact-scoring-replay-success-or-failure',
+      repairRejections:
+        'increment-when-a-charged-repair-neighbor-exact-scoring-replay-rejects',
+      authorizationReplays:
+        'charge-before-each-distinct-fresh-full-input-authorization-replay-success-or-failure',
+      authorizationRejections:
+        'increment-when-a-charged-authorization-replay-rejects-or-mismatches',
+      proposals:
+        'increment-once-when-a-model-resolved-candidate-set-enters-its-policy-proposal-state-before-its-first-share-action',
+      diagnostics:
+        'increment-once-when-a-retained-candidate-set-reaches-and-retains-one-terminal-typed-diagnostic',
+      counterMutation:
+        'every-charged-counter-increments-before-its-action-and-the-pending-action-is-uncharged-on-a-pre-action-stop',
+      aggregateAccounting:
+        'aggregate-is-the-sum-of-shareActions-reconstructionSteps-residualReplays-repairReplays-authorizationReplays-and-proposals-only-methodActions-outerUpdates-rejections-and-diagnostics-are-projections-and-are-not-double-counted',
+    },
+    'semantic counter semantics',
+  );
   const protocol = object(config.operationalProtocol, 'operationalProtocol');
   const callOnly = object(protocol.callOnly, 'callOnly');
   const instrumented = object(protocol.instrumented, 'instrumented');

@@ -48,8 +48,8 @@
   },
   "artifactSchema": {
     "path": "fixtures/m7c/service-fast-numerical/experiment-artifact-schema.v1.json",
-    "bytes": 64860,
-    "sha256": "sha256:ab4291f2fdb4fe3640b865e584a27ccbb6894b5f7cc8ee987fc8234e08c9fe1d"
+    "bytes": 65692,
+    "sha256": "sha256:ab5620110543f5fc5d7e032a4069c1693f95251dbe50ea848fca773b2b80f626"
   },
   "boundInputs": {
     "suiteConfig": {
@@ -810,6 +810,18 @@
       "totalMemoryBytes",
       "timezone"
     ],
+    "recordOnlyAdmission": {
+      "cpuSpeedMHz": "safe-nonnegative-integer-at-most-9007199254740991",
+      "totalMemoryBytes": "canonical-positive-decimal-at-most-9007199254740991-and-at-most-16-decimal-digits",
+      "timezone": "nonempty-json-string-at-most-128-utf8-bytes"
+    },
+    "clockAdmission": {
+      "maximumNanosecondDecimalDigits": 20,
+      "maximumNanosecondValue": "99999999999999999999",
+      "rawSamples": "every-process-hrtime-bigint-sample-must-be-nonnegative-and-at-most-the-maximum-or-clock-invariant-failure",
+      "derivedValues": "every-retained-elapsed-or-relative-event-nanosecond-value-must-be-nonnegative-and-at-most-the-maximum-or-clock-invariant-failure",
+      "absoluteDeadlines": "entry-sample-plus-configured-deadline-duration-must-be-nonnegative-and-at-most-the-maximum-before-any-candidate-action-or-clock-invariant-failure"
+    },
     "clock": "process.hrtime.bigint",
     "clockUnit": "nanoseconds",
     "deadlineMillisecondMultiplier": "1000000",
@@ -913,7 +925,7 @@
     "amplifiedOperationalTiming": false
   },
   "metricArithmetic": {
-    "elapsedAndEventType": "nonnegative-bigint-nanoseconds",
+    "elapsedAndEventType": "nonnegative-bigint-nanoseconds-at-most-runtime.clockAdmission.maximumNanosecondValue",
     "negativeNonmonotonicOrStructuralOverflow": "integrity-failure",
     "perRequestCallMedian": "middle-of-five-sorted-values",
     "pairedCallDelta": "candidate-per-request-median-minus-anchor-per-request-median",
@@ -1554,6 +1566,20 @@
         "semanticFileCapBytes": 268435456,
         "proof": "verifier-constructs-a-field-order-exact-conservative-four-set-envelope-with-one-maximal-repair-target-four-authorizations-and-the-longest-independent-field-representations-even-when-mutually-exclusive-using-Number.MAX_SAFE_INTEGER-for-every-structural-number-and-counter-even-though-cross-field-caps-are-lower-so-every-valid-record-is-no-larger"
       },
+      "operationalEnvelope": {
+        "requiredAtConfigVerification": true,
+        "maximumNanosecondDecimalDigits": 20,
+        "maximumNanosecondValue": "99999999999999999999",
+        "maximumSafeIntegerDecimalDigits": 16,
+        "maximumRecordOnlyTotalMemoryValue": "9007199254740991",
+        "maximumRecordOnlyTimezoneUtf8Bytes": 128,
+        "maximumRecordOnlyTimezoneEscapedJsonContentBytes": 768,
+        "maximumOperationalRequestsPerCase": 108,
+        "maximumExactRationalMagnitudeDecimalDigits": 23,
+        "decisionReason": "closed-enum-three-values",
+        "readmeAdmission": "fixed-template-dry-serialized-with-maximal-config-and-committed-input-derived-widths-before-source-closure",
+        "proof": "with-M-equal-99999999999999999999-each-stored-time-and-absolute-deadline-is-at-most-M-each-even-median-numerator-magnitude-is-at-most-2M-and-each-case-sum-numerator-or-denominator-is-at-most-108M-so-every-retained-ExactRational-magnitude-has-at-most-23-decimal-digits-timezone-json-content-is-at-most-six-times-its-128-byte-utf8-admission-decision-reasons-are-a-closed-enum-README-is-dry-serialized-and-all-remaining-variable-width-fields-are-bounded-from-the-committed-input-before-source-closure"
+      },
       "perFileProof": "record-count-times-maximal-record-bytes-plus-required-line-feeds-is-less-than-or-equal-to-file-cap",
       "directoryProof": "sum-of-proved-file-maxima-is-less-than-or-equal-to-maximumDirectoryBytes",
       "runtimeEnforcement": "incremental-byte-accounting-rejects-before-write-exceeding-any-file-or-directory-cap",
@@ -1562,7 +1588,20 @@
     "ndjsonSerialization": "canonical-minified-utf8-one-record-per-line-one-trailing-line-feed",
     "jsonSerialization": "canonical-minified-utf8-one-trailing-line-feed",
     "retainedInputs": "exact-byte-copy-of-pre-observation-input-artifact-never-rederived",
-    "publication": "fresh-sibling-staging-exclusive-files-whole-eight-file-directory-atomic-no-overwrite-rename",
+    "publication": {
+      "atomicVisibility": "destination-becomes-visible-at-one-same-parent-directory-rename-after-all-eight-files-and-the-staging-directory-are-synced",
+      "coordinationScope": "single-host-filesystem-honoring-open-wx-exclusivity-and-same-parent-directory-rename-no-overwrite-among-cooperating-tool-instances-only-noncooperating-external-creators-are-outside-the-no-overwrite-claim",
+      "filesystemPrecondition": "lock-staging-and-destination-must-share-one-local-filesystem-with-open-wx-exclusivity-and-atomic-same-parent-directory-rename-semantics-or-reject-before-any-candidate-call",
+      "lockPath": "same-parent-dot-retained-directory-basename-publication-lock",
+      "lockAcquisition": "complete-preflight-before-any-candidate-call-open-wx-and-hold-the-owned-handle-through-commit-and-cleanup-existing-lock-rejects-and-a-stale-lock-is-never-auto-removed",
+      "destinationChecks": "lstat-destination-must-return-enoent-after-lock-acquisition-and-immediately-before-rename-any-existing-file-directory-or-symlink-rejects",
+      "staging": "fresh-unique-same-parent-directory-each-of-the-eight-fixed-files-created-with-open-wx",
+      "failurePrecedence": "publication-lock-conflict-then-initial-destination-conflict-then-staging-file-cap-hash-or-sync-failure-then-final-destination-conflict-then-rename-failure-then-postcommit-parent-sync-or-owned-lock-cleanup-failure",
+      "commitPoint": "successful-staging-to-destination-directory-rename",
+      "preCommitFailure": "close-owned-handles-remove-only-the-owned-staging-directory-then-close-and-unlink-only-the-owned-lock-never-touch-the-destination-or-a-preexisting-lock-if-owned-staging-removal-fails-retain-the-lock-for-manual-review",
+      "postCommitFailure": "never-remove-or-replace-the-published-destination-report-parent-sync-or-owned-lock-cleanup-failure-separately",
+      "externalRaceDisposition": "detected-conflicts-reject-but-no-atomic-no-overwrite-guarantee-is-made-against-a-noncooperating-creator-between-the-final-lstat-and-rename"
+    },
     "semanticOperationalAnalysisManifestHashesSeparate": true,
     "unexpectedAbsoluteTraversalUnknownUnsafeIntegerNoncanonicalDecimalPartialOrOverwrite": "reject"
   },

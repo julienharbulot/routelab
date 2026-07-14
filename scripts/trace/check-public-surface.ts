@@ -37,6 +37,8 @@ export interface GitSnapshot {
   files: Map<string, SnapshotFile>;
 }
 
+export const TRACE_GIT_COMMAND_MAX_BUFFER_BYTES = 272 * 1024 * 1024;
+
 function escapeRegexCharacter(character: string): string {
   return /[\\^$.*+?()[\]{}|]/u.test(character) ? `\\${character}` : character;
 }
@@ -80,7 +82,7 @@ function gitBuffer(root: string, args: string[]): Buffer {
   return execFileSync('git', args, {
     cwd: root,
     encoding: 'buffer',
-    maxBuffer: 160 * 1024 * 1024,
+    maxBuffer: TRACE_GIT_COMMAND_MAX_BUFFER_BYTES,
   });
 }
 

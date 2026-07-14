@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const EXPECTED_CONFIG_BYTES = 64_077;
+const EXPECTED_CONFIG_BYTES = 68_175;
 const EXPECTED_CONFIG_SHA256 =
-  'sha256:bbbda3f30749d62489c63484ddfdfb063b72f4837b4f9137386759e99dcf9c12';
+  'sha256:d21a2156f3a291a52f9888a567d6b3f7372afacccb5dfc457292d7145e3842ac';
 const CONFIG_PATH = 'fixtures/m7c/service-fast-numerical/experiment-config.v1.json';
 
 type KnownJsonKey =
@@ -535,7 +535,8 @@ function verifyArtifactSchema(root: string, config: JsonObject): void {
     fail('unexpected artifact schema identity.');
   }
 
-  const primitiveIds = new Set(Object.keys(object(schema['primitiveCodecs'], 'primitiveCodecs')));
+  const primitiveCodecs = object(schema['primitiveCodecs'], 'primitiveCodecs');
+  const primitiveIds = new Set(Object.keys(primitiveCodecs));
   const enumIds = new Set(Object.keys(object(schema['enums'], 'enums')));
   const schemas = array(schema['objectSchemas'], 'objectSchemas').map((value, index) =>
     object(value, `objectSchemas[${index}]`),
@@ -602,11 +603,69 @@ function verifyArtifactSchema(root: string, config: JsonObject): void {
     if (value === undefined) fail(`missing artifact schema ${schemaId}.`);
     return schemaFieldNames(value, schemaId);
   };
+  const fieldTypes = (schemaId: string): readonly string[] => {
+    const value = schemaById.get(schemaId);
+    if (value === undefined) fail(`missing artifact schema ${schemaId}.`);
+    return array(value['fields'], `${schemaId}.fields`).map((fieldValue, index) => {
+      const field = array(fieldValue, `${schemaId}.fields[${index}]`);
+      return string(field[1], `${schemaId}.fields[${index}][1]`);
+    });
+  };
   if (
-    object(schema['primitiveCodecs'], 'primitiveCodecs')['counterVector'] !==
+    primitiveCodecs['counterVector'] !==
     'json-array-of-exactly-12-safe-nonnegative-integers-in-config.semanticEvidence.counterOrder-each-less-than-or-equal-config.actionCaps.aggregateServiceTransitionCap-100000'
   ) {
     fail('artifact counter-vector ceiling mismatch.');
+  }
+  same(
+    {
+      nanoseconds: primitiveCodecs['nanoseconds'],
+      boundedMetricSignedDecimal: primitiveCodecs['boundedMetricSignedDecimal'],
+      boundedMetricPositiveDecimal: primitiveCodecs['boundedMetricPositiveDecimal'],
+      recordOnlyTotalMemoryBytes: primitiveCodecs['recordOnlyTotalMemoryBytes'],
+      recordOnlyTimezone: primitiveCodecs['recordOnlyTimezone'],
+    },
+    {
+      nanoseconds:
+        'json-string-regex-^(0|[1-9][0-9]{0,19})$-maximum-20-decimal-digits-and-maximum-value-99999999999999999999',
+      boundedMetricSignedDecimal:
+        'json-string-regex-^(0|-?[1-9][0-9]{0,22})$-no-plus-no-negative-zero-maximum-23-magnitude-decimal-digits',
+      boundedMetricPositiveDecimal:
+        'json-string-regex-^[1-9][0-9]{0,22}$-maximum-23-decimal-digits',
+      recordOnlyTotalMemoryBytes:
+        'json-string-regex-^[1-9][0-9]{0,15}$-BigInt-at-most-9007199254740991',
+      recordOnlyTimezone: 'nonempty-json-string-utf8-byte-length-at-most-128',
+    },
+    'bounded operational primitive codecs',
+  );
+  same(
+    fieldTypes('ExactRational'),
+    ['primitive:boundedMetricSignedDecimal', 'primitive:boundedMetricPositiveDecimal'],
+    'bounded exact rational field types',
+  );
+  const environmentFields = fields('Environment');
+  const environmentTypes = fieldTypes('Environment');
+  if (
+    environmentTypes[environmentFields.indexOf('totalMemoryBytes')] !==
+      'primitive:recordOnlyTotalMemoryBytes' ||
+    environmentTypes[environmentFields.indexOf('timezone')] !==
+      'primitive:recordOnlyTimezone'
+  ) {
+    fail('bounded record-only environment field types do not match.');
+  }
+  same(
+    object(schema['enums'], 'enums')['decisionReason'],
+    [
+      'highest-ranked-qualifying-policy',
+      'trustworthy-complete-no-policy-qualified',
+      'incomplete-or-untrustworthy-observation',
+    ],
+    'decision reason enum',
+  );
+  const decisionFields = fields('Decision');
+  const decisionTypes = fieldTypes('Decision');
+  if (decisionTypes[decisionFields.indexOf('reason')] !== 'enum:decisionReason') {
+    fail('decision reason field type does not match.');
   }
   same(
     fields('IncumbentReference'),
@@ -863,6 +922,147 @@ function verifyUniformSemanticEnvelope(config: JsonObject): void {
   }
 }
 
+function verifyOperationalAdmission(config: JsonObject): void {
+  const maximumNanosecondValue = '9'.repeat(20);
+  const maximumNanoseconds = BigInt(maximumNanosecondValue);
+  const maximumSafeIntegerValue = Number.MAX_SAFE_INTEGER.toString(10);
+  const runtime = object(config['runtime'], 'runtime');
+  same(
+    runtime['recordOnlyAdmission'],
+    {
+      cpuSpeedMHz: 'safe-nonnegative-integer-at-most-9007199254740991',
+      totalMemoryBytes:
+        'canonical-positive-decimal-at-most-9007199254740991-and-at-most-16-decimal-digits',
+      timezone: 'nonempty-json-string-at-most-128-utf8-bytes',
+    },
+    'record-only environment admission',
+  );
+  same(
+    runtime['clockAdmission'],
+    {
+      maximumNanosecondDecimalDigits: 20,
+      maximumNanosecondValue,
+      rawSamples:
+        'every-process-hrtime-bigint-sample-must-be-nonnegative-and-at-most-the-maximum-or-clock-invariant-failure',
+      derivedValues:
+        'every-retained-elapsed-or-relative-event-nanosecond-value-must-be-nonnegative-and-at-most-the-maximum-or-clock-invariant-failure',
+      absoluteDeadlines:
+        'entry-sample-plus-configured-deadline-duration-must-be-nonnegative-and-at-most-the-maximum-before-any-candidate-action-or-clock-invariant-failure',
+    },
+    'clock admission',
+  );
+  if (
+    object(config['metricArithmetic'], 'metricArithmetic')['elapsedAndEventType'] !==
+      'nonnegative-bigint-nanoseconds-at-most-runtime.clockAdmission.maximumNanosecondValue'
+  ) {
+    fail('metric nanosecond admission does not match.');
+  }
+
+  const artifacts = object(config['artifacts'], 'artifacts');
+  const publication = object(artifacts['publication'], 'artifacts.publication');
+  const expectedPublication = {
+    atomicVisibility:
+      'destination-becomes-visible-at-one-same-parent-directory-rename-after-all-eight-files-and-the-staging-directory-are-synced',
+    coordinationScope:
+      'single-host-filesystem-honoring-open-wx-exclusivity-and-same-parent-directory-rename-no-overwrite-among-cooperating-tool-instances-only-noncooperating-external-creators-are-outside-the-no-overwrite-claim',
+    filesystemPrecondition:
+      'lock-staging-and-destination-must-share-one-local-filesystem-with-open-wx-exclusivity-and-atomic-same-parent-directory-rename-semantics-or-reject-before-any-candidate-call',
+    lockPath: 'same-parent-dot-retained-directory-basename-publication-lock',
+    lockAcquisition:
+      'complete-preflight-before-any-candidate-call-open-wx-and-hold-the-owned-handle-through-commit-and-cleanup-existing-lock-rejects-and-a-stale-lock-is-never-auto-removed',
+    destinationChecks:
+      'lstat-destination-must-return-enoent-after-lock-acquisition-and-immediately-before-rename-any-existing-file-directory-or-symlink-rejects',
+    staging:
+      'fresh-unique-same-parent-directory-each-of-the-eight-fixed-files-created-with-open-wx',
+    failurePrecedence:
+      'publication-lock-conflict-then-initial-destination-conflict-then-staging-file-cap-hash-or-sync-failure-then-final-destination-conflict-then-rename-failure-then-postcommit-parent-sync-or-owned-lock-cleanup-failure',
+    commitPoint: 'successful-staging-to-destination-directory-rename',
+    preCommitFailure:
+      'close-owned-handles-remove-only-the-owned-staging-directory-then-close-and-unlink-only-the-owned-lock-never-touch-the-destination-or-a-preexisting-lock-if-owned-staging-removal-fails-retain-the-lock-for-manual-review',
+    postCommitFailure:
+      'never-remove-or-replace-the-published-destination-report-parent-sync-or-owned-lock-cleanup-failure-separately',
+    externalRaceDisposition:
+      'detected-conflicts-reject-but-no-atomic-no-overwrite-guarantee-is-made-against-a-noncooperating-creator-between-the-final-lstat-and-rename',
+  } as const;
+  same(Object.keys(publication), Object.keys(expectedPublication), 'publication field order');
+  same(publication, expectedPublication, 'publication protocol');
+
+  const admission = object(artifacts['sizeAdmission'], 'artifacts.sizeAdmission');
+  const operational = object(
+    admission['operationalEnvelope'],
+    'artifacts.sizeAdmission.operationalEnvelope',
+  );
+  same(
+    operational,
+    {
+      requiredAtConfigVerification: true,
+      maximumNanosecondDecimalDigits: 20,
+      maximumNanosecondValue,
+      maximumSafeIntegerDecimalDigits: 16,
+      maximumRecordOnlyTotalMemoryValue: maximumSafeIntegerValue,
+      maximumRecordOnlyTimezoneUtf8Bytes: 128,
+      maximumRecordOnlyTimezoneEscapedJsonContentBytes: 768,
+      maximumOperationalRequestsPerCase: 108,
+      maximumExactRationalMagnitudeDecimalDigits: 23,
+      decisionReason: 'closed-enum-three-values',
+      readmeAdmission:
+        'fixed-template-dry-serialized-with-maximal-config-and-committed-input-derived-widths-before-source-closure',
+      proof:
+        'with-M-equal-99999999999999999999-each-stored-time-and-absolute-deadline-is-at-most-M-each-even-median-numerator-magnitude-is-at-most-2M-and-each-case-sum-numerator-or-denominator-is-at-most-108M-so-every-retained-ExactRational-magnitude-has-at-most-23-decimal-digits-timezone-json-content-is-at-most-six-times-its-128-byte-utf8-admission-decision-reasons-are-a-closed-enum-README-is-dry-serialized-and-all-remaining-variable-width-fields-are-bounded-from-the-committed-input-before-source-closure',
+    },
+    'operational size envelope',
+  );
+
+  const operationalCohort = object(
+    object(config['cohorts'], 'cohorts')['operational'],
+    'cohorts.operational',
+  );
+  const perCaseCounts = Object.values(
+    object(operationalCohort['perCaseCounts'], 'cohorts.operational.perCaseCounts'),
+  ).map((value, index) => integer(value, `operational per-case count ${index}`));
+  if (Math.max(...perCaseCounts) !== 108) {
+    fail('operational per-case maximum does not match the width proof.');
+  }
+  const evenMedianMaximum = 2n * maximumNanoseconds;
+  const caseSumMaximum = 108n * maximumNanoseconds;
+  if (
+    evenMedianMaximum.toString(10).length !== 21 ||
+    caseSumMaximum !== 10_799_999_999_999_999_999_892n ||
+    caseSumMaximum.toString(10).length !== 23 ||
+    maximumSafeIntegerValue.length !== 16 ||
+    Buffer.byteLength(JSON.stringify('\u0000'.repeat(128)), 'utf8') - 2 !== 768
+  ) {
+    fail('operational width arithmetic proof does not reproduce.');
+  }
+
+  const validNanoseconds = (value: string): boolean =>
+    /^(0|[1-9][0-9]{0,19})$/u.test(value) && BigInt(value) <= maximumNanoseconds;
+  const validMemory = (value: string): boolean =>
+    /^[1-9][0-9]{0,15}$/u.test(value) && BigInt(value) <= BigInt(Number.MAX_SAFE_INTEGER);
+  const validTimezone = (value: string): boolean =>
+    value.length > 0 && Buffer.byteLength(value, 'utf8') <= 128;
+  const validMetricSigned = (value: string): boolean =>
+    /^(0|-?[1-9][0-9]{0,22})$/u.test(value);
+  const validMetricPositive = (value: string): boolean =>
+    /^[1-9][0-9]{0,22}$/u.test(value);
+  if (
+    !validNanoseconds(maximumNanosecondValue) ||
+    validNanoseconds(`1${maximumNanosecondValue}`) ||
+    !validMemory(maximumSafeIntegerValue) ||
+    validMemory('0') ||
+    validMemory('9007199254740992') ||
+    !validTimezone('x'.repeat(128)) ||
+    validTimezone('') ||
+    validTimezone('x'.repeat(129)) ||
+    !validMetricSigned(`-${caseSumMaximum.toString(10)}`) ||
+    validMetricSigned(`1${caseSumMaximum.toString(10)}`) ||
+    !validMetricPositive(caseSumMaximum.toString(10)) ||
+    validMetricPositive(`1${caseSumMaximum.toString(10)}`)
+  ) {
+    fail('operational codec boundary proof does not reproduce.');
+  }
+}
+
 function verifyBindings(root: string, config: JsonObject): void {
   const expectedAuthorities = [
     'docs/invariants.md',
@@ -944,6 +1144,7 @@ function main(): void {
   verifyBindings(root, config);
   verifyArtifactSchema(root, config);
   verifyUniformSemanticEnvelope(config);
+  verifyOperationalAdmission(config);
   verifyCohorts(root, config);
   verifyPolicyMatrix(config);
   verifyActionAndArtifactArithmetic(config);

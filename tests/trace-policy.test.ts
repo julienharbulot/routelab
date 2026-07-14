@@ -14,6 +14,7 @@ import {
   globToRegExp,
   runCheck,
   runHistoryCheck,
+  TRACE_GIT_COMMAND_MAX_BUFFER_BYTES,
   type PublicSurfacePolicy,
 } from '../scripts/trace/check-public-surface.ts';
 import { promotionWriteAction, renderMarkdown, validateManifest } from '../scripts/trace/promote.ts';
@@ -22,6 +23,22 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const repositoryPolicy = JSON.parse(
   readFileSync(path.join(repositoryRoot, 'config/public-surface.json'), 'utf8'),
 ) as PublicSurfacePolicy;
+
+void test('trace blob capacity exceeds every retained experiment file cap', () => {
+  const experimentConfig = JSON.parse(
+    readFileSync(
+      path.join(
+        repositoryRoot,
+        'fixtures/m7c/service-fast-numerical/experiment-config.v1.json',
+      ),
+      'utf8',
+    ),
+  ) as { readonly artifacts: { readonly files: readonly { readonly maxBytes: number }[] } };
+  const maximumRetainedFileBytes = Math.max(
+    ...experimentConfig.artifacts.files.map((file) => file.maxBytes),
+  );
+  assert.ok(TRACE_GIT_COMMAND_MAX_BUFFER_BYTES > maximumRetainedFileBytes);
+});
 
 const pathPolicy = {
   forbiddenTrackedPatterns: [

@@ -28,7 +28,11 @@
     "canonicalUnsignedDecimal": "json-string-regex-^(0|[1-9][0-9]*)$",
     "canonicalPositiveDecimal": "json-string-regex-^[1-9][0-9]*$",
     "canonicalSignedDecimal": "json-string-regex-^(0|-?[1-9][0-9]*)$-no-plus-no-negative-zero",
-    "nanoseconds": "canonicalUnsignedDecimal",
+    "nanoseconds": "json-string-regex-^(0|[1-9][0-9]{0,19})$-maximum-20-decimal-digits-and-maximum-value-99999999999999999999",
+    "boundedMetricSignedDecimal": "json-string-regex-^(0|-?[1-9][0-9]{0,22})$-no-plus-no-negative-zero-maximum-23-magnitude-decimal-digits",
+    "boundedMetricPositiveDecimal": "json-string-regex-^[1-9][0-9]{0,22}$-maximum-23-decimal-digits",
+    "recordOnlyTotalMemoryBytes": "json-string-regex-^[1-9][0-9]{0,15}$-BigInt-at-most-9007199254740991",
+    "recordOnlyTimezone": "nonempty-json-string-utf8-byte-length-at-most-128",
     "binary64Bits": "json-string-regex-^[0-9a-f]{16}$-big-endian-bits",
     "sha256": "json-string-regex-^sha256:[0-9a-f]{64}$",
     "gitRevision": "json-string-regex-^[0-9a-f]{40}$",
@@ -184,6 +188,11 @@
       "selected-policy",
       "strict-reference-fallback",
       "rejected-observation"
+    ],
+    "decisionReason": [
+      "highest-ranked-qualifying-policy",
+      "trustworthy-complete-no-policy-qualified",
+      "incomplete-or-untrustworthy-observation"
     ],
     "nodeOptionsState": [
       "unset",
@@ -1581,11 +1590,11 @@
       "fields": [
         [
           "numerator",
-          "primitive:canonicalSignedDecimal"
+          "primitive:boundedMetricSignedDecimal"
         ],
         [
           "denominator",
-          "primitive:canonicalPositiveDecimal"
+          "primitive:boundedMetricPositiveDecimal"
         ]
       ],
       "crossFieldRules": [
@@ -1646,11 +1655,11 @@
         ],
         [
           "totalMemoryBytes",
-          "primitive:canonicalPositiveDecimal"
+          "primitive:recordOnlyTotalMemoryBytes"
         ],
         [
           "timezone",
-          "primitive:identifier"
+          "primitive:recordOnlyTimezone"
         ],
         [
           "execArgv",
@@ -2055,13 +2064,13 @@
         ],
         [
           "reason",
-          "primitive:identifier"
+          "enum:decisionReason"
         ]
       ],
       "crossFieldRules": [
-        "selected-policy-requires-nonanchor-policyId-null-fallback-and-nonempty-ranking-first-equals-policyId",
-        "strict-reference-fallback-requires-null-policyId-fallback-id-and-empty-ranking",
-        "rejected-observation-requires-null-policyId-null-fallback-and-empty-ranking",
+        "selected-policy-requires-nonanchor-policyId-null-fallback-nonempty-ranking-first-equals-policyId-and-reason-highest-ranked-qualifying-policy",
+        "strict-reference-fallback-requires-null-policyId-fallback-id-empty-ranking-and-reason-trustworthy-complete-no-policy-qualified",
+        "rejected-observation-requires-null-policyId-null-fallback-empty-ranking-and-reason-incomplete-or-untrustworthy-observation",
         "ranking-is-all-qualifiers-sorted-by-frozen-ranking-keys"
       ]
     },

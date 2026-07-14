@@ -483,7 +483,21 @@ export type PreparedPathShadowPriceResolutionResult =
       readonly ok: false;
     };
 
+/** @internal */
+export type PreparedPathShadowPriceRouteResolutionResult =
+  | {
+      readonly ok: true;
+      readonly value: PathShadowPriceResolvedRoute;
+    }
+  | {
+      readonly ok: false;
+    };
+
 function invalidPreparedPathShadowPriceRoutes(): PreparedPathShadowPriceResolutionResult {
+  return Object.freeze({ ok: false });
+}
+
+function invalidPreparedPathShadowPriceRoute(): PreparedPathShadowPriceRouteResolutionResult {
   return Object.freeze({ ok: false });
 }
 
@@ -517,6 +531,9 @@ function captureDirectionalHop(value: unknown): DirectionalRouteHop | undefined 
 
 function captureDirectionalRoutes(
   value: unknown,
+  minimumRouteCount: number,
+  maximumRouteCount = Number.MAX_SAFE_INTEGER,
+  maximumHopCount = Number.MAX_SAFE_INTEGER,
 ): readonly (readonly DirectionalRouteHop[])[] | undefined {
   try {
     if (!Array.isArray(value)) return undefined;
@@ -529,14 +546,26 @@ function captureDirectionalRoutes(
   } catch {
     return undefined;
   }
-  if (!Number.isSafeInteger(routeCount) || routeCount < 2) return undefined;
+  if (
+    !Number.isSafeInteger(routeCount) ||
+    routeCount < minimumRouteCount ||
+    routeCount > maximumRouteCount
+  ) {
+    return undefined;
+  }
   const routes: Array<readonly DirectionalRouteHop[]> = [];
   try {
     for (let routeIndex = 0; routeIndex < routeCount; routeIndex += 1) {
       const sourceRoute: unknown = value[routeIndex];
       if (!Array.isArray(sourceRoute)) return undefined;
       const hopCount = sourceRoute.length;
-      if (!Number.isSafeInteger(hopCount) || hopCount < 1) return undefined;
+      if (
+        !Number.isSafeInteger(hopCount) ||
+        hopCount < 1 ||
+        hopCount > maximumHopCount
+      ) {
+        return undefined;
+      }
       const route: DirectionalRouteHop[] = [];
       for (let hopIndex = 0; hopIndex < hopCount; hopIndex += 1) {
         const hop = captureDirectionalHop(sourceRoute[hopIndex]);
@@ -551,21 +580,10 @@ function captureDirectionalRoutes(
   return Object.freeze(routes);
 }
 
-/**
- * Resolves a canonical prepared candidate set into fresh identifier-free financial hops.
- * @internal
- */
-export function resolvePreparedPathShadowPriceRoutes(
-  context: PreparedRoutingContext,
-  sourceRoutes: readonly (readonly DirectionalRouteHop[])[],
+function resolveCapturedPreparedPathShadowPriceRoutes(
+  state: PreparedRoutingContextState,
+  routes: readonly (readonly DirectionalRouteHop[])[],
 ): PreparedPathShadowPriceResolutionResult {
-  const state = preparedStates.get(context);
-  if (state === undefined) {
-    throw new TypeError('PreparedRoutingContext was not created by prepareRoutingContext.');
-  }
-  const routes = captureDirectionalRoutes(sourceRoutes);
-  if (routes === undefined) return invalidPreparedPathShadowPriceRoutes();
-
   const firstRoute = routes[0];
   const firstHop = firstRoute?.[0];
   const lastHop = firstRoute?.at(-1);
@@ -641,6 +659,46 @@ export function resolvePreparedPathShadowPriceRoutes(
   return Object.freeze({ ok: true, value: Object.freeze(resolvedRoutes) });
 }
 
+/**
+ * Resolves a canonical prepared candidate set into fresh identifier-free financial hops.
+ * @internal
+ */
+export function resolvePreparedPathShadowPriceRoutes(
+  context: PreparedRoutingContext,
+  sourceRoutes: readonly (readonly DirectionalRouteHop[])[],
+): PreparedPathShadowPriceResolutionResult {
+  const state = preparedStates.get(context);
+  if (state === undefined) {
+    throw new TypeError('PreparedRoutingContext was not created by prepareRoutingContext.');
+  }
+  const routes = captureDirectionalRoutes(sourceRoutes, 2);
+  if (routes === undefined) return invalidPreparedPathShadowPriceRoutes();
+
+  return resolveCapturedPreparedPathShadowPriceRoutes(state, routes);
+}
+
+/**
+ * Resolves exactly one bounded prepared service route into fresh financial hops.
+ * @internal
+ */
+export function resolvePreparedPathShadowPriceRoute(
+  context: PreparedRoutingContext,
+  sourceRoute: readonly DirectionalRouteHop[],
+): PreparedPathShadowPriceRouteResolutionResult {
+  const state = preparedStates.get(context);
+  if (state === undefined) {
+    throw new TypeError('PreparedRoutingContext was not created by prepareRoutingContext.');
+  }
+  const routes = captureDirectionalRoutes([sourceRoute], 1, 1, 4);
+  if (routes === undefined) return invalidPreparedPathShadowPriceRoute();
+  const resolved = resolveCapturedPreparedPathShadowPriceRoutes(state, routes);
+  if (!resolved.ok) return invalidPreparedPathShadowPriceRoute();
+  const route = resolved.value[0];
+  return route === undefined
+    ? invalidPreparedPathShadowPriceRoute()
+    : Object.freeze({ ok: true, value: route });
+}
+
 /** Creates one opaque, request-local simple-path frontier. @internal */
 export function createPreparedSimplePathFrontier(
   context: PreparedRoutingContext,
@@ -690,10 +748,10 @@ export function hasPreparedSimplePathExpansion(
 /** Executes exactly one atomic path-expansion unit. @internal */
 export function expandPreparedSimplePathFrontier(
   frontier: PreparedSimplePathFrontier,
-): void {
+): readonly DirectionalRouteHop[] | undefined {
   const traversal = preparedPathFrontiers.get(frontier);
   if (traversal === undefined) throw new TypeError('Unknown prepared path frontier.');
-  expandSimplePathTraversal(traversal);
+  return expandSimplePathTraversal(traversal);
 }
 
 /** Materializes the completed prefix in accepted canonical order. @internal */

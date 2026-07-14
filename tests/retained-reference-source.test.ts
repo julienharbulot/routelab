@@ -29,6 +29,11 @@ const PROVENANCE_README = path.join(
   ROOT,
   'fixtures/m7/numerical-representative-profile/provenance/README.md',
 );
+const PACKAGE_PROVENANCE_README = path.join(
+  ROOT,
+  'fixtures/retained-reference-source/README.md',
+);
+const PACKAGE_SOURCE_REVISION = '8434ad6dc69517c33c04cbe36ec67967efe2cd46';
 const BINDINGS: readonly SourceBinding[] = [
   {
     logicalPath: 'src/router/numerical-exact-input-split/index.ts',
@@ -47,6 +52,12 @@ const BINDINGS: readonly SourceBinding[] = [
     provenancePath: 'fixtures/m7/numerical-representative-profile/provenance/verify-representative-numerical-profile.source.ts',
     bytes: 985,
     sha256: 'a47c599ec1b2565787a0811ea0e8e76456396aad6f8700c6c430d85f802354ae',
+  },
+  {
+    logicalPath: 'package.json',
+    provenancePath: 'fixtures/retained-reference-source/rlt080-package.source.json',
+    bytes: 2_017,
+    sha256: '490fbe328e08fbd1fe1edf171e09c099cf2bc0daa301aac9d1ddf6101a4cb101',
   },
 ];
 
@@ -97,6 +108,22 @@ void test('immutable numerical oracle and historical logical source identities r
     }
   }
   assert.equal(existsSync(PROVENANCE_README), existsSync(READER_PATH));
+  assert.equal(existsSync(PACKAGE_PROVENANCE_README), existsSync(READER_PATH));
+});
+
+void test('retained package provenance matches the RLT-080 profiler integration revision', () => {
+  const archived = readFileSync(path.join(
+    ROOT,
+    'fixtures/retained-reference-source/rlt080-package.source.json',
+  ));
+  const historical = spawnSync(
+    'git',
+    ['show', `${PACKAGE_SOURCE_REVISION}:package.json`],
+    { cwd: ROOT, maxBuffer: 16 * 1024 },
+  );
+  assert.equal(historical.error, undefined);
+  assert.equal(historical.status, 0, historical.stderr.toString('utf8'));
+  assert.deepEqual(historical.stdout, archived);
 });
 
 void test('provenance migration is absent only at the exact activation state or complete', async () => {
@@ -114,14 +141,16 @@ void test('provenance migration is absent only at the exact activation state or 
     'resolveRetainedReferenceSourcePath',
   ]);
   const readme = readFileSync(PROVENANCE_README, 'utf8');
+  const packageReadme = readFileSync(PACKAGE_PROVENANCE_README, 'utf8');
   for (const binding of BINDINGS) {
+    const sourceReadme = binding.logicalPath === 'package.json' ? packageReadme : readme;
     assert.equal(
       retained.resolveRetainedReferenceSourcePath(binding.logicalPath),
       binding.provenancePath,
     );
-    assert.equal(readme.includes(`\`${binding.logicalPath}\``), true);
-    assert.equal(readme.includes(`\`${binding.provenancePath}\``), true);
-    assert.equal(readme.includes(`\`${binding.sha256}\``), true);
+    assert.equal(sourceReadme.includes(`\`${binding.logicalPath}\``), true);
+    assert.equal(sourceReadme.includes(`\`${binding.provenancePath}\``), true);
+    assert.equal(sourceReadme.includes(`\`${binding.sha256}\``), true);
   }
 
   const passThroughPaths = [
@@ -136,6 +165,10 @@ void test('provenance migration is absent only at the exact activation state or 
     '/src/router/numerical-exact-input-split/index.ts',
     'src/router/numerical-exact-input-split/index.ts.backup',
     'SRC/router/numerical-exact-input-split/index.ts',
+    './package.json',
+    '/package.json',
+    'package.json.backup',
+    'Package.json',
     'fixtures/m7/numerical-representative-profile/profile-config.v1.json',
   ];
   for (const filePath of passThroughPaths) {

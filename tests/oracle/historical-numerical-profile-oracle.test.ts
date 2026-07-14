@@ -13,6 +13,8 @@ const HISTORICAL_REFERENCE_SOURCES: Readonly<Record<string, string>> = Object.fr
     'fixtures/m7/numerical-representative-profile/provenance/numerical-exact-input-split.index.source.ts',
   'cli/verify-historical-numerical-profile.ts':
     'fixtures/m7/numerical-representative-profile/provenance/verify-historical-numerical-profile.source.ts',
+  'package.json':
+    'fixtures/retained-reference-source/rlt080-package.source.json',
 });
 const CONFIG = 'fixtures/m7/numerical-baseline-profile/profile-config.v1.json';
 const ELIGIBILITY = 'fixtures/m7/numerical-historical/eligibility.v1.json';

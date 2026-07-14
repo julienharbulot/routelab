@@ -10,6 +10,8 @@ const RETAINED_REFERENCE_SOURCE_PATHS: Readonly<Record<string, string>> =
       'fixtures/m7/numerical-representative-profile/provenance/verify-historical-numerical-profile.source.ts',
     'cli/verify-representative-numerical-profile.ts':
       'fixtures/m7/numerical-representative-profile/provenance/verify-representative-numerical-profile.source.ts',
+    'package.json':
+      'fixtures/retained-reference-source/rlt080-package.source.json',
   });
 
 export function resolveRetainedReferenceSourcePath(filePath: string): string {

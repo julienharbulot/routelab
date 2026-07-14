@@ -1,0 +1,42 @@
+{
+  "name": "routelab-ts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.12.0",
+  "engines": {
+    "node": ">=24.12.0 <25",
+    "pnpm": "11.12.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src cli tests scripts",
+    "test": "node --test \"tests/**/*.test.ts\"",
+    "test:pool": "node --test tests/constant-product.test.ts",
+    "replay:cases": "node cli/replay-cases.ts",
+    "replay:split-cases": "node cli/replay-split-cases.ts",
+    "verify:historical-data": "node cli/verify-historical-dataset.ts",
+    "verify:synthetic-requests": "node cli/verify-synthetic-request-corpus.ts",
+    "evaluate:historical": "node cli/run-historical-composed-split-evaluation.ts",
+    "verify:historical-evaluation": "node cli/verify-historical-composed-split-evaluation.ts",
+    "evaluate:numerical": "node cli/run-historical-numerical-split-evaluation.ts",
+    "verify:numerical-evaluation": "node cli/verify-historical-numerical-split-evaluation.ts",
+    "profile:numerical-baseline": "node cli/run-historical-numerical-profile.ts",
+    "verify:numerical-baseline-profile": "node cli/verify-historical-numerical-profile.ts",
+    "measure:anytime": "node cli/measure-anytime.ts",
+    "demo": "node cli/demo.ts",
+    "trace:check": "pnpm trace:check:index",
+    "trace:check:index": "node scripts/trace/check-public-surface.ts --index",
+    "trace:check:head": "node scripts/trace/check-public-surface.ts --head",
+    "trace:check:history": "node scripts/trace/check-public-surface.ts --history",
+    "trace:promote": "node scripts/trace/promote.ts",
+    "check": "pnpm trace:check && pnpm lint && pnpm typecheck && pnpm test && pnpm verify:historical-data && pnpm verify:synthetic-requests && pnpm verify:historical-evaluation && pnpm verify:numerical-evaluation && pnpm demo"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.13.3",
+    "eslint": "10.7.0",
+    "typescript": "6.0.2",
+    "typescript-eslint": "8.63.0"
+  }
+}

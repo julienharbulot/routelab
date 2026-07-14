@@ -317,7 +317,10 @@
         "config-artifactSchema-inputArtifact-match-frozen-descriptors",
         "sources-follow-config-sourceArrayOrder-and-caps",
         "protectedSources-follow-config-protectedPaths-order-and-caps",
-        "accepted-run-before-candidate-calls-proves-HEAD-is-exactly-one-child-of-implementationInputRevision-and-the-only-parent-to-HEAD-diff-is-this-added-or-modified-closure-file-plus-empty-index-worktree-untracked-status-no-submodules-and-only-node-builtin-or-implementation-revision-tracked-relative-runtime-imports"
+        "accepted-run-before-lock-acquisition-proves-HEAD-is-exactly-one-child-of-implementationInputRevision-the-only-parent-to-HEAD-diff-is-this-added-or-modified-closure-file-and-index-worktree-untracked-nonignored-and-submodule-state-is-empty-deliberately-ignored-local-roots-may-exist-but-are-never-runtime-import-targets",
+        "the-fixed-sibling-publication-lock-is-then-acquired-with-open-wx-and-inode-bound-to-the-owned-handle-before-any-candidate-call",
+        "immediately-before-the-first-candidate-call-tracked-state-remains-clean-and-the-exact-owned-lock-path-and-inode-identity-is-the-only-untracked-nonignored-exception-deliberately-ignored-local-roots-may-exist-outside-runtime-import-closure-and-no-runtime-import-may-resolve-to-the-lock-any-other-untracked-path-or-any-ignored-path",
+        "staging-is-created-only-after-all-candidate-work-so-no-staging-exception-exists-at-the-candidate-call-gate-and-runtime-imports-remain-node-builtins-or-implementation-revision-tracked-relative-files"
       ]
     },
     {
@@ -927,6 +930,7 @@
       ],
       "crossFieldRules": [
         "failed-requires-nonnull-failureCode-and-null-weightBits-and-reconstructionHash",
+        "failed-failureCode-converged-and-completedOuterIterations-equal-the-exact-proposer-failure-progress-at-the-share-or-reconstruction-transition",
         "ready-requires-null-failureCode-nonnull-converged-weightBits-and-reconstructionHash",
         "under-final-finite-policy-ready-with-converged-false-is-the-canonical-retained-finite-nonconverged-replayed-diagnostic-while-the-parent-failureCode-remains-available-for-any-downstream-terminal-failure",
         "configured-inner-iterations-and-all-other-driver-parameters-are-derived-from-policyMatrixIndex-and-not-duplicated",
@@ -963,7 +967,8 @@
         "status-is-valid-or-rejected-never-not-run",
         "valid-requires-null-failureCode-and-nonnull-receiptHash",
         "rejected-requires-nonnull-failureCode-and-null-receiptHash",
-        "allocation-is-exact-sum-in-candidate-set-route-order"
+        "in-a-current-score-transcript-allocation-is-regenerated-from-the-current-residual-state-in-candidate-set-route-order-and-sums-to-the-exact-attempted-replay-and-receipt-amount-which-may-be-less-than-requested-input-before-the-final-residual-round",
+        "in-a-repair-score-transcript-allocation-is-regenerated-from-the-frozen-neighborhood-in-candidate-set-route-order-and-sums-to-the-full-requested-input"
       ]
     },
     {
@@ -1123,12 +1128,14 @@
         "selectedScoreSource-current-requires-currentScore-valid-and-its-selectedAttemptIndex-is-the-only-allocation-eligible-for-authorization",
         "selectedScoreSource-repair-requires-nonnull-complete-repair-with-nonnull-winnerAttemptIndex-and-that-index-is-the-only-allocation-eligible-for-authorization",
         "authorization-accepted-receiptHash-equals-the-fresh-replay-hash-of-that-exact-selected-source-and-attempt-index",
+        "every-repair-selected-and-authorization-allocation-sums-to-the-full-requested-input-while-each-current-attempt-sums-to-its-regenerated-attempted-replay-and-receipt-amount",
         "not-better-or-improved-without-failure-requires-null-parent-failureCode",
         "every-record-is-terminal-and-retained-even-on-failure-or-work-limit",
         "repair-is-null-except-on-the-result-blind-input-repair-target-set",
         "current-only-nontarget-disposition-denotes-that-repair-is-ineligible-and-remains-truthful-even-when-upstream-proposal-or-current-scoring-fails",
         "repair-target-with-upstream-proposal-failure-uses-repair-incomplete-disposition-and-matching-failureCode-without-neighbor-work",
-        "at-most-one-authorization-per-set"
+        "at-most-one-authorization-per-set",
+        "counters-are-attributable-to-this-set-only-and-terminal-diagnostics-have-diagnostics-equal-one"
       ]
     },
     {
@@ -1236,7 +1243,8 @@
         "caseId-requestId-policyId-and-cohort-membership-are-derived-exactly-from-sourceIndex-policyMatrixIndex-the-bound-input-and-config-and-are-not-duplicated",
         "entryIncumbentHash-is-sha256-of-minified-utf8-JSON.stringify-of-the-input-entryBaseline.incumbent-preserving-ExactIncumbent-field-order-without-line-feed",
         "candidateSetDiagnostics-has-one-member-per-input-candidate-set-and-at-most-four-members",
-        "finalIncumbent-is-the-entry-reference-or-the-last-monotonic-strictly-improving-accepted-candidate-set-install-in-candidate-set-order"
+        "finalIncumbent-is-the-entry-reference-or-the-last-monotonic-strictly-improving-accepted-candidate-set-install-in-candidate-set-order",
+        "counters-equal-the-elementwise-sum-of-every-candidateSetDiagnostics-counters-vector"
       ]
     },
     {
@@ -1261,7 +1269,11 @@
       ],
       "arrayRules": {
         "candidateSetDiagnostics": "retained-candidate-set-index-order"
-      }
+      },
+      "crossFieldRules": [
+        "counters-equal-the-elementwise-sum-of-every-candidateSetDiagnostics-counters-vector",
+        "protected-anchor-raw-per-set-methodActions-remain-null-and-every-retained-numeric-methodActions-value-is-admitted-only-after-configurable-shadow-parity"
+      ]
     },
     {
       "schemaId": "CallTimingRecord",
@@ -1441,6 +1453,7 @@
       "crossFieldRules": [
         "terminal-stage-requires-terminalStatus-nonnull",
         "nonterminal-stage-requires-terminalStatus-null",
+        "nonterminal-and-untouched-set-counters-have-diagnostics-zero-while-a-terminal-set-counter-has-diagnostics-one",
         "setIndex-references-the-input-candidateDiscovery-set-so-candidateSetKey-is-not-duplicated",
         "currentScoreTranscriptHash-and-repairScoreTranscriptHash-each-hash-their-completed-ScoreAttemptProjection-array-in-frozen-action-order",
         "authorizationTranscriptHash-hashes-the-completed-AuthorizationAttemptProjection-array-in-action-order-length-at-most-one",
@@ -1582,7 +1595,8 @@
       "crossFieldRules": [
         "incumbent-reference-fresh-exact-replays-against-the-requested-snapshot-and-input-candidate-set-after-the-timed-interval",
         "diagnosticStateHash-is-sha256-of-minified-utf8-JSON.stringify-array-of-DeadlineSetState-in-retained-set-order-without-line-feed",
-        "validatedOutcomeHash-is-sha256-of-minified-utf8-JSON.stringify-DeadlineOutcomeProjection-without-line-feed"
+        "validatedOutcomeHash-is-sha256-of-minified-utf8-JSON.stringify-DeadlineOutcomeProjection-without-line-feed",
+        "counters-equal-the-elementwise-sum-of-the-regenerated-DeadlineSetState-counters-vectors-for-the-complete-or-stopped-prefix"
       ]
     },
     {

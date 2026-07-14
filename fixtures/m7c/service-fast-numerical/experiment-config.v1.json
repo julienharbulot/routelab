@@ -48,8 +48,8 @@
   },
   "artifactSchema": {
     "path": "fixtures/m7c/service-fast-numerical/experiment-artifact-schema.v1.json",
-    "bytes": 65692,
-    "sha256": "sha256:ab5620110543f5fc5d7e032a4069c1693f95251dbe50ea848fca773b2b80f626"
+    "bytes": 67824,
+    "sha256": "sha256:a1639d3b0156f0135f1df25eff0f9e7693e95c85674cb02c04145a94a9d4a07a"
   },
   "boundInputs": {
     "suiteConfig": {
@@ -652,11 +652,11 @@
     "compactReplayEncoding": {
       "identity": "semanticIndex-sourceIndex-policyMatrixIndex-derive-case-request-policy-and-cohort-membership-from-the-bound-input-and-config",
       "entryIncumbent": "sha256-binding-to-the-complete-input-entryBaseline-incumbent",
-      "proposal": "retain-final-weight-bits-and-sha256-of-regenerated-integerWeights-baseAllocations-residualUnits-drop-policy-derived-configuration",
-      "currentScore": "selected-attempt-index-plus-complete-regenerated-score-transcript-hash-and-receipt-hash",
-      "repair": "target-only-null-for-nontarget-selected-attempt-index-plus-complete-regenerated-neighbor-transcript-hash-and-receipt-hash",
+      "proposal": "retain-final-weight-bits-and-sha256-of-regenerated-integerWeights-baseAllocations-residualUnits-or-on-share-or-reconstruction-failure-retain-the-exact-failureCode-converged-and-completedOuterUpdates-progress-drop-policy-derived-configuration",
+      "currentScore": "selected-attempt-index-plus-complete-regenerated-score-transcript-hash-and-receipt-hash-each-current-allocation-is-regenerated-from-residual-state-and-sums-to-its-attempted-replay-and-receipt-amount-which-may-be-partial-before-the-final-residual-round",
+      "repair": "target-only-null-for-nontarget-selected-attempt-index-plus-complete-regenerated-neighbor-transcript-hash-and-receipt-hash-every-repair-allocation-sums-to-full-requested-input",
       "incumbent": "entry-input-reference-or-candidate-set-score-attempt-reference-plus-complete-objective-hash-and-receipt-hash",
-      "selectionBinding": "candidate-incumbent-source-index-and-hashes-must-equal-the-parent-diagnostic-selected-current-or-repair-attempt-and-its-distinct-accepted-authorization-final-and-deadline-incumbents-are-last-monotonic-accepted-installs",
+      "selectionBinding": "candidate-incumbent-source-index-and-hashes-must-equal-the-parent-diagnostic-selected-current-or-repair-attempt-and-its-distinct-accepted-authorization-every-selected-and-authorization-allocation-sums-to-full-requested-input-final-and-deadline-incumbents-are-last-monotonic-accepted-installs",
       "replayAuthority": "artifact-verifier-regenerates-every-referenced-allocation-transcript-receipt-and-complete-objective-from-input-policy-and-frozen-operation-order-before-analysis-admission",
       "objectiveComparison": "decoded-regenerated-objective-fields-never-hash-or-serialized-key-lexicographic-comparison"
     },
@@ -705,7 +705,9 @@
       "proposals": "increment-once-when-a-model-resolved-candidate-set-enters-its-policy-proposal-state-before-its-first-share-action",
       "diagnostics": "increment-once-when-a-retained-candidate-set-reaches-and-retains-one-terminal-typed-diagnostic",
       "counterMutation": "every-charged-counter-increments-before-its-action-and-the-pending-action-is-uncharged-on-a-pre-action-stop",
-      "aggregateAccounting": "aggregate-is-the-sum-of-shareActions-reconstructionSteps-residualReplays-repairReplays-authorizationReplays-and-proposals-only-methodActions-outerUpdates-rejections-and-diagnostics-are-projections-and-are-not-double-counted"
+      "aggregateAccounting": "aggregate-is-the-sum-of-shareActions-reconstructionSteps-residualReplays-repairReplays-authorizationReplays-and-proposals-only-methodActions-outerUpdates-rejections-and-diagnostics-are-projections-and-are-not-double-counted",
+      "perSetAttribution": "every-complete-or-stopped-prefix-parent-counter-is-the-elementwise-sum-of-all-candidate-set-snapshot-counters-terminal-snapshot-counters-equal-the-distinct-terminal-diagnostic-counters-and-untouched-or-active-set-diagnostics-are-zero",
+      "protectedAnchorClassification": "protected-raw-parent-and-per-set-methodActions-are-null-and-numeric-parent-diagnostic-and-snapshot-methodActions-exist-only-after-configurable-shadow-parity-with-elementwise-per-set-attribution"
     },
     "candidateFailureCodes": [
       "invalid-route-model",
@@ -1331,9 +1333,11 @@
         "requiredBeforeCandidateCalls": true,
         "observationHeadRelation": "HEAD-is-exactly-one-child-commit-of-implementationInputRevision",
         "parentToHeadTrackedDiff": "exactly-one-added-or-modified-file-at-fixtures/m7c/service-fast-numerical/source-closure.v1.json-with-bytes-equal-current-closure",
-        "trackedIndexAndWorktreeDiff": "empty",
-        "untrackedFiles": "none",
-        "submodules": "none",
+        "preLockRepositoryState": "tracked-index-and-worktree-clean-no-untracked-nonignored-files-and-no-submodules-deliberately-ignored-local-roots-may-exist-but-are-never-runtime-import-targets",
+        "lockAcquisitionAndIdentity": "open-wx-the-fixed-sibling-publication-lock-and-inode-bind-that-exact-path-to-the-owned-open-handle-before-any-candidate-call",
+        "candidateCallRepositoryState": "immediately-before-the-first-candidate-call-tracked-index-and-worktree-remain-clean-and-the-only-untracked-nonignored-exception-is-the-exact-owned-lock-path-and-its-open-handle-inode-identity-deliberately-ignored-local-roots-may-exist-and-remain-outside-runtime-import-closure",
+        "candidateCallRuntimeImportRule": "no-runtime-import-may-resolve-to-the-owned-lock-path-any-other-untracked-path-or-any-ignored-path",
+        "stagingCreationOrder": "create-staging-only-after-all-candidate-work-so-no-staging-exception-exists-at-the-candidate-call-gate",
         "runtimeImportClosure": "node-builtins-or-repository-relative-files-tracked-at-implementationInputRevision-only-source-closure-is-read-as-data-from-HEAD",
         "bare-package-runtimeImports": "forbidden",
         "ignored-or-untracked-runtimeImportTargets": "forbidden",

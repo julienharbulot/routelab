@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const EXPECTED_CONFIG_BYTES = 68_175;
+const EXPECTED_CONFIG_BYTES = 69_930;
 const EXPECTED_CONFIG_SHA256 =
-  'sha256:d21a2156f3a291a52f9888a567d6b3f7372afacccb5dfc457292d7145e3842ac';
+  'sha256:c0b86e26106177f7fee5e8f4ae740e0b1f5a889c8e8b1246a65323d842a30f20';
 const CONFIG_PATH = 'fixtures/m7c/service-fast-numerical/experiment-config.v1.json';
 
 type KnownJsonKey =
@@ -451,8 +451,35 @@ function verifyActionAndArtifactArithmetic(config: JsonObject): void {
         'every-charged-counter-increments-before-its-action-and-the-pending-action-is-uncharged-on-a-pre-action-stop',
       aggregateAccounting:
         'aggregate-is-the-sum-of-shareActions-reconstructionSteps-residualReplays-repairReplays-authorizationReplays-and-proposals-only-methodActions-outerUpdates-rejections-and-diagnostics-are-projections-and-are-not-double-counted',
+      perSetAttribution:
+        'every-complete-or-stopped-prefix-parent-counter-is-the-elementwise-sum-of-all-candidate-set-snapshot-counters-terminal-snapshot-counters-equal-the-distinct-terminal-diagnostic-counters-and-untouched-or-active-set-diagnostics-are-zero',
+      protectedAnchorClassification:
+        'protected-raw-parent-and-per-set-methodActions-are-null-and-numeric-parent-diagnostic-and-snapshot-methodActions-exist-only-after-configurable-shadow-parity-with-elementwise-per-set-attribution',
     },
     'semantic counter semantics',
+  );
+  const compactReplay = object(
+    semantic['compactReplayEncoding'],
+    'semanticEvidence.compactReplayEncoding',
+  );
+  same(
+    {
+      proposal: compactReplay['proposal'],
+      currentScore: compactReplay['currentScore'],
+      repair: compactReplay['repair'],
+      selectionBinding: compactReplay['selectionBinding'],
+    },
+    {
+      proposal:
+        'retain-final-weight-bits-and-sha256-of-regenerated-integerWeights-baseAllocations-residualUnits-or-on-share-or-reconstruction-failure-retain-the-exact-failureCode-converged-and-completedOuterUpdates-progress-drop-policy-derived-configuration',
+      currentScore:
+        'selected-attempt-index-plus-complete-regenerated-score-transcript-hash-and-receipt-hash-each-current-allocation-is-regenerated-from-residual-state-and-sums-to-its-attempted-replay-and-receipt-amount-which-may-be-partial-before-the-final-residual-round',
+      repair:
+        'target-only-null-for-nontarget-selected-attempt-index-plus-complete-regenerated-neighbor-transcript-hash-and-receipt-hash-every-repair-allocation-sums-to-full-requested-input',
+      selectionBinding:
+        'candidate-incumbent-source-index-and-hashes-must-equal-the-parent-diagnostic-selected-current-or-repair-attempt-and-its-distinct-accepted-authorization-every-selected-and-authorization-allocation-sums-to-full-requested-input-final-and-deadline-incumbents-are-last-monotonic-accepted-installs',
+    },
+    'compact exact-evidence semantics',
   );
   const protocol = object(config.operationalProtocol, 'operationalProtocol');
   const callOnly = object(protocol.callOnly, 'callOnly');
@@ -611,6 +638,16 @@ function verifyArtifactSchema(root: string, config: JsonObject): void {
       return string(field[1], `${schemaId}.fields[${index}][1]`);
     });
   };
+  const crossFieldRules = (schemaId: string): readonly unknown[] => {
+    const value = schemaById.get(schemaId);
+    if (value === undefined) fail(`missing artifact schema ${schemaId}.`);
+    return array(value['crossFieldRules'], `${schemaId}.crossFieldRules`);
+  };
+  const requireCrossFieldRule = (schemaId: string, rule: string): void => {
+    if (!crossFieldRules(schemaId).includes(rule)) {
+      fail(`${schemaId} is missing frozen cross-field rule ${rule}.`);
+    }
+  };
   if (
     primitiveCodecs['counterVector'] !==
     'json-array-of-exactly-12-safe-nonnegative-integers-in-config.semanticEvidence.counterOrder-each-less-than-or-equal-config.actionCaps.aggregateServiceTransitionCap-100000'
@@ -732,6 +769,38 @@ function verifyArtifactSchema(root: string, config: JsonObject): void {
     ],
     'compact candidate-set diagnostic fields',
   );
+  requireCrossFieldRule(
+    'ProposalEvidence',
+    'failed-failureCode-converged-and-completedOuterIterations-equal-the-exact-proposer-failure-progress-at-the-share-or-reconstruction-transition',
+  );
+  requireCrossFieldRule(
+    'ScoreAttemptProjection',
+    'in-a-current-score-transcript-allocation-is-regenerated-from-the-current-residual-state-in-candidate-set-route-order-and-sums-to-the-exact-attempted-replay-and-receipt-amount-which-may-be-less-than-requested-input-before-the-final-residual-round',
+  );
+  requireCrossFieldRule(
+    'ScoreAttemptProjection',
+    'in-a-repair-score-transcript-allocation-is-regenerated-from-the-frozen-neighborhood-in-candidate-set-route-order-and-sums-to-the-full-requested-input',
+  );
+  requireCrossFieldRule(
+    'CandidateSetDiagnostic',
+    'every-repair-selected-and-authorization-allocation-sums-to-the-full-requested-input-while-each-current-attempt-sums-to-its-regenerated-attempted-replay-and-receipt-amount',
+  );
+  requireCrossFieldRule(
+    'SemanticResultRecord',
+    'counters-equal-the-elementwise-sum-of-every-candidateSetDiagnostics-counters-vector',
+  );
+  requireCrossFieldRule(
+    'OperationalCompleteOutcomeProjection',
+    'protected-anchor-raw-per-set-methodActions-remain-null-and-every-retained-numeric-methodActions-value-is-admitted-only-after-configurable-shadow-parity',
+  );
+  requireCrossFieldRule(
+    'DeadlineRecord',
+    'counters-equal-the-elementwise-sum-of-the-regenerated-DeadlineSetState-counters-vectors-for-the-complete-or-stopped-prefix',
+  );
+  requireCrossFieldRule(
+    'SourceClosure',
+    'staging-is-created-only-after-all-candidate-work-so-no-staging-exception-exists-at-the-candidate-call-gate-and-runtime-imports-remain-node-builtins-or-implementation-revision-tracked-relative-files',
+  );
   const input = object(object(config['inputConstruction'], 'inputConstruction')['inputArtifact'], 'inputArtifact');
   same(input['recordFieldOrder'], fields('ExperimentInputRecord'), 'input record schema fields');
   const sourceClosure = object(object(config['artifacts'], 'artifacts')['sourceClosure'], 'sourceClosure');
@@ -742,6 +811,42 @@ function verifyArtifactSchema(root: string, config: JsonObject): void {
     'source entry schema fields',
   );
   same(sourceClosure['descriptorFieldOrder'], fields('Descriptor'), 'descriptor schema fields');
+  const executionRevisionGate = object(
+    sourceClosure['executionRevisionGate'],
+    'sourceClosure.executionRevisionGate',
+  );
+  const expectedExecutionRevisionGate = {
+    requiredBeforeCandidateCalls: true,
+    observationHeadRelation:
+      'HEAD-is-exactly-one-child-commit-of-implementationInputRevision',
+    parentToHeadTrackedDiff:
+      'exactly-one-added-or-modified-file-at-fixtures/m7c/service-fast-numerical/source-closure.v1.json-with-bytes-equal-current-closure',
+    preLockRepositoryState:
+      'tracked-index-and-worktree-clean-no-untracked-nonignored-files-and-no-submodules-deliberately-ignored-local-roots-may-exist-but-are-never-runtime-import-targets',
+    lockAcquisitionAndIdentity:
+      'open-wx-the-fixed-sibling-publication-lock-and-inode-bind-that-exact-path-to-the-owned-open-handle-before-any-candidate-call',
+    candidateCallRepositoryState:
+      'immediately-before-the-first-candidate-call-tracked-index-and-worktree-remain-clean-and-the-only-untracked-nonignored-exception-is-the-exact-owned-lock-path-and-its-open-handle-inode-identity-deliberately-ignored-local-roots-may-exist-and-remain-outside-runtime-import-closure',
+    candidateCallRuntimeImportRule:
+      'no-runtime-import-may-resolve-to-the-owned-lock-path-any-other-untracked-path-or-any-ignored-path',
+    stagingCreationOrder:
+      'create-staging-only-after-all-candidate-work-so-no-staging-exception-exists-at-the-candidate-call-gate',
+    runtimeImportClosure:
+      'node-builtins-or-repository-relative-files-tracked-at-implementationInputRevision-only-source-closure-is-read-as-data-from-HEAD',
+    'bare-package-runtimeImports': 'forbidden',
+    'ignored-or-untracked-runtimeImportTargets': 'forbidden',
+    mismatchDisposition: 'integrity-failure-before-candidate-call',
+  } as const;
+  same(
+    Object.keys(executionRevisionGate),
+    Object.keys(expectedExecutionRevisionGate),
+    'execution revision gate field order',
+  );
+  same(
+    executionRevisionGate,
+    expectedExecutionRevisionGate,
+    'execution revision gate',
+  );
 
   const artifactSchemaIds = new Map<string, string>([
     ['semantic-results.ndjson', 'SemanticResultRecord'],

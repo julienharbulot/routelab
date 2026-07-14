@@ -12,6 +12,7 @@ import {
   type BoundedExactSplitRepairState,
 } from '../../allocation/bounded-exact-split-repair/index.ts';
 import type {
+  ServiceFastPathShadowPriceFailure,
   ServiceFastPathShadowPriceFailureCode,
   ServiceFastPathShadowPriceProposalMetadata,
   ServiceFastPathShadowPriceReconstruction,
@@ -185,6 +186,7 @@ export interface ServiceFastExperimentCurrentAttempt {
   readonly routeIndex: number | null;
   readonly allocations: readonly bigint[];
   readonly outcome: 'rejected' | 'valid-not-best' | 'valid-best';
+  readonly failureCode: 'residual-options-exhausted' | null;
   readonly receipt: ExactInputSplitReplayReceipt | null;
 }
 
@@ -194,7 +196,15 @@ export interface ServiceFastExperimentRepairAttempt {
   readonly neighborIndex: number;
   readonly allocations: readonly bigint[];
   readonly outcome: 'rejected' | 'valid-not-best' | 'valid-best';
+  readonly failureCode: 'repair-no-valid-neighbor' | null;
   readonly receipt: ExactInputSplitReplayReceipt | null;
+}
+
+/** @internal */
+export interface ServiceFastExperimentProposalFailureEvidence {
+  readonly failureCode: ServiceFastPathShadowPriceFailureCode;
+  readonly converged: boolean;
+  readonly completedOuterUpdates: number;
 }
 
 /** @internal */
@@ -209,6 +219,7 @@ export interface ServiceFastExperimentRepairEvidence {
 /** @internal */
 export interface ServiceFastExperimentCandidateSetSnapshot {
   readonly setIndex: number;
+  readonly counters: ServiceFastExperimentRawCounters;
   readonly stage: SetStage;
   readonly reconstructionDisposition: ServiceFastExperimentReconstructionDisposition;
   readonly proposalMetadata: ServiceFastPathShadowPriceProposalMetadata | null;
@@ -218,6 +229,7 @@ export interface ServiceFastExperimentCandidateSetSnapshot {
   readonly currentScore: ServiceFastExperimentScoreEvidence | null;
   readonly repair: ServiceFastExperimentRepairEvidence | null;
   readonly selectedScore: ServiceFastExperimentScoreEvidence | null;
+  readonly proposalFailure: ServiceFastExperimentProposalFailureEvidence | null;
   readonly terminalDiagnostic: ServiceFastExperimentCandidateSetDiagnostic | null;
 }
 
@@ -233,6 +245,7 @@ export type ServiceFastExperimentCandidateSetTerminalStatus =
 /** @internal */
 export interface ServiceFastExperimentCandidateSetDiagnostic {
   readonly setIndex: number;
+  readonly counters: ServiceFastExperimentRawCounters;
   readonly status: ServiceFastExperimentCandidateSetTerminalStatus;
   readonly failureCode: ServiceFastExperimentCandidateFailureCode | null;
   readonly reconstructionDisposition: ServiceFastExperimentReconstructionDisposition;
@@ -243,6 +256,7 @@ export interface ServiceFastExperimentCandidateSetDiagnostic {
   readonly currentScore: ServiceFastExperimentScoreEvidence | null;
   readonly repair: ServiceFastExperimentRepairEvidence | null;
   readonly selectedScore: ServiceFastExperimentScoreEvidence | null;
+  readonly proposalFailure: ServiceFastExperimentProposalFailureEvidence | null;
   readonly authorizationReceipt: ExactInputSplitReplayReceipt | null;
 }
 
@@ -389,13 +403,30 @@ interface MutableCounters {
   diagnostics: number;
 }
 
+const COUNTER_KEYS = Object.freeze([
+  'methodActions',
+  'outerUpdates',
+  'shareActions',
+  'reconstructionSteps',
+  'residualReplays',
+  'residualRejections',
+  'repairReplays',
+  'repairRejections',
+  'authorizationReplays',
+  'authorizationRejections',
+  'proposals',
+  'diagnostics',
+] as const);
+
 interface MutableSetState {
   readonly setIndex: number;
   readonly input: CapturedCandidateSet;
   readonly adapter: ServiceFastExperimentProposalAdapter | undefined;
-  readonly setupFailure: ServiceFastPathShadowPriceFailureCode | undefined;
+  readonly setupFailure: ServiceFastPathShadowPriceFailure | undefined;
+  readonly counters: MutableCounters;
   stage: SetStage;
   proposalMetadata: ServiceFastPathShadowPriceProposalMetadata | undefined;
+  proposalFailure: ServiceFastExperimentProposalFailureEvidence | undefined;
   reconstruction: ServiceFastPathShadowPriceReconstruction | undefined;
   initialResidualUnits: bigint | undefined;
   currentAttempts: ServiceFastExperimentCurrentAttempt[];
@@ -756,6 +787,52 @@ function copyCounters(counters: MutableCounters): ServiceFastExperimentRawCounte
   return Object.freeze({ ...counters });
 }
 
+type NumericCounterKey = Exclude<keyof MutableCounters, 'methodActions'>;
+
+function incrementCounter(
+  state: CallState,
+  set: MutableSetState,
+  key: NumericCounterKey,
+  delta = 1,
+): void {
+  state.counters[key] += delta;
+  set.counters[key] += delta;
+}
+
+function incrementMethodCounter(state: CallState, set: MutableSetState): void {
+  if (
+    state.counters.methodActions === null ||
+    set.counters.methodActions === null
+  ) {
+    setIntegrityFailure(state, 'counter-invariant-failure');
+    return;
+  }
+  state.counters.methodActions += 1;
+  set.counters.methodActions += 1;
+}
+
+function copyProposalFailure(
+  failure: ServiceFastExperimentProposalFailureEvidence | undefined,
+): ServiceFastExperimentProposalFailureEvidence | null {
+  return failure === undefined
+    ? null
+    : Object.freeze({
+        failureCode: failure.failureCode,
+        converged: failure.converged,
+        completedOuterUpdates: failure.completedOuterUpdates,
+      });
+}
+
+function captureProposalFailure(
+  failure: ServiceFastPathShadowPriceFailure,
+): ServiceFastExperimentProposalFailureEvidence {
+  return Object.freeze({
+    failureCode: failure.code,
+    converged: failure.converged,
+    completedOuterUpdates: failure.completedOuterUpdates,
+  });
+}
+
 function prepareSetState(
   cell: CellState,
   policy: ServiceFastExperimentPolicy,
@@ -765,7 +842,7 @@ function prepareSetState(
   setIndex: number,
 ): { readonly state: MutableSetState; readonly setupSteps: number } {
   let adapter: ServiceFastExperimentProposalAdapter | undefined;
-  let setupFailure: ServiceFastPathShadowPriceFailureCode | undefined;
+  let setupFailure: ServiceFastPathShadowPriceFailure | undefined;
   let setupSteps = 0;
   const resolvedRoutes = input.resolvedRoutes;
   if (resolvedRoutes !== undefined) {
@@ -794,15 +871,19 @@ function prepareSetState(
       );
     setupSteps = prepared.modelRouteSetupSteps;
     if (prepared.ok) adapter = prepared.adapter;
-    else setupFailure = prepared.failure.code;
+    else setupFailure = prepared.failure;
   }
   const state: MutableSetState = {
     setIndex,
     input,
     adapter,
     setupFailure,
+    counters: emptyCounters(
+      adapterSelection === 'normal' && policy.policyIndex === 0 ? null : 0,
+    ),
     stage: 'model-resolution',
     proposalMetadata: undefined,
+    proposalFailure: undefined,
     reconstruction: undefined,
     initialResidualUnits: undefined,
     currentAttempts: [],
@@ -988,6 +1069,7 @@ function setSnapshot(
 ): ServiceFastExperimentCandidateSetSnapshot {
   return Object.freeze({
     setIndex: set.setIndex,
+    counters: copyCounters(set.counters),
     stage: set.stage,
     reconstructionDisposition: set.reconstructionDisposition,
     proposalMetadata: copyProposalMetadata(set.proposalMetadata),
@@ -997,6 +1079,7 @@ function setSnapshot(
     currentScore: copyScore(set.currentScore),
     repair: repairEvidence(state, set),
     selectedScore: copyScore(set.selectedScore),
+    proposalFailure: copyProposalFailure(set.proposalFailure),
     terminalDiagnostic: set.diagnostic === undefined
       ? null
       : copyDiagnostic(set.diagnostic),
@@ -1015,8 +1098,10 @@ function createDiagnostic(
     return;
   }
   set.stage = 'terminal';
+  incrementCounter(state, set, 'diagnostics');
   const diagnostic: ServiceFastExperimentCandidateSetDiagnostic = Object.freeze({
     setIndex: set.setIndex,
+    counters: copyCounters(set.counters),
     status,
     failureCode,
     reconstructionDisposition: set.reconstructionDisposition,
@@ -1027,12 +1112,12 @@ function createDiagnostic(
     currentScore: copyScore(set.currentScore),
     repair: repairEvidence(state, set, failureCode),
     selectedScore: copyScore(set.selectedScore),
+    proposalFailure: copyProposalFailure(set.proposalFailure),
     authorizationReceipt: authorizationReceipt === undefined
       ? null
       : copyServiceFastExperimentReceipt(authorizationReceipt),
   });
   set.diagnostic = diagnostic;
-  state.counters.diagnostics += 1;
 }
 
 function setIntegrityFailure(
@@ -1112,8 +1197,16 @@ function normalizeState(state: CallState): ServiceFastExperimentActionKind | und
         continue;
       }
       if (set.setupFailure !== undefined || set.adapter === undefined) {
-        const failure = set.setupFailure ?? 'invalid-route-model';
-        createDiagnostic(state, set, 'proposal-failed', failure);
+        const failure = set.setupFailure;
+        if (failure !== undefined) {
+          set.proposalFailure = captureProposalFailure(failure);
+        }
+        createDiagnostic(
+          state,
+          set,
+          'proposal-failed',
+          failure?.code ?? 'invalid-route-model',
+        );
         continue;
       }
       set.stage = 'proposal';
@@ -1162,8 +1255,16 @@ function normalizeState(state: CallState): ServiceFastExperimentActionKind | und
         continue;
       }
       if (progress.phase === 'failed') {
-        const failure = set.adapter?.failure()?.code ?? 'non-finite-proposal';
-        createDiagnostic(state, set, 'proposal-failed', failure);
+        const failure = set.adapter?.failure();
+        if (failure !== undefined) {
+          set.proposalFailure = captureProposalFailure(failure);
+        }
+        createDiagnostic(
+          state,
+          set,
+          'proposal-failed',
+          failure?.code ?? 'non-finite-proposal',
+        );
         continue;
       }
       setIntegrityFailure(state, 'counter-invariant-failure');
@@ -1190,8 +1291,16 @@ function normalizeState(state: CallState): ServiceFastExperimentActionKind | und
         continue;
       }
       if (progress?.phase === 'failed') {
-        const failure = set.adapter?.failure()?.code ?? 'invalid-reconstruction';
-        createDiagnostic(state, set, 'proposal-failed', failure);
+        const failure = set.adapter?.failure();
+        if (failure !== undefined) {
+          set.proposalFailure = captureProposalFailure(failure);
+        }
+        createDiagnostic(
+          state,
+          set,
+          'proposal-failed',
+          failure?.code ?? 'invalid-reconstruction',
+        );
         continue;
       }
       setIntegrityFailure(state, 'counter-invariant-failure');
@@ -1332,23 +1441,25 @@ function checkpoint(
   });
 }
 
-function precharge(state: CallState, kind: ServiceFastExperimentActionKind): void {
-  if (kind === 'proposal') state.counters.proposals += 1;
+function precharge(
+  state: CallState,
+  set: MutableSetState,
+  kind: ServiceFastExperimentActionKind,
+): void {
+  if (kind === 'proposal') incrementCounter(state, set, 'proposals');
   else if (
     kind === 'reconstruction-step'
-  ) state.counters.reconstructionSteps += 1;
-  else if (kind === 'residual-replay') state.counters.residualReplays += 1;
-  else if (kind === 'repair-replay') state.counters.repairReplays += 1;
-  else if (kind === 'authorization-replay') state.counters.authorizationReplays += 1;
+  ) incrementCounter(state, set, 'reconstructionSteps');
+  else if (kind === 'residual-replay') {
+    incrementCounter(state, set, 'residualReplays');
+  } else if (kind === 'repair-replay') {
+    incrementCounter(state, set, 'repairReplays');
+  } else if (kind === 'authorization-replay') {
+    incrementCounter(state, set, 'authorizationReplays');
+  }
   else {
-    state.counters.shareActions += 1;
-    if (actionIsMethod(kind)) {
-      if (state.counters.methodActions === null) {
-        setIntegrityFailure(state, 'counter-invariant-failure');
-      } else {
-        state.counters.methodActions += 1;
-      }
-    }
+    incrementCounter(state, set, 'shareActions');
+    if (actionIsMethod(kind)) incrementMethodCounter(state, set);
   }
 }
 
@@ -1404,10 +1515,17 @@ function executeShare(
     setIntegrityFailure(state, 'counter-invariant-failure');
     return;
   }
-  state.counters.outerUpdates += outerDelta;
+  incrementCounter(state, set, 'outerUpdates', outerDelta);
   if (!result.ok) {
-    const failure = result.failure?.code ?? 'non-finite-proposal';
-    createDiagnostic(state, set, 'proposal-failed', failure);
+    if (result.failure !== undefined) {
+      set.proposalFailure = captureProposalFailure(result.failure);
+    }
+    createDiagnostic(
+      state,
+      set,
+      'proposal-failed',
+      result.failure?.code ?? 'non-finite-proposal',
+    );
   }
 }
 
@@ -1425,8 +1543,15 @@ function executeReconstruction(state: CallState, set: MutableSetState): void {
     return;
   }
   if (!result.ok) {
-    const failure = result.failure?.code ?? 'invalid-reconstruction';
-    createDiagnostic(state, set, 'proposal-failed', failure);
+    if (result.failure !== undefined) {
+      set.proposalFailure = captureProposalFailure(result.failure);
+    }
+    createDiagnostic(
+      state,
+      set,
+      'proposal-failed',
+      result.failure?.code ?? 'invalid-reconstruction',
+    );
   }
 }
 
@@ -1448,7 +1573,7 @@ function executeResidual(state: CallState, set: MutableSetState): void {
   let receipt: ExactInputSplitReplayReceipt | null = null;
   if (!replay.ok) {
     outcome = 'rejected';
-    state.counters.residualRejections += 1;
+    incrementCounter(state, set, 'residualRejections');
   } else {
     receipt = copyServiceFastExperimentReceipt(replay.value);
     if (receipt.amountIn === state.cell.identity.amountIn) {
@@ -1470,6 +1595,7 @@ function executeResidual(state: CallState, set: MutableSetState): void {
     routeIndex: option.routeIndex,
     allocations: Object.freeze([...option.allocations]),
     outcome,
+    failureCode: outcome === 'rejected' ? 'residual-options-exhausted' : null,
     receipt,
   }));
   const settled = adapter.settleResidual(outcome);
@@ -1510,7 +1636,7 @@ function executeRepair(state: CallState, set: MutableSetState): void {
   let receipt: ExactInputSplitReplayReceipt | null = null;
   if (!replay.ok) {
     outcome = 'rejected';
-    state.counters.repairRejections += 1;
+    incrementCounter(state, set, 'repairRejections');
   } else {
     state.anyValidScore = true;
     receipt = copyServiceFastExperimentReceipt(replay.value);
@@ -1526,6 +1652,7 @@ function executeRepair(state: CallState, set: MutableSetState): void {
     neighborIndex: option.neighborIndex,
     allocations: Object.freeze([...option.allocations]),
     outcome,
+    failureCode: outcome === 'rejected' ? 'repair-no-valid-neighbor' : null,
     receipt,
   }));
   settleBoundedExactSplitRepairOption(repair, outcome);
@@ -1549,12 +1676,12 @@ function executeAuthorization(state: CallState, set: MutableSetState): void {
     replay,
   );
   if (classification.outcome === 'authorization-rejected') {
-    state.counters.authorizationRejections += 1;
+    incrementCounter(state, set, 'authorizationRejections');
     createDiagnostic(state, set, 'authorization-rejected', 'authorization-rejected');
     return;
   }
   if (classification.outcome === 'authorization-mismatch') {
-    state.counters.authorizationRejections += 1;
+    incrementCounter(state, set, 'authorizationRejections');
     createDiagnostic(state, set, 'authorization-rejected', 'authorization-mismatch');
     setIntegrityFailure(state, 'exact-replay-mismatch');
     return;
@@ -1593,6 +1720,7 @@ function copyDiagnostic(
 ): ServiceFastExperimentCandidateSetDiagnostic {
   return Object.freeze({
     ...diagnostic,
+    counters: Object.freeze({ ...diagnostic.counters }),
     proposalMetadata: copyProposalMetadata(diagnostic.proposalMetadata ?? undefined),
     reconstruction: copyReconstruction(diagnostic.reconstruction ?? undefined),
     currentAttempts: Object.freeze(diagnostic.currentAttempts.map(copyCurrentAttempt)),
@@ -1611,6 +1739,9 @@ function copyDiagnostic(
     selectedScore: diagnostic.selectedScore === null
       ? null
       : copyScore(diagnostic.selectedScore),
+    proposalFailure: diagnostic.proposalFailure === null
+      ? null
+      : Object.freeze({ ...diagnostic.proposalFailure }),
     authorizationReceipt: diagnostic.authorizationReceipt === null
       ? null
       : copyServiceFastExperimentReceipt(diagnostic.authorizationReceipt),
@@ -1782,7 +1913,7 @@ export function runServiceFastOperationalPolicy(
         return outcome;
       }
     }
-    precharge(state, action);
+    precharge(state, set, action);
     try {
       executeAction(state, set, action);
     } catch (error) {
@@ -1897,6 +2028,7 @@ function currentAttemptsEqual(
       attempt.residualUnitsRemaining === other.residualUnitsRemaining &&
       attempt.routeIndex === other.routeIndex &&
       attempt.outcome === other.outcome &&
+      attempt.failureCode === other.failureCode &&
       bigintVectorsEqual(attempt.allocations, other.allocations) &&
       (attempt.receipt === null && other.receipt === null ||
         attempt.receipt !== null &&
@@ -1915,6 +2047,7 @@ function repairAttemptsEqual(
       attempt.attemptIndex === other.attemptIndex &&
       attempt.neighborIndex === other.neighborIndex &&
       attempt.outcome === other.outcome &&
+      attempt.failureCode === other.failureCode &&
       bigintVectorsEqual(attempt.allocations, other.allocations) &&
       (attempt.receipt === null && other.receipt === null ||
         attempt.receipt !== null &&
@@ -1959,6 +2092,86 @@ function repairEvidenceEqual(
       scoresEqual(left.winner, right.winner);
 }
 
+function rawCountersEqual(
+  left: ServiceFastExperimentRawCounters,
+  right: ServiceFastExperimentRawCounters,
+): boolean {
+  return left.methodActions === right.methodActions &&
+    left.outerUpdates === right.outerUpdates &&
+    left.shareActions === right.shareActions &&
+    left.reconstructionSteps === right.reconstructionSteps &&
+    left.residualReplays === right.residualReplays &&
+    left.residualRejections === right.residualRejections &&
+    left.repairReplays === right.repairReplays &&
+    left.repairRejections === right.repairRejections &&
+    left.authorizationReplays === right.authorizationReplays &&
+    left.authorizationRejections === right.authorizationRejections &&
+    left.proposals === right.proposals &&
+    left.diagnostics === right.diagnostics;
+}
+
+function attributableDownstreamCountersEqual(
+  left: ServiceFastExperimentRawCounters,
+  right: ServiceFastExperimentRawCounters,
+): boolean {
+  return left.residualReplays === right.residualReplays &&
+    left.residualRejections === right.residualRejections &&
+    left.repairReplays === right.repairReplays &&
+    left.repairRejections === right.repairRejections &&
+    left.authorizationReplays === right.authorizationReplays &&
+    left.authorizationRejections === right.authorizationRejections &&
+    left.proposals === right.proposals &&
+    left.diagnostics === right.diagnostics;
+}
+
+function operationalFineCountersEqual(
+  authority: ServiceFastExperimentRawCounters,
+  shadow: ServiceFastExperimentRawCounters,
+): boolean {
+  return authority.methodActions === null &&
+    shadow.methodActions !== null &&
+    authority.outerUpdates === shadow.outerUpdates &&
+    authority.shareActions === shadow.shareActions &&
+    authority.reconstructionSteps === shadow.reconstructionSteps;
+}
+
+function prefixCountersEqual(
+  authority: ServiceFastExperimentRawCounters,
+  shadow: ServiceFastExperimentRawCounters,
+  protectedAnchor: boolean,
+): boolean {
+  return protectedAnchor
+    ? operationalFineCountersEqual(authority, shadow)
+    : rawCountersEqual(authority, shadow);
+}
+
+/** Applies the production elementwise counter admission relation. @internal */
+export function serviceFastExperimentCounterVectorsMatch(
+  authority: readonly ServiceFastExperimentRawCounters[],
+  shadow: readonly ServiceFastExperimentRawCounters[],
+  mode: 'protected-operational' | 'configurable-exact',
+): boolean {
+  const protectedAnchor = mode === 'protected-operational';
+  return authority.length === shadow.length &&
+    authority.every((counters, index) => {
+      const other = shadow[index];
+      return other !== undefined &&
+        prefixCountersEqual(counters, other, protectedAnchor);
+    });
+}
+
+function proposalFailuresEqual(
+  left: ServiceFastExperimentProposalFailureEvidence | null,
+  right: ServiceFastExperimentProposalFailureEvidence | null,
+): boolean {
+  return left === null && right === null ||
+    left !== null &&
+      right !== null &&
+      left.failureCode === right.failureCode &&
+      left.converged === right.converged &&
+      left.completedOuterUpdates === right.completedOuterUpdates;
+}
+
 function diagnosticsEqual(
   left: ServiceFastExperimentCandidateSetDiagnostic,
   right: ServiceFastExperimentCandidateSetDiagnostic,
@@ -1967,6 +2180,8 @@ function diagnosticsEqual(
   return left.setIndex === right.setIndex &&
     left.status === right.status &&
     left.failureCode === right.failureCode &&
+    attributableDownstreamCountersEqual(left.counters, right.counters) &&
+    proposalFailuresEqual(left.proposalFailure, right.proposalFailure) &&
     left.reconstructionDisposition === right.reconstructionDisposition &&
     metadataEqual(left.proposalMetadata, right.proposalMetadata) &&
     reconstructionsEqual(
@@ -1994,6 +2209,7 @@ function setSnapshotsEqual(
   allowLeftMissingReconstruction: boolean,
 ): boolean {
   return left.setIndex === right.setIndex &&
+    attributableDownstreamCountersEqual(left.counters, right.counters) &&
     left.stage === right.stage &&
     left.reconstructionDisposition === right.reconstructionDisposition &&
     metadataEqual(left.proposalMetadata, right.proposalMetadata) &&
@@ -2007,6 +2223,7 @@ function setSnapshotsEqual(
     scoresEqual(left.currentScore, right.currentScore) &&
     repairEvidenceEqual(left.repair, right.repair) &&
     scoresEqual(left.selectedScore, right.selectedScore) &&
+    proposalFailuresEqual(left.proposalFailure, right.proposalFailure) &&
     (left.terminalDiagnostic === null && right.terminalDiagnostic === null ||
       left.terminalDiagnostic !== null &&
         right.terminalDiagnostic !== null &&
@@ -2017,12 +2234,100 @@ function setSnapshotsEqual(
         ));
 }
 
+interface CounterPartitionEvidence {
+  readonly counters: ServiceFastExperimentRawCounters;
+  readonly diagnostics: readonly ServiceFastExperimentCandidateSetDiagnostic[];
+  readonly setSnapshots: readonly ServiceFastExperimentCandidateSetSnapshot[];
+}
+
+function attemptEvidenceIsValid(
+  attempt: ServiceFastExperimentCurrentAttempt | ServiceFastExperimentRepairAttempt,
+): boolean {
+  return attempt.outcome === 'rejected'
+    ? attempt.failureCode !== null && attempt.receipt === null
+    : attempt.failureCode === null && attempt.receipt !== null;
+}
+
+function counterPartitionInvariant(outcome: CounterPartitionEvidence): boolean {
+  const snapshots = outcome.setSnapshots;
+  if (snapshots.length === 0) {
+    return outcome.diagnostics.length === 0 && COUNTER_KEYS.every((key) =>
+      key === 'methodActions'
+        ? outcome.counters.methodActions === null ||
+          outcome.counters.methodActions === 0
+        : outcome.counters[key] === 0);
+  }
+  for (const key of COUNTER_KEYS) {
+    const parent = outcome.counters[key];
+    const values = snapshots.map((snapshot) => snapshot.counters[key]);
+    if (key === 'methodActions') {
+      if (parent === null) {
+        if (!values.every((value) => value === null)) return false;
+      } else if (
+        !values.every((value): value is number => typeof value === 'number') ||
+        values.reduce<number>((sum, value) => sum + value, 0) !== parent
+      ) {
+        return false;
+      }
+      continue;
+    }
+    if (values.reduce<number>((sum, value) => sum + (value ?? 0), 0) !== parent) {
+      return false;
+    }
+  }
+  if (outcome.counters.diagnostics !== outcome.diagnostics.length) return false;
+  for (const snapshot of snapshots) {
+    const values = COUNTER_KEYS
+      .map((key) => snapshot.counters[key])
+      .filter((value): value is number => value !== null);
+    if (!values.every((value) => Number.isSafeInteger(value) && value >= 0)) {
+      return false;
+    }
+    if (
+      !snapshot.currentAttempts.every(attemptEvidenceIsValid) ||
+      !(snapshot.repair?.attempts.every(attemptEvidenceIsValid) ?? true)
+    ) {
+      return false;
+    }
+    const diagnostic = outcome.diagnostics.find(
+      (candidate) => candidate.setIndex === snapshot.setIndex,
+    );
+    if (snapshot.terminalDiagnostic === null) {
+      if (snapshot.stage === 'terminal' || snapshot.counters.diagnostics !== 0) {
+        return false;
+      }
+      continue;
+    }
+    if (
+      snapshot.stage !== 'terminal' ||
+      snapshot.counters.diagnostics !== 1 ||
+      diagnostic === undefined ||
+      !diagnosticsEqual(snapshot.terminalDiagnostic, diagnostic, false) ||
+      !rawCountersEqual(snapshot.counters, diagnostic.counters) ||
+      !proposalFailuresEqual(snapshot.proposalFailure, diagnostic.proposalFailure)
+    ) {
+      return false;
+    }
+  }
+  return outcome.diagnostics.every((diagnostic) => {
+    const snapshot = snapshots.find(
+      (candidate) => candidate.setIndex === diagnostic.setIndex,
+    );
+    return snapshot !== undefined &&
+      diagnostic.counters.diagnostics === 1 &&
+      diagnostic.currentAttempts.every(attemptEvidenceIsValid) &&
+      (diagnostic.repair?.attempts.every(attemptEvidenceIsValid) ?? true);
+  });
+}
+
 function completeOutcomesEqual(
   authority: ServiceFastExperimentRawCompleteOutcome,
   shadow: ServiceFastExperimentRawCompleteOutcome,
   allowAuthorityMissingReconstruction: boolean,
 ): boolean {
   if (
+    !counterPartitionInvariant(authority) ||
+    !counterPartitionInvariant(shadow) ||
     authority.policy.policyId !== shadow.policy.policyId ||
     authority.modelRouteSetupSteps !== shadow.modelRouteSetupSteps ||
     authority.diagnostics.length !== shadow.diagnostics.length ||
@@ -2085,7 +2390,7 @@ function finalizeClassifiedComplete(
   outcome: ServiceFastExperimentRawCompleteOutcome,
 ): ServiceFastExperimentCompleteOutcome | undefined {
   const methodActions = outcome.counters.methodActions;
-  if (methodActions === null) return undefined;
+  if (methodActions === null || !counterPartitionInvariant(outcome)) return undefined;
   const counters: ServiceFastExperimentCounters = Object.freeze({
     ...outcome.counters,
     methodActions,
@@ -2144,6 +2449,20 @@ function validateProtectedReconstruction(
     : Object.freeze({ ok: false });
 }
 
+function mergeAnchorCounters(
+  authority: ServiceFastExperimentRawCounters,
+  shadow: ServiceFastExperimentRawCounters,
+): ServiceFastExperimentCounters | undefined {
+  if (shadow.methodActions === null) return undefined;
+  return Object.freeze({
+    ...authority,
+    methodActions: shadow.methodActions,
+    outerUpdates: shadow.outerUpdates,
+    shareActions: shadow.shareActions,
+    reconstructionSteps: shadow.reconstructionSteps,
+  });
+}
+
 function mergeValidatedAnchorOutcome(
   authority: ServiceFastExperimentRawCompleteOutcome,
   shadow: ServiceFastExperimentRawCompleteOutcome,
@@ -2158,20 +2477,22 @@ function mergeValidatedAnchorOutcome(
       adapterMode === 'operational',
     ) ||
     (adapterMode === 'operational' &&
-      (authority.counters.outerUpdates !== shadow.counters.outerUpdates ||
-        authority.counters.shareActions !== shadow.counters.shareActions ||
-        authority.counters.reconstructionSteps !==
-          shadow.counters.reconstructionSteps))
+      (!operationalFineCountersEqual(authority.counters, shadow.counters) ||
+        !serviceFastExperimentCounterVectorsMatch(
+          authority.diagnostics.map((diagnostic) => diagnostic.counters),
+          shadow.diagnostics.map((diagnostic) => diagnostic.counters),
+          'protected-operational',
+        ) ||
+        !serviceFastExperimentCounterVectorsMatch(
+          authority.setSnapshots.map((snapshot) => snapshot.counters),
+          shadow.setSnapshots.map((snapshot) => snapshot.counters),
+          'protected-operational',
+        )))
   ) {
     return parityFailureFrom(authority);
   }
-  const counters: ServiceFastExperimentCounters = Object.freeze({
-    ...authority.counters,
-    methodActions: shadow.counters.methodActions,
-    outerUpdates: shadow.counters.outerUpdates,
-    shareActions: shadow.counters.shareActions,
-    reconstructionSteps: shadow.counters.reconstructionSteps,
-  });
+  const counters = mergeAnchorCounters(authority.counters, shadow.counters);
+  if (counters === undefined) return parityFailureFrom(authority);
   const aggregate = counters.proposals +
     counters.shareActions +
     counters.reconstructionSteps +
@@ -2186,6 +2507,22 @@ function mergeValidatedAnchorOutcome(
       if (shadowDiagnostic === undefined) {
         throw new ServiceFastExperimentAnchorParityError();
       }
+      if (
+        adapterMode === 'operational' &&
+        !operationalFineCountersEqual(
+          diagnostic.counters,
+          shadowDiagnostic.counters,
+        )
+      ) {
+        throw new ServiceFastExperimentAnchorParityError();
+      }
+      const diagnosticCounters = mergeAnchorCounters(
+        diagnostic.counters,
+        shadowDiagnostic.counters,
+      );
+      if (diagnosticCounters === undefined) {
+        throw new ServiceFastExperimentAnchorParityError();
+      }
       const reconstruction = validateProtectedReconstruction(
         diagnostic.proposalMetadata,
         diagnostic.reconstruction,
@@ -2195,12 +2532,29 @@ function mergeValidatedAnchorOutcome(
       if (!reconstruction.ok) throw new ServiceFastExperimentAnchorParityError();
       return Object.freeze({
         ...diagnostic,
+        counters: diagnosticCounters,
         reconstruction: reconstruction.value,
       });
     }));
     setSnapshots = Object.freeze(authority.setSnapshots.map((snapshot, index) => {
       const shadowSnapshot = shadow.setSnapshots[index];
       if (shadowSnapshot === undefined) {
+        throw new ServiceFastExperimentAnchorParityError();
+      }
+      if (
+        adapterMode === 'operational' &&
+        !operationalFineCountersEqual(
+          snapshot.counters,
+          shadowSnapshot.counters,
+        )
+      ) {
+        throw new ServiceFastExperimentAnchorParityError();
+      }
+      const snapshotCounters = mergeAnchorCounters(
+        snapshot.counters,
+        shadowSnapshot.counters,
+      );
+      if (snapshotCounters === undefined) {
         throw new ServiceFastExperimentAnchorParityError();
       }
       const reconstruction = validateProtectedReconstruction(
@@ -2220,6 +2574,7 @@ function mergeValidatedAnchorOutcome(
       }
       return Object.freeze({
         ...snapshot,
+        counters: snapshotCounters,
         reconstruction: reconstruction.value,
         terminalDiagnostic,
       });
@@ -2261,6 +2616,8 @@ export function validateServiceFastCompleteOutcome(
     consumedRawCompleteOutcomes.has(operational) ||
     !completeOutcomeStates.has(operational) ||
     !semanticOutcomeCells.has(semantic) ||
+    !counterPartitionInvariant(operational) ||
+    !counterPartitionInvariant(semantic) ||
     completeOutcomeStates.get(operational)?.cell !==
       semanticOutcomeCells.get(semantic)
   ) {
@@ -2388,15 +2745,38 @@ function stoppedOutcomesMatchPrefix(
   shadow: ServiceFastExperimentRawStoppedOutcome,
   allowAuthorityMissingReconstruction: boolean,
 ): boolean {
+  const counterMode = allowAuthorityMissingReconstruction
+    ? 'protected-operational'
+    : 'configurable-exact';
   return authority.reason === shadow.reason &&
     authority.policy.policyId === shadow.policy.policyId &&
+    prefixCountersEqual(
+      authority.counters,
+      shadow.counters,
+      allowAuthorityMissingReconstruction,
+    ) &&
     checkpointsMatchBoundary(authority.nextAction, shadow.nextAction) &&
+    prefixCountersEqual(
+      authority.nextAction.counters,
+      shadow.nextAction.counters,
+      allowAuthorityMissingReconstruction,
+    ) &&
     nonMethodCountersEqual(authority.counters, shadow.counters) &&
     authority.modelRouteSetupSteps === shadow.modelRouteSetupSteps &&
     authority.stageAggregate === shadow.stageAggregate &&
     authority.conservativeAggregate === shadow.conservativeAggregate &&
     authority.diagnostics.length === shadow.diagnostics.length &&
     authority.setSnapshots.length === shadow.setSnapshots.length &&
+    serviceFastExperimentCounterVectorsMatch(
+      authority.diagnostics.map((diagnostic) => diagnostic.counters),
+      shadow.diagnostics.map((diagnostic) => diagnostic.counters),
+      counterMode,
+    ) &&
+    serviceFastExperimentCounterVectorsMatch(
+      authority.setSnapshots.map((snapshot) => snapshot.counters),
+      shadow.setSnapshots.map((snapshot) => snapshot.counters),
+      counterMode,
+    ) &&
     authority.anyValidScore === shadow.anyValidScore &&
     authority.anyImprovement === shadow.anyImprovement &&
     nullableReceiptsEqual(authority.entryIncumbent, shadow.entryIncumbent) &&
@@ -2407,6 +2787,10 @@ function stoppedOutcomesMatchPrefix(
         diagnostic,
         other,
         allowAuthorityMissingReconstruction,
+      ) && prefixCountersEqual(
+        diagnostic.counters,
+        other.counters,
+        allowAuthorityMissingReconstruction,
       );
     }) &&
     authority.setSnapshots.every((snapshot, index) => {
@@ -2414,6 +2798,10 @@ function stoppedOutcomesMatchPrefix(
       return other !== undefined && setSnapshotsEqual(
         snapshot,
         other,
+        allowAuthorityMissingReconstruction,
+      ) && prefixCountersEqual(
+        snapshot.counters,
+        other.counters,
         allowAuthorityMissingReconstruction,
       );
     });
@@ -2492,7 +2880,7 @@ function outcomeCounterInvariant(
   const maximum = serviceFastExperimentMaximumCapsForPolicy(
     outcome.policy.policyIndex,
   );
-  return values.every(
+  return counterPartitionInvariant(outcome) && values.every(
     (value) => Number.isSafeInteger(value) && value >= 0,
   ) &&
     aggregate === outcome.stageAggregate &&
@@ -2516,7 +2904,13 @@ function mergePrefixDiagnostic(
   shadow: ServiceFastExperimentCandidateSetDiagnostic,
   semantic: ServiceFastExperimentCandidateSetDiagnostic,
   amountIn: bigint,
+  protectedAnchor: boolean,
 ): ServiceFastExperimentCandidateSetDiagnostic | undefined {
+  if (!prefixCountersEqual(raw.counters, shadow.counters, protectedAnchor)) {
+    return undefined;
+  }
+  const counters = mergeAnchorCounters(raw.counters, shadow.counters);
+  if (counters === undefined) return undefined;
   const expected = shadow.reconstruction === null
     ? null
     : semantic.reconstruction;
@@ -2533,7 +2927,11 @@ function mergePrefixDiagnostic(
     amountIn,
   );
   return reconstruction.ok
-    ? Object.freeze({ ...raw, reconstruction: reconstruction.value })
+    ? Object.freeze({
+        ...raw,
+        counters,
+        reconstruction: reconstruction.value,
+      })
     : undefined;
 }
 
@@ -2542,9 +2940,22 @@ function finalizeValidatedPrefix(
   shadow: ServiceFastExperimentRawStoppedOutcome,
   semantic: ServiceFastExperimentCompleteOutcome,
   amountIn: bigint,
+  protectedAnchor: boolean,
 ): ServiceFastExperimentStoppedOutcome | undefined {
   const methodActions = shadow.counters.methodActions;
-  if (methodActions === null) return undefined;
+  const checkpointMethodActions = shadow.nextAction.counters.methodActions;
+  if (
+    methodActions === null ||
+    checkpointMethodActions === null ||
+    !prefixCountersEqual(raw.counters, shadow.counters, protectedAnchor) ||
+    !prefixCountersEqual(
+      raw.nextAction.counters,
+      shadow.nextAction.counters,
+      protectedAnchor,
+    )
+  ) {
+    return undefined;
+  }
   const diagnostics: ServiceFastExperimentCandidateSetDiagnostic[] = [];
   for (let index = 0; index < raw.diagnostics.length; index += 1) {
     const rawDiagnostic = raw.diagnostics[index];
@@ -2559,6 +2970,7 @@ function finalizeValidatedPrefix(
       shadowDiagnostic,
       semanticDiagnostic,
       amountIn,
+      protectedAnchor,
     );
     if (merged === undefined) return undefined;
     diagnostics.push(merged);
@@ -2592,6 +3004,20 @@ function finalizeValidatedPrefix(
       amountIn,
     );
     if (!reconstruction.ok) return undefined;
+    const snapshotCounters = mergeAnchorCounters(
+      rawSnapshot.counters,
+      shadowSnapshot.counters,
+    );
+    if (
+      !prefixCountersEqual(
+        rawSnapshot.counters,
+        shadowSnapshot.counters,
+        protectedAnchor,
+      ) ||
+      snapshotCounters === undefined
+    ) {
+      return undefined;
+    }
     const terminalDiagnostic = rawSnapshot.terminalDiagnostic === null
       ? null
       : diagnostics.find(
@@ -2602,6 +3028,7 @@ function finalizeValidatedPrefix(
     }
     setSnapshots.push(Object.freeze({
       ...rawSnapshot,
+      counters: snapshotCounters,
       reconstruction: reconstruction.value,
       terminalDiagnostic,
     }));
@@ -2612,9 +3039,9 @@ function finalizeValidatedPrefix(
   });
   const checkpointCounters: ServiceFastExperimentCounters = Object.freeze({
     ...raw.nextAction.counters,
-    methodActions,
+    methodActions: checkpointMethodActions,
   });
-  return Object.freeze({
+  const finalized: ServiceFastExperimentStoppedOutcome = Object.freeze({
     ...raw,
     counters,
     nextAction: Object.freeze({
@@ -2624,6 +3051,7 @@ function finalizeValidatedPrefix(
     diagnostics: Object.freeze(diagnostics),
     setSnapshots: Object.freeze(setSnapshots),
   });
+  return outcomeCounterInvariant(finalized) ? finalized : undefined;
 }
 
 export type ValidateServiceFastDeadlinePrefixResult =
@@ -2724,6 +3152,7 @@ export function validateServiceFastDeadlinePrefix(
     shadow,
     semantic,
     state.cell.identity.amountIn,
+    state.policy.policyIndex === 0,
   );
   if (finalized === undefined) {
     return Object.freeze({ ok: false, code: parityFailureCode });

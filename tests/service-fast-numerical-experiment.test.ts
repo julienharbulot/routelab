@@ -13,6 +13,7 @@ import {
   prepareServiceFastOperationalPolicy,
   projectServiceFastSemanticResult,
   runServiceFastOperationalPolicy,
+  serviceFastExperimentCounterVectorsMatch,
   serviceFastExperimentCallSetSnapshot,
   serviceFastExperimentMaximumCapsForPolicy,
   serviceFastExperimentPolicies,
@@ -22,6 +23,10 @@ import {
   type ServiceFastExperimentActionCaps,
   type ServiceFastExperimentCell,
   type ServiceFastExperimentCompleteOutcome,
+  type ServiceFastExperimentOutcome,
+  type ServiceFastExperimentRawCompleteOutcome,
+  type ServiceFastExperimentRawCounters,
+  type ServiceFastExperimentRawStoppedOutcome,
   type ServiceFastExperimentResolvedCandidateSetInput,
 } from '../src/benchmark/service-fast-numerical-experiment/index.ts';
 import type { ConstantProductPool, LiquiditySnapshot } from '../src/domain/index.ts';
@@ -156,6 +161,145 @@ function assertDeepFrozen(value: unknown, seen = new Set<object>()): void {
   }
 }
 
+const COUNTER_KEYS = Object.freeze([
+  'methodActions',
+  'outerUpdates',
+  'shareActions',
+  'reconstructionSteps',
+  'residualReplays',
+  'residualRejections',
+  'repairReplays',
+  'repairRejections',
+  'authorizationReplays',
+  'authorizationRejections',
+  'proposals',
+  'diagnostics',
+] as const);
+
+function assertCounterPartition(
+  outcome: ServiceFastExperimentOutcome | ServiceFastExperimentCompleteOutcome,
+): void {
+  const totals = Object.fromEntries(COUNTER_KEYS.map((key) => [key, 0])) as {
+    -readonly [Key in typeof COUNTER_KEYS[number]]: number | null;
+  };
+  const methods = outcome.setSnapshots.map(
+    (snapshotValue) => snapshotValue.counters.methodActions,
+  );
+  if (methods.every((value) => value === null)) totals.methodActions = null;
+  else {
+    assert.ok(methods.every((value) => typeof value === 'number'));
+    totals.methodActions = methods.reduce<number>(
+      (sum, value) => sum + (value ?? 0),
+      0,
+    );
+  }
+  for (const key of COUNTER_KEYS) {
+    if (key === 'methodActions') continue;
+    totals[key] = outcome.setSnapshots.reduce(
+      (sum, snapshotValue) => sum + snapshotValue.counters[key],
+      0,
+    );
+  }
+  assert.deepEqual(totals, outcome.counters);
+  for (const snapshotValue of outcome.setSnapshots) {
+    assertDeepFrozen(snapshotValue.counters);
+    const diagnostic = outcome.diagnostics.find(
+      (candidate) => candidate.setIndex === snapshotValue.setIndex,
+    );
+    if (snapshotValue.terminalDiagnostic === null) {
+      assert.equal(snapshotValue.counters.diagnostics, 0);
+      continue;
+    }
+    assert.equal(snapshotValue.stage, 'terminal');
+    assert.notEqual(diagnostic, undefined);
+    assert.deepEqual(snapshotValue.counters, diagnostic?.counters);
+    assert.notEqual(snapshotValue.counters, diagnostic?.counters);
+    assert.deepEqual(snapshotValue.proposalFailure, diagnostic?.proposalFailure);
+  }
+}
+
+function countersWithFineValuesFrom(
+  base: ServiceFastExperimentRawCounters,
+  source: ServiceFastExperimentRawCounters,
+): ServiceFastExperimentRawCounters {
+  return Object.freeze({
+    ...base,
+    outerUpdates: source.outerUpdates,
+    shareActions: source.shareActions,
+    reconstructionSteps: source.reconstructionSteps,
+  });
+}
+
+function counterVector(
+  methodActions: number | null,
+  outerUpdates: number,
+  shareActions: number,
+  reconstructionSteps: number,
+): ServiceFastExperimentRawCounters {
+  return Object.freeze({
+    methodActions,
+    outerUpdates,
+    shareActions,
+    reconstructionSteps,
+    residualReplays: 0,
+    residualRejections: 0,
+    repairReplays: 0,
+    repairRejections: 0,
+    authorizationReplays: 0,
+    authorizationRejections: 0,
+    proposals: 0,
+    diagnostics: 0,
+  });
+}
+
+function redistributeFirstTwoFineCounterVectors<
+  T extends
+    | ServiceFastExperimentRawCompleteOutcome
+    | ServiceFastExperimentRawStoppedOutcome,
+>(outcome: T): T {
+  const first = outcome.setSnapshots[0];
+  const second = outcome.setSnapshots[1];
+  if (first === undefined || second === undefined) {
+    throw new Error('Expected two candidate-set snapshots.');
+  }
+  const firstCounters = countersWithFineValuesFrom(
+    first.counters,
+    second.counters,
+  );
+  const secondCounters = countersWithFineValuesFrom(
+    second.counters,
+    first.counters,
+  );
+  const countersBySet = new Map<number, ServiceFastExperimentRawCounters>([
+    [first.setIndex, firstCounters],
+    [second.setIndex, secondCounters],
+  ]);
+  const diagnostics = Object.freeze(outcome.diagnostics.map((diagnostic) =>
+    Object.freeze({
+      ...diagnostic,
+      counters: countersBySet.get(diagnostic.setIndex) ?? diagnostic.counters,
+    })));
+  const setSnapshots = Object.freeze(outcome.setSnapshots.map((snapshotValue) => {
+    const counters = countersBySet.get(snapshotValue.setIndex) ??
+      snapshotValue.counters;
+    const terminalDiagnostic = snapshotValue.terminalDiagnostic === null
+      ? null
+      : diagnostics.find(
+        (diagnostic) => diagnostic.setIndex === snapshotValue.setIndex,
+      ) ?? null;
+    return Object.freeze({
+      ...snapshotValue,
+      counters,
+      terminalDiagnostic,
+    });
+  }));
+  return Object.freeze({
+    ...outcome,
+    diagnostics,
+    setSnapshots,
+  }) as unknown as T;
+}
+
 void test('freezes the exact 24-policy matrix and per-driver hard caps', () => {
   const policies = serviceFastExperimentPolicies();
   assert.equal(SERVICE_FAST_EXPERIMENT_POLICY_COUNT, 24);
@@ -201,6 +345,7 @@ void test('classifies every semantic policy with exact replay and stable evidenc
     policyIndex += 1) {
     const first = semanticComplete(cell, policyIndex);
     const second = semanticComplete(cell, policyIndex);
+    assertCounterPartition(first);
     const firstProjection = projectServiceFastSemanticResult(first);
     const secondProjection = projectServiceFastSemanticResult(second);
     assert.deepEqual(secondProjection, firstProjection);
@@ -247,12 +392,17 @@ void test('keeps protected anchor timing raw until complete outside validation',
   assert.equal(raw.status, 'complete');
   if (raw.status !== 'complete') throw new Error('Expected raw completion.');
   assert.equal(raw.adapterMode, 'operational');
+  assertCounterPartition(raw);
   assert.equal(raw.counters.methodActions, null);
   assert.equal(raw.diagnostics[0]?.reconstruction, null);
   assert.equal(isFinalizedServiceFastCompleteOutcome(raw), false);
   const validated = validateServiceFastCompleteOutcome(raw, semantic);
   assert.equal(validated.ok, true);
   if (!validated.ok) throw new Error('Expected complete parity.');
+  assertCounterPartition(validated.value);
+  assert.ok(validated.value.setSnapshots.every(
+    (snapshotValue) => typeof snapshotValue.counters.methodActions === 'number',
+  ));
   assert.equal(typeof validated.value.counters.methodActions, 'number');
   assert.equal(isFinalizedServiceFastCompleteOutcome(validated.value), true);
   const operationalProjection = projectServiceFastSemanticResult(validated.value);
@@ -281,9 +431,14 @@ void test('replays and finalizes stopped prefixes without charging the pending a
   assert.equal(raw.counters.shareActions, 3);
   assert.equal(raw.counters.methodActions, null);
   assert.equal(raw.stageAggregate, 4);
+  assertCounterPartition(raw);
+  assert.ok(raw.setSnapshots.every(
+    (snapshotValue) => snapshotValue.counters.methodActions === null,
+  ));
   const validated = validateServiceFastDeadlinePrefix(call, raw, semantic);
   assert.equal(validated.ok, true);
   if (!validated.ok) throw new Error('Expected prefix parity.');
+  assertCounterPartition(validated.value);
   assert.equal(validated.value.reason, 'action-cap');
   assert.equal(isFinalizedServiceFastStoppedOutcome(raw), false);
   assert.equal(isFinalizedServiceFastStoppedOutcome(validated.value), true);
@@ -336,6 +491,103 @@ void test('runtime-fences semantic evidence from raw and forged completions', ()
     ok: false,
     code: 'counter-invariant-failure',
   });
+});
+
+void test('rejects forged equal-total per-set fine-counter redistribution', () => {
+  const context = prepareContext(snapshot());
+  const candidate = resolvedCandidate(context);
+  const unresolved: ServiceFastExperimentResolvedCandidateSetInput = Object.freeze({
+    routes: ROUTES,
+    modelResolution: Object.freeze({ ok: false as const }),
+  });
+  const completeCell = prepareCell(101n, [candidate, unresolved]);
+  const completeSemantic = semanticComplete(completeCell, 0);
+  const completeCall = prepareServiceFastOperationalPolicy(completeCell, 0);
+  const completeRaw = runServiceFastOperationalPolicy(completeCall);
+  assert.equal(completeRaw.status, 'complete');
+  if (completeRaw.status !== 'complete') throw new Error('Expected completion.');
+  const completeForged = redistributeFirstTwoFineCounterVectors(completeRaw);
+  assert.deepEqual(validateServiceFastCompleteOutcome(
+    completeForged,
+    completeSemantic,
+  ), {
+    ok: false,
+    code: 'counter-invariant-failure',
+  });
+  assert.equal(
+    validateServiceFastCompleteOutcome(completeRaw, completeSemantic).ok,
+    true,
+  );
+
+  const stoppedCell = prepareCell(101n, [candidate, candidate]);
+  const stoppedSemantic = semanticComplete(stoppedCell, 0);
+  const stoppedCall = prepareServiceFastOperationalPolicy(stoppedCell, 0);
+  const stoppedRaw = runServiceFastOperationalPolicy(
+    stoppedCall,
+    (pending) => pending.setIndex === 1 && pending.actionKind === 'proposal',
+  );
+  assert.equal(stoppedRaw.status, 'stopped');
+  if (stoppedRaw.status !== 'stopped') throw new Error('Expected stopped prefix.');
+  const stoppedForged = redistributeFirstTwoFineCounterVectors(stoppedRaw);
+  assert.deepEqual(validateServiceFastDeadlinePrefix(
+    stoppedCall,
+    stoppedForged,
+    stoppedSemantic,
+  ), {
+    ok: false,
+    code: 'counter-invariant-failure',
+  });
+  assert.equal(
+    validateServiceFastDeadlinePrefix(stoppedCall, stoppedRaw, stoppedSemantic).ok,
+    true,
+  );
+});
+
+void test('admits protected per-set fine counters only elementwise', () => {
+  const raw = Object.freeze([
+    counterVector(null, 2, 7, 3),
+    counterVector(null, 0, 0, 0),
+  ]);
+  const matchingShadow = Object.freeze([
+    counterVector(6, 2, 7, 3),
+    counterVector(0, 0, 0, 0),
+  ]);
+  const redistributedShadow = Object.freeze([
+    counterVector(0, 0, 0, 0),
+    counterVector(6, 2, 7, 3),
+  ]);
+  assert.equal(
+    serviceFastExperimentCounterVectorsMatch(
+      raw,
+      matchingShadow,
+      'protected-operational',
+    ),
+    true,
+  );
+  assert.equal(
+    serviceFastExperimentCounterVectorsMatch(
+      raw,
+      redistributedShadow,
+      'protected-operational',
+    ),
+    false,
+  );
+  assert.equal(
+    serviceFastExperimentCounterVectorsMatch(
+      matchingShadow,
+      matchingShadow,
+      'configurable-exact',
+    ),
+    true,
+  );
+  assert.equal(
+    serviceFastExperimentCounterVectorsMatch(
+      matchingShadow,
+      redistributedShadow,
+      'configurable-exact',
+    ),
+    false,
+  );
 });
 
 void test('classifies the three validation mismatch taxonomies without runtime seams', () => {
@@ -470,6 +722,9 @@ void test('exposes the configurable final-share and canonical next-set boundarie
   assert.equal(setRaw.diagnostics.length, 1);
   assert.equal(setRaw.setSnapshots[0]?.stage, 'terminal');
   assert.equal(setRaw.setSnapshots[1]?.stage, 'proposal');
+  assertCounterPartition(setRaw);
+  assert.equal(setRaw.setSnapshots[0]?.counters.diagnostics, 1);
+  assert.equal(setRaw.setSnapshots[1]?.counters.diagnostics, 0);
   assert.equal(
     validateServiceFastDeadlinePrefix(
       multiSetCall,
@@ -543,6 +798,133 @@ void test('sets any-valid-score only after a full-input scoring receipt', () => 
   if (!validated.ok) throw new Error('Expected partial-score prefix parity.');
   assert.ok((validated.value.setSnapshots[0]?.reconstruction?.residualUnits ?? 0n) > 1n);
   assert.equal(validated.value.anyValidScore, false);
+
+  const repairSemantic = semanticComplete(cell, 15);
+  const repairDiagnostic = repairSemantic.diagnostics[0];
+  assert.notEqual(repairDiagnostic, undefined);
+  const partialCurrentAttempts = repairDiagnostic?.currentAttempts.filter((attempt) =>
+    attempt.allocations.reduce((sum, allocation) => sum + allocation, 0n) < 1_003n
+  ) ?? [];
+  assert.ok(partialCurrentAttempts.length > 0);
+  for (const attempt of repairDiagnostic?.currentAttempts ?? []) {
+    const attemptedAmount = attempt.allocations.reduce(
+      (sum, allocation) => sum + allocation,
+      0n,
+    );
+    assert.equal(attempt.receipt?.amountIn, attemptedAmount);
+    assert.equal(attempt.failureCode, null);
+  }
+  for (const attempt of repairDiagnostic?.repair?.attempts ?? []) {
+    assert.equal(
+      attempt.allocations.reduce((sum, allocation) => sum + allocation, 0n),
+      1_003n,
+    );
+    assert.equal(attempt.receipt?.amountIn, 1_003n);
+    assert.equal(attempt.failureCode, null);
+  }
+  assert.equal(
+    repairDiagnostic?.selectedScore?.allocations.reduce(
+      (sum, allocation) => sum + allocation,
+      0n,
+    ),
+    1_003n,
+  );
+  assert.equal(repairDiagnostic?.authorizationReceipt?.amountIn, 1_003n);
+});
+
+void test('retains exact proposal and rejected-attempt failure progress', () => {
+  const value = snapshot([
+    pool('left-ac', 10_000n, 10_000n),
+    pool('right-ac', 10_000n, 10_000n),
+  ]);
+  const context = prepareContext(value);
+  const resolved = resolvedCandidate(context);
+  if (!resolved.modelResolution.ok) throw new Error('Expected resolved candidate.');
+  const missingRoutes = Object.freeze(ROUTES.map((route, index) => {
+    const hop = route[0];
+    if (hop === undefined) throw new Error('Expected one-hop route.');
+    return Object.freeze([Object.freeze({
+      assetIn: hop.assetIn,
+      poolId: `missing-${index}`,
+      assetOut: hop.assetOut,
+    })]);
+  }));
+  const replayFailureCell = prepareServiceFastExperimentCell({
+    context,
+    snapshotId: value.snapshotId,
+    snapshotChecksum: value.snapshotChecksum,
+    assetIn: 'A',
+    assetOut: 'C',
+    amountIn: 101n,
+    candidateSets: [Object.freeze({
+      routes: missingRoutes,
+      modelResolution: resolved.modelResolution,
+    })],
+    repairTargetSetIndex: 0,
+  });
+  const replayFailure = semanticComplete(replayFailureCell, 15);
+  assertCounterPartition(replayFailure);
+  const replayDiagnostic = replayFailure.diagnostics[0];
+  assert.equal(replayDiagnostic?.failureCode, 'residual-options-exhausted');
+  assert.ok(replayDiagnostic?.currentAttempts.every((attempt) =>
+    attempt.outcome === 'rejected' &&
+    attempt.failureCode === 'residual-options-exhausted' &&
+    attempt.receipt === null));
+  assert.ok(replayDiagnostic?.repair?.attempts.every((attempt) =>
+    attempt.outcome === 'rejected' &&
+    attempt.failureCode === 'repair-no-valid-neighbor' &&
+    attempt.receipt === null));
+
+  const huge = 1n << 20_000n;
+  const hostileResolved = Object.freeze([
+    Object.freeze([Object.freeze({
+      reserveIn: 1n,
+      reserveOut: huge,
+      feeChargedNumerator: 0n,
+      feeDenominator: 1n,
+    })]),
+    resolved.modelResolution.resolvedRoutes[1]!,
+  ]);
+  const proposalFailureCell = prepareServiceFastExperimentCell({
+    context,
+    snapshotId: value.snapshotId,
+    snapshotChecksum: value.snapshotChecksum,
+    assetIn: 'A',
+    assetOut: 'C',
+    amountIn: 101n,
+    candidateSets: [Object.freeze({
+      routes: ROUTES,
+      modelResolution: Object.freeze({
+        ok: true as const,
+        resolvedRoutes: hostileResolved,
+      }),
+    })],
+    repairTargetSetIndex: 0,
+  });
+  const proposalFailure = semanticComplete(proposalFailureCell, 15);
+  assertCounterPartition(proposalFailure);
+  assert.deepEqual(proposalFailure.diagnostics[0]?.proposalFailure, {
+    failureCode: 'non-finite-normalization',
+    converged: false,
+    completedOuterUpdates: 0,
+  });
+  assert.deepEqual(
+    proposalFailure.setSnapshots[0]?.proposalFailure,
+    proposalFailure.diagnostics[0]?.proposalFailure,
+  );
+  const projection = projectServiceFastSemanticResult(proposalFailure);
+  const projectedDiagnostic = projection.diagnostics[0] as {
+    readonly proposalFailure: unknown;
+    readonly counters: unknown;
+  } | undefined;
+  assert.deepEqual(
+    projectedDiagnostic?.proposalFailure,
+    proposalFailure.diagnostics[0]?.proposalFailure,
+  );
+  assert.deepEqual(
+    projectedDiagnostic?.counters,
+    COUNTER_KEYS.map((key) => proposalFailure.diagnostics[0]?.counters[key]),
+  );
 });
 
 void test('retains truthful incomplete repair evidence and never leaks a winner', () => {
@@ -679,6 +1061,18 @@ void test('keeps 255-bit amounts exact through reconstruction, repair, and autho
 });
 
 void test('types unresolved sets without proposing and rejects hostile cell bounds', () => {
+  const emptyCell = prepareCell(101n, []);
+  for (const policyIndex of [0, 7]) {
+    const empty = semanticComplete(emptyCell, policyIndex);
+    assert.deepEqual(empty.diagnostics, []);
+    assert.deepEqual(empty.setSnapshots, []);
+    assert.equal(empty.counters.methodActions, 0);
+    assert.equal(
+      Object.values(empty.counters).every((value) => value === 0),
+      true,
+    );
+    assert.equal(empty.finalIncumbent, null);
+  }
   const unresolved: ServiceFastExperimentResolvedCandidateSetInput = Object.freeze({
     routes: ROUTES,
     modelResolution: Object.freeze({ ok: false as const }),

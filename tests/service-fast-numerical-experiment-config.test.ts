@@ -16,12 +16,12 @@ const ARTIFACT_SCHEMA = path.join(
   'fixtures/m7c/service-fast-numerical/experiment-artifact-schema.v1.json',
 );
 const VERIFIER = path.join(ROOT, 'cli/verify-service-fast-numerical-experiment-config.ts');
-const EXPECTED_CONFIG_BYTES = 68_175;
+const EXPECTED_CONFIG_BYTES = 69_930;
 const EXPECTED_CONFIG_SHA256 =
-  'd21a2156f3a291a52f9888a567d6b3f7372afacccb5dfc457292d7145e3842ac';
-const EXPECTED_ARTIFACT_SCHEMA_BYTES = 65_692;
+  'c0b86e26106177f7fee5e8f4ae740e0b1f5a889c8e8b1246a65323d842a30f20';
+const EXPECTED_ARTIFACT_SCHEMA_BYTES = 67_824;
 const EXPECTED_ARTIFACT_SCHEMA_SHA256 =
-  'ab5620110543f5fc5d7e032a4069c1693f95251dbe50ea848fca773b2b80f626';
+  'a1639d3b0156f0135f1df25eff0f9e7693e95c85674cb02c04145a94a9d4a07a';
 
 function assertBytesAndHash(
   filePath: string,
@@ -98,6 +98,9 @@ void test('the publication and operational-width admission is closed before obse
     };
     readonly artifacts: {
       readonly publication: Readonly<Record<string, string>>;
+      readonly sourceClosure: {
+        readonly executionRevisionGate: Readonly<Record<string, unknown>>;
+      };
       readonly sizeAdmission: { readonly operationalEnvelope: Readonly<Record<string, unknown>> };
     };
   };
@@ -107,6 +110,7 @@ void test('the publication and operational-width admission is closed before obse
     readonly objectSchemas: readonly {
       readonly schemaId: string;
       readonly fields: readonly (readonly [string, string])[];
+      readonly crossFieldRules?: readonly string[];
     }[];
   };
 
@@ -130,6 +134,36 @@ void test('the publication and operational-width admission is closed before obse
   assert.match(
     config.artifacts.publication['externalRaceDisposition'] ?? '',
     /no-atomic-no-overwrite-guarantee/u,
+  );
+  assert.deepEqual(
+    config.artifacts.sourceClosure.executionRevisionGate,
+    {
+      requiredBeforeCandidateCalls: true,
+      observationHeadRelation:
+        'HEAD-is-exactly-one-child-commit-of-implementationInputRevision',
+      parentToHeadTrackedDiff:
+        'exactly-one-added-or-modified-file-at-fixtures/m7c/service-fast-numerical/source-closure.v1.json-with-bytes-equal-current-closure',
+      preLockRepositoryState:
+        'tracked-index-and-worktree-clean-no-untracked-nonignored-files-and-no-submodules-deliberately-ignored-local-roots-may-exist-but-are-never-runtime-import-targets',
+      lockAcquisitionAndIdentity:
+        'open-wx-the-fixed-sibling-publication-lock-and-inode-bind-that-exact-path-to-the-owned-open-handle-before-any-candidate-call',
+      candidateCallRepositoryState:
+        'immediately-before-the-first-candidate-call-tracked-index-and-worktree-remain-clean-and-the-only-untracked-nonignored-exception-is-the-exact-owned-lock-path-and-its-open-handle-inode-identity-deliberately-ignored-local-roots-may-exist-and-remain-outside-runtime-import-closure',
+      candidateCallRuntimeImportRule:
+        'no-runtime-import-may-resolve-to-the-owned-lock-path-any-other-untracked-path-or-any-ignored-path',
+      stagingCreationOrder:
+        'create-staging-only-after-all-candidate-work-so-no-staging-exception-exists-at-the-candidate-call-gate',
+      runtimeImportClosure:
+        'node-builtins-or-repository-relative-files-tracked-at-implementationInputRevision-only-source-closure-is-read-as-data-from-HEAD',
+      'bare-package-runtimeImports': 'forbidden',
+      'ignored-or-untracked-runtimeImportTargets': 'forbidden',
+      mismatchDisposition: 'integrity-failure-before-candidate-call',
+    },
+  );
+  assert.equal(
+    Object.values(config.artifacts.sourceClosure.executionRevisionGate)
+      .includes('none'),
+    false,
   );
 
   const maximumNanosecondValue = '9'.repeat(20);
@@ -196,6 +230,19 @@ void test('the publication and operational-width admission is closed before obse
   assert.equal(fields('Environment').get('totalMemoryBytes'), 'primitive:recordOnlyTotalMemoryBytes');
   assert.equal(fields('Environment').get('timezone'), 'primitive:recordOnlyTimezone');
   assert.equal(fields('Decision').get('reason'), 'enum:decisionReason');
+  const rules = (schemaId: string): readonly string[] =>
+    schema.objectSchemas.find((value) => value.schemaId === schemaId)
+      ?.crossFieldRules ?? [];
+  assert.ok(rules('ScoreAttemptProjection').some((rule) =>
+    /may-be-less-than-requested-input/u.test(rule)));
+  assert.ok(rules('ScoreAttemptProjection').some((rule) =>
+    /repair-score-transcript.*full-requested-input/u.test(rule)));
+  assert.ok(rules('SemanticResultRecord').some((rule) =>
+    /elementwise-sum/u.test(rule)));
+  assert.ok(rules('OperationalCompleteOutcomeProjection').some((rule) =>
+    /configurable-shadow-parity/u.test(rule)));
+  assert.ok(rules('SourceClosure').some((rule) =>
+    /no-staging-exception/u.test(rule)));
   assert.equal(config.artifacts.sizeAdmission.operationalEnvelope['readmeAdmission'],
     'fixed-template-dry-serialized-with-maximal-config-and-committed-input-derived-widths-before-source-closure');
 });
@@ -311,4 +358,9 @@ void test('the pre-output counter accounting is closed and non-overlapping', () 
   assert.match(counterSemantics['outerUpdates'] ?? '', /final-recomputed-sample-is-not/u);
   assert.match(counterSemantics['counterMutation'] ?? '', /pending-action-is-uncharged/u);
   assert.match(counterSemantics['aggregateAccounting'] ?? '', /not-double-counted/u);
+  assert.match(counterSemantics['perSetAttribution'] ?? '', /elementwise-sum/u);
+  assert.match(
+    counterSemantics['protectedAnchorClassification'] ?? '',
+    /configurable-shadow-parity/u,
+  );
 });

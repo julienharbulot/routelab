@@ -8,8 +8,8 @@ import {
   isFinalizedServiceFastCompleteOutcome,
   type ServiceFastExperimentCandidateSetDiagnostic,
   type ServiceFastExperimentCompleteOutcome,
-  type ServiceFastExperimentCounters,
   type ServiceFastExperimentCurrentAttempt,
+  type ServiceFastExperimentRawCounters,
   type ServiceFastExperimentRepairAttempt,
   type ServiceFastExperimentScoreEvidence,
 } from './evaluator-kernel.ts';
@@ -68,7 +68,9 @@ function deepFreezeProjection<T>(value: T, seen = new Set<object>()): T {
   return Object.freeze(value);
 }
 
-function countersProjection(counters: ServiceFastExperimentCounters): readonly number[] {
+function countersProjection(
+  counters: ServiceFastExperimentRawCounters,
+): readonly number[] {
   const methodActions: unknown = counters.methodActions;
   if (typeof methodActions !== 'number') {
     throw new TypeError(
@@ -124,6 +126,7 @@ function currentAttemptProjection(attempt: ServiceFastExperimentCurrentAttempt):
     routeIndex: attempt.routeIndex,
     allocations: attempt.allocations.map((allocation) => allocation.toString(10)),
     outcome: attempt.outcome,
+    failureCode: attempt.failureCode,
     receiptHash: attempt.receipt === null
       ? null
       : serviceFastExperimentReceiptHash(attempt.receipt),
@@ -136,6 +139,7 @@ function repairAttemptProjection(attempt: ServiceFastExperimentRepairAttempt): u
     neighborIndex: attempt.neighborIndex,
     allocations: attempt.allocations.map((allocation) => allocation.toString(10)),
     outcome: attempt.outcome,
+    failureCode: attempt.failureCode,
     receiptHash: attempt.receipt === null
       ? null
       : serviceFastExperimentReceiptHash(attempt.receipt),
@@ -172,6 +176,14 @@ function diagnosticProjection(
           completedOuterUpdates: diagnostic.proposalMetadata.completedOuterUpdates,
           weightBits: diagnostic.proposalMetadata.weights.map(numberHex),
         },
+    proposalFailure: diagnostic.proposalFailure === null
+      ? null
+      : {
+          failureCode: diagnostic.proposalFailure.failureCode,
+          converged: diagnostic.proposalFailure.converged,
+          completedOuterUpdates:
+            diagnostic.proposalFailure.completedOuterUpdates,
+        },
     reconstructionHash: reconstructionProjection === null
       ? null
       : sha256Projection(reconstructionProjection),
@@ -194,6 +206,7 @@ function diagnosticProjection(
     authorizationReceiptHash: diagnostic.authorizationReceipt === null
       ? null
       : serviceFastExperimentReceiptHash(diagnostic.authorizationReceipt),
+    counters: countersProjection(diagnostic.counters),
   };
 }
 

@@ -1436,6 +1436,20 @@ function sourceFiles(root: string): readonly string[] {
   return files;
 }
 
+function isJsonRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function containsServiceFastReference(value: unknown): boolean {
+  const serviceFastReference = /service[-_:]?fast/iu;
+  if (typeof value === 'string') return serviceFastReference.test(value);
+  if (Array.isArray(value)) return value.some(containsServiceFastReference);
+  if (!isJsonRecord(value)) return false;
+  return Object.entries(value).some(
+    ([key, nested]) => serviceFastReference.test(key) || containsServiceFastReference(nested),
+  );
+}
+
 function importClosure(entry: string): ReadonlyMap<string, string> {
   const closure = new Map<string, string>();
   const pending = [entry];
@@ -1495,6 +1509,35 @@ void test('audits the production closure for test-only forcing seams', () => {
       `Experiment evaluator leaked into supported runtime: ${file}`,
     );
   }
-  const packageJson = readFileSync(path.join(repository, 'package.json'), 'utf8');
-  assert.doesNotMatch(packageJson, /service-fast-numerical-experiment/u);
+  const packageJson: unknown = JSON.parse(
+    readFileSync(path.join(repository, 'package.json'), 'utf8'),
+  );
+  assert.ok(isJsonRecord(packageJson));
+  const scripts = packageJson['scripts'];
+  assert.ok(isJsonRecord(scripts));
+  const serviceFastScripts = Object.entries(scripts).filter(
+    ([name, command]) =>
+      containsServiceFastReference(name) || containsServiceFastReference(command),
+  );
+  assert.deepEqual(serviceFastScripts, [
+    [
+      'experiment:service-fast:inputs',
+      'node cli/verify-service-fast-numerical-experiment-config.ts --input-admission && node cli/build-service-fast-numerical-experiment-inputs.ts',
+    ],
+    [
+      'experiment:service-fast',
+      'node cli/run-service-fast-numerical-experiment.ts',
+    ],
+    [
+      'verify:service-fast-experiment',
+      'node cli/verify-service-fast-numerical-experiment.ts',
+    ],
+  ]);
+  for (const field of ['exports', 'main', 'module'] as const) {
+    assert.equal(
+      containsServiceFastReference(packageJson[field]),
+      false,
+      `Experiment leaked through package ${field}.`,
+    );
+  }
 });

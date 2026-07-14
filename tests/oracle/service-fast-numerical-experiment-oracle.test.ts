@@ -181,7 +181,7 @@ interface CorrectedOutcomeEvidence {
 
 function correctedOutcome(outcome: ServiceFastExperimentOutcome | ServiceFastExperimentCompleteOutcome):
   CorrectedOutcomeEvidence {
-  return outcome as unknown as CorrectedOutcomeEvidence;
+  return outcome;
 }
 
 function assertDeepFrozen(value: unknown, seen = new Set<object>()): void {
@@ -1379,17 +1379,42 @@ void test('projects one hand-derived failure record with a deterministic semanti
       failureCode: 'invalid-route-model',
       reconstructionDisposition: 'current',
       proposalMetadata: null,
+      proposalFailure: null,
       reconstructionHash: null,
       currentTranscriptHash: emptyTranscriptHash,
       currentScore: null,
       repair: null,
       selectedScore: null,
       authorizationReceiptHash: null,
+      counters: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     }],
   };
+  const expectedSemanticHash =
+    'sha256:a31ecab5037212ecee5bfb4f4aa42e852ed31e25c2e793c5d1dc6ec82177ca73';
+  assert.equal(sha256Json(withoutHash), expectedSemanticHash);
+  assert.deepEqual(Reflect.ownKeys(withoutHash.diagnostics[0] ?? {}), [
+    'setIndex',
+    'status',
+    'failureCode',
+    'reconstructionDisposition',
+    'proposalMetadata',
+    'proposalFailure',
+    'reconstructionHash',
+    'currentTranscriptHash',
+    'currentScore',
+    'repair',
+    'selectedScore',
+    'authorizationReceiptHash',
+    'counters',
+  ]);
+  assert.equal(withoutHash.diagnostics[0]?.proposalFailure, null);
+  assert.deepEqual(
+    withoutHash.diagnostics[0]?.counters,
+    withoutHash.counters,
+  );
   const expected = Object.freeze({
     ...withoutHash,
-    semanticHash: sha256Json(withoutHash),
+    semanticHash: expectedSemanticHash,
   });
   assert.deepEqual(projectServiceFastSemanticResult(semantic), expected);
   assert.deepEqual(

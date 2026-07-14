@@ -145,6 +145,11 @@ interface CapturedPolicy {
   readonly nonConvergence: ServiceFastPathShadowPriceNonConvergence;
 }
 
+interface DecodedWeight {
+  readonly significand: bigint;
+  readonly binaryExponent: number;
+}
+
 interface DriverConfiguration {
   readonly driverId: ServiceFastPathShadowPriceDriverId;
   readonly method: 'bisection' | 'pinned-sqrt' | 'fixed-newton-sqrt';
@@ -180,7 +185,21 @@ interface MutableState {
   outerUpdatesCompleted: number;
   methodActions: number;
   shareActions: number;
+  reconstructionPass: 0 | 1 | 2;
+  reconstructionRouteIndex: number;
   reconstructionSteps: number;
+  decodedWeights: Array<DecodedWeight | 0>;
+  minimumExponent: number | undefined;
+  positiveWeightCount: number;
+  integerWeights: bigint[];
+  totalIntegerWeight: bigint;
+  baseAllocations: bigint[];
+  allocatedTotal: bigint;
+  residualUnitsRemaining: bigint | undefined;
+  residualOptionIndex: number;
+  residualOptionPending: boolean;
+  residualBestAllocations: readonly bigint[] | undefined;
+  currentAllocations: readonly bigint[] | undefined;
   proposalMetadata: ServiceFastPathShadowPriceProposalMetadata | undefined;
   reconstruction: ServiceFastPathShadowPriceReconstruction | undefined;
   scoreAllocations: readonly bigint[] | undefined;
@@ -195,6 +214,7 @@ const BIT_LENGTH_CHUNK_BIGINT = 1_024n;
 const BIT_LENGTH_CHUNK_THRESHOLD = 1n << BIT_LENGTH_CHUNK_BIGINT;
 const BINARY64_FRACTION_MASK = (1n << 52n) - 1n;
 const BINARY64_FRACTION_DIVISOR = 2 ** 52;
+const BINARY64_IMPLICIT_SIGNIFICAND_BIT = 1n << 52n;
 
 const BISECTION_64_64: DriverConfiguration = Object.freeze({
   driverId: 'bisection-o64-i64',
@@ -379,6 +399,27 @@ function isUnitShare(value: number): boolean {
 function isPositiveZeroOrPositiveNormal(value: number): boolean {
   if (!Number.isFinite(value) || Object.is(value, -0) || value < 0) return false;
   return value === 0 || value >= MINIMUM_NORMAL_NUMBER;
+}
+
+function decodeWeight(value: number): DecodedWeight | 0 | undefined {
+  const bytes = new Uint8Array(8);
+  const view = new DataView(bytes.buffer);
+  view.setFloat64(0, value, false);
+  let bits = 0n;
+  for (let index = 0; index < bytes.length; index += 1) {
+    bits = (bits << 8n) | BigInt(view.getUint8(index));
+  }
+  const firstByte = view.getUint8(0);
+  if ((firstByte & 0x80) !== 0) return undefined;
+  const exponentBits = (bits >> 52n) & 0x7ffn;
+  const fraction = bits & BINARY64_FRACTION_MASK;
+  if (exponentBits === 0n) return fraction === 0n ? 0 : undefined;
+  if (exponentBits === 0x7ffn) return undefined;
+  const exponent = ((firstByte & 0x7f) * 16) + (view.getUint8(1) >> 4);
+  return Object.freeze({
+    significand: BINARY64_IMPLICIT_SIGNIFICAND_BIT + fraction,
+    binaryExponent: exponent - 1_023 - 52,
+  });
 }
 
 function checkedPositiveHalving(value: number): number | undefined {
@@ -1013,7 +1054,21 @@ export function createServiceFastPathShadowPriceState(
     outerUpdatesCompleted: 0,
     methodActions: 0,
     shareActions: 0,
+    reconstructionPass: 0,
+    reconstructionRouteIndex: 0,
     reconstructionSteps: 0,
+    decodedWeights: [],
+    minimumExponent: undefined,
+    positiveWeightCount: 0,
+    integerWeights: [],
+    totalIntegerWeight: 0n,
+    baseAllocations: [],
+    allocatedTotal: 0n,
+    residualUnitsRemaining: undefined,
+    residualOptionIndex: 0,
+    residualOptionPending: false,
+    residualBestAllocations: undefined,
+    currentAllocations: undefined,
     proposalMetadata: undefined,
     reconstruction: undefined,
     scoreAllocations: undefined,
@@ -1123,7 +1178,102 @@ export function advanceServiceFastPathShadowPriceReconstructionStep(
   if (state.phase !== 'reconstruction-step') {
     throw new TypeError('No service-fast shadow-price reconstruction step is pending.');
   }
-  throw new Error('Service-fast shadow-price reconstruction is pending implementation.');
+  state.reconstructionSteps += 1;
+  const weights = state.proposalMetadata?.weights;
+  const weight = weights?.[state.reconstructionRouteIndex];
+  if (weights === undefined || weight === undefined) {
+    return fail(state, 'invalid-reconstruction');
+  }
+
+  if (state.reconstructionPass === 0) {
+    const decoded = decodeWeight(weight);
+    if (decoded === undefined) return fail(state, 'invalid-reconstruction');
+    state.decodedWeights.push(decoded);
+    if (decoded !== 0) {
+      state.positiveWeightCount += 1;
+      if (
+        state.minimumExponent === undefined ||
+        decoded.binaryExponent < state.minimumExponent
+      ) {
+        state.minimumExponent = decoded.binaryExponent;
+      }
+    }
+  } else if (state.reconstructionPass === 1) {
+    const decoded = state.decodedWeights[state.reconstructionRouteIndex];
+    if (decoded === undefined) return fail(state, 'invalid-reconstruction');
+    if (decoded === 0) {
+      state.integerWeights.push(0n);
+    } else {
+      const minimumExponent = state.minimumExponent;
+      if (minimumExponent === undefined) return fail(state, 'zero-total-weight');
+      const shift = decoded.binaryExponent - minimumExponent;
+      if (!Number.isSafeInteger(shift) || shift < 0) {
+        return fail(state, 'invalid-reconstruction');
+      }
+      const integerWeight = decoded.significand << BigInt(shift);
+      if (integerWeight <= 0n) return fail(state, 'invalid-reconstruction');
+      state.integerWeights.push(integerWeight);
+      state.totalIntegerWeight += integerWeight;
+    }
+  } else {
+    const integerWeight = state.integerWeights[state.reconstructionRouteIndex];
+    if (integerWeight === undefined || state.totalIntegerWeight <= 0n) {
+      return fail(
+        state,
+        state.totalIntegerWeight <= 0n
+          ? 'zero-total-weight'
+          : 'invalid-reconstruction',
+      );
+    }
+    const allocation = (state.amountIn * integerWeight) / state.totalIntegerWeight;
+    if (allocation < 0n) return fail(state, 'invalid-reconstruction');
+    state.baseAllocations.push(allocation);
+    state.allocatedTotal += allocation;
+    if (state.allocatedTotal > state.amountIn) {
+      return fail(state, 'invalid-reconstruction');
+    }
+  }
+
+  state.reconstructionRouteIndex += 1;
+  if (state.reconstructionRouteIndex < state.routeCount) return success(state);
+
+  if (state.reconstructionPass === 0) {
+    if (state.minimumExponent === undefined || state.positiveWeightCount === 0) {
+      return fail(state, 'zero-total-weight');
+    }
+    state.reconstructionPass = 1;
+    state.reconstructionRouteIndex = 0;
+    return success(state);
+  }
+  if (state.reconstructionPass === 1) {
+    if (state.totalIntegerWeight <= 0n) return fail(state, 'zero-total-weight');
+    state.reconstructionPass = 2;
+    state.reconstructionRouteIndex = 0;
+    return success(state);
+  }
+
+  const residualUnits = state.amountIn - state.allocatedTotal;
+  if (
+    residualUnits < 0n ||
+    residualUnits >= BigInt(state.positiveWeightCount) ||
+    state.allocatedTotal + residualUnits !== state.amountIn
+  ) {
+    return fail(state, 'invalid-reconstruction');
+  }
+  const integerWeights = Object.freeze([...state.integerWeights]);
+  const baseAllocations = Object.freeze([...state.baseAllocations]);
+  state.reconstruction = Object.freeze({
+    integerWeights,
+    baseAllocations,
+    residualUnits,
+  });
+  state.residualUnitsRemaining = residualUnits;
+  state.currentAllocations = baseAllocations;
+  state.residualOptionIndex = 0;
+  state.residualOptionPending = false;
+  state.residualBestAllocations = undefined;
+  state.phase = 'residual-option';
+  return success(state);
 }
 
 /** @internal */
@@ -1131,10 +1281,31 @@ export function serviceFastPathShadowPriceResidualOption(
   handle: ServiceFastPathShadowPriceState,
 ): ServiceFastPathShadowPriceResidualOption {
   const state = stateOf(handle);
-  if (state.phase !== 'residual-option') {
-    throw new TypeError('No service-fast shadow-price residual option is available.');
+  if (state.phase !== 'residual-option' || state.residualOptionPending) {
+    throw new TypeError('No new service-fast shadow-price residual option is available.');
   }
-  throw new Error('Service-fast shadow-price residual scoring is pending implementation.');
+  const current = state.currentAllocations;
+  const remaining = state.residualUnitsRemaining;
+  if (current === undefined || remaining === undefined) {
+    throw new Error('Service-fast shadow-price residual state is incomplete.');
+  }
+  let allocations: readonly bigint[];
+  let routeIndex: number | null;
+  if (remaining === 0n) {
+    allocations = Object.freeze([...current]);
+    routeIndex = null;
+  } else {
+    routeIndex = state.residualOptionIndex;
+    const candidate = [...current];
+    const prior = candidate[routeIndex];
+    if (prior === undefined) {
+      throw new Error('Service-fast shadow-price residual route is unavailable.');
+    }
+    candidate[routeIndex] = prior + 1n;
+    allocations = Object.freeze(candidate);
+  }
+  state.residualOptionPending = true;
+  return Object.freeze({ allocations, routeIndex, residualUnitsRemaining: remaining });
 }
 
 /** @internal */
@@ -1145,13 +1316,49 @@ export function settleServiceFastPathShadowPriceResidualOption(
   const state = stateOf(handle);
   if (
     state.phase !== 'residual-option' ||
+    !state.residualOptionPending ||
     (outcome !== 'rejected' &&
       outcome !== 'valid-not-best' &&
       outcome !== 'valid-best')
   ) {
     throw new TypeError('Service-fast shadow-price residual outcome is invalid.');
   }
-  throw new Error('Service-fast shadow-price residual scoring is pending implementation.');
+  const current = state.currentAllocations;
+  const remaining = state.residualUnitsRemaining;
+  if (current === undefined || remaining === undefined) {
+    throw new Error('Service-fast shadow-price residual state is incomplete.');
+  }
+  state.residualOptionPending = false;
+  if (remaining === 0n) {
+    if (outcome === 'rejected') return fail(state, 'residual-options-exhausted');
+    state.scoreAllocations = Object.freeze([...current]);
+    state.phase = 'score-ready';
+    return success(state);
+  }
+
+  if (outcome === 'valid-best') {
+    const candidate = [...current];
+    const prior = candidate[state.residualOptionIndex];
+    if (prior === undefined) return fail(state, 'invalid-reconstruction');
+    candidate[state.residualOptionIndex] = prior + 1n;
+    state.residualBestAllocations = Object.freeze(candidate);
+  }
+  state.residualOptionIndex += 1;
+  if (state.residualOptionIndex < state.routeCount) return success(state);
+
+  const winner = state.residualBestAllocations;
+  if (winner === undefined) return fail(state, 'residual-options-exhausted');
+  const nextRemaining = remaining - 1n;
+  if (nextRemaining < 0n) return fail(state, 'invalid-reconstruction');
+  state.currentAllocations = winner;
+  state.residualUnitsRemaining = nextRemaining;
+  state.residualOptionIndex = 0;
+  state.residualBestAllocations = undefined;
+  if (nextRemaining === 0n) {
+    state.scoreAllocations = winner;
+    state.phase = 'score-ready';
+  }
+  return success(state);
 }
 
 /** @internal */

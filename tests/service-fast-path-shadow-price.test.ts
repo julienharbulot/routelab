@@ -3,15 +3,21 @@ import test from 'node:test';
 
 import type { PathShadowPriceResolvedRoute } from '../src/allocation/path-shadow-price/index.ts';
 import {
+  advanceServicePathShadowPriceReconstructionStep,
   advanceServicePathShadowPriceShareMicrostep,
   appendServicePathShadowPriceModelRoute,
   createServicePathShadowPriceState,
   servicePathShadowPriceFailure,
+  servicePathShadowPriceInitialResidualUnits,
   servicePathShadowPriceProgress,
   servicePathShadowPriceReadyWeights,
+  servicePathShadowPriceResidualOption,
+  servicePathShadowPriceScoreAllocations,
+  settleServicePathShadowPriceResidualOption,
   startServicePathShadowPriceProposal,
 } from '../src/allocation/service-path-shadow-price/index.ts';
 import {
+  advanceServiceFastPathShadowPriceReconstructionStep,
   advanceServiceFastPathShadowPriceShareAction,
   appendServiceFastPathShadowPriceModelRoute,
   createServiceFastPathShadowPriceState,
@@ -19,7 +25,9 @@ import {
   serviceFastPathShadowPriceProgress,
   serviceFastPathShadowPriceProposalMetadata,
   serviceFastPathShadowPriceReconstruction,
+  serviceFastPathShadowPriceResidualOption,
   serviceFastPathShadowPriceScoreAllocations,
+  settleServiceFastPathShadowPriceResidualOption,
   startServiceFastPathShadowPriceProposal,
   type ServiceFastPathShadowPriceDriverId,
   type ServiceFastPathShadowPricePolicy,
@@ -121,6 +129,59 @@ function prepareReferenceState(
   }
   assert.equal(startServicePathShadowPriceProposal(state).ok, true);
   return state;
+}
+
+function runReferenceShares(
+  state: ReturnType<typeof createServicePathShadowPriceState>,
+): void {
+  let guard = 0;
+  while (servicePathShadowPriceProgress(state).phase === 'share-microstep') {
+    assert.equal(advanceServicePathShadowPriceShareMicrostep(state).ok, true);
+    guard += 1;
+    assert.ok(guard < 50_000);
+  }
+}
+
+function finishFastReconstruction(
+  state: ServiceFastPathShadowPriceState,
+): NonNullable<ReturnType<typeof serviceFastPathShadowPriceReconstruction>> {
+  const routeCount = serviceFastPathShadowPriceProgress(state).routeCount;
+  assert.equal(serviceFastPathShadowPriceProgress(state).phase, 'reconstruction-step');
+  for (let step = 1; step <= 3 * routeCount; step += 1) {
+    const advanced = advanceServiceFastPathShadowPriceReconstructionStep(state);
+    assert.equal(advanced.ok, true);
+    assert.equal(advanced.actionKind, null);
+    assert.equal(serviceFastPathShadowPriceProgress(state).reconstructionSteps, step);
+  }
+  assert.equal(serviceFastPathShadowPriceProgress(state).phase, 'residual-option');
+  const reconstruction = serviceFastPathShadowPriceReconstruction(state);
+  assert.notEqual(reconstruction, undefined);
+  return reconstruction!;
+}
+
+function finishFastCurrentScore(
+  state: ServiceFastPathShadowPriceState,
+): readonly bigint[] {
+  let guard = 0;
+  while (serviceFastPathShadowPriceProgress(state).phase === 'residual-option') {
+    const option = serviceFastPathShadowPriceResidualOption(state);
+    const outcome = option.routeIndex === null || option.routeIndex === 0
+      ? 'valid-best'
+      : 'valid-not-best';
+    assert.equal(settleServiceFastPathShadowPriceResidualOption(state, outcome).ok, true);
+    guard += 1;
+    assert.ok(guard < 20);
+  }
+  assert.equal(serviceFastPathShadowPriceProgress(state).phase, 'score-ready');
+  const score = serviceFastPathShadowPriceScoreAllocations(state);
+  assert.notEqual(score, undefined);
+  return score!;
+}
+
+function bigintSum(values: readonly bigint[]): bigint {
+  let sum = 0n;
+  for (const value of values) sum += value;
+  return sum;
 }
 
 function assertInvalidCapturedRoute(source: unknown): void {
@@ -927,4 +988,207 @@ void test('precharges and attributes a failing method-core action', () => {
   assert.equal(progress.outerUpdatesCompleted, 0);
   assert.equal(progress.shareActions, 2);
   assert.equal(progress.methodActions, 1);
+});
+
+void test('matches protected F5/F6 reconstruction, residual options, and score', () => {
+  const fixtures = [
+    { amountIn: 5n, routes: [route(1n, 3n), route(3n, 4n)] },
+    { amountIn: 100n, routes: [route(100n, 100n), route(100n, 100n)] },
+  ] as const;
+
+  for (const fixture of fixtures) {
+    const fast = prepareFastState(
+      fixture.amountIn,
+      fixture.routes,
+      'bisection-o64-i64',
+    );
+    const reference = prepareReferenceState(fixture.amountIn, fixture.routes);
+    runFastShares(fast);
+    runReferenceShares(reference);
+    assert.deepEqual(
+      serviceFastPathShadowPriceProposalMetadata(fast)?.weights,
+      servicePathShadowPriceReadyWeights(reference),
+    );
+    for (let step = 1; step <= 6; step += 1) {
+      assert.equal(advanceServiceFastPathShadowPriceReconstructionStep(fast).ok, true);
+      assert.equal(advanceServicePathShadowPriceReconstructionStep(reference).ok, true);
+      assert.equal(serviceFastPathShadowPriceProgress(fast).reconstructionSteps, step);
+      assert.equal(servicePathShadowPriceProgress(reference).reconstructionSteps, step);
+    }
+    const reconstruction = serviceFastPathShadowPriceReconstruction(fast);
+    assert.notEqual(reconstruction, undefined);
+    assert.equal(
+      reconstruction?.residualUnits,
+      servicePathShadowPriceInitialResidualUnits(reference),
+    );
+    assert.equal(
+      bigintSum(reconstruction?.baseAllocations ?? []) +
+        (reconstruction?.residualUnits ?? 0n),
+      fixture.amountIn,
+    );
+
+    while (serviceFastPathShadowPriceProgress(fast).phase === 'residual-option') {
+      const fastOption = serviceFastPathShadowPriceResidualOption(fast);
+      const referenceOption = servicePathShadowPriceResidualOption(reference);
+      assert.deepEqual(fastOption, referenceOption);
+      const outcome = fastOption.routeIndex === null || fastOption.routeIndex === 1
+        ? 'valid-best'
+        : 'valid-not-best';
+      assert.equal(
+        settleServiceFastPathShadowPriceResidualOption(fast, outcome).ok,
+        true,
+      );
+      assert.equal(
+        settleServicePathShadowPriceResidualOption(reference, outcome).ok,
+        true,
+      );
+    }
+    assert.equal(serviceFastPathShadowPriceProgress(fast).phase, 'score-ready');
+    assert.equal(servicePathShadowPriceProgress(reference).phase, 'score-ready');
+    assert.deepEqual(
+      serviceFastPathShadowPriceScoreAllocations(fast),
+      servicePathShadowPriceScoreAllocations(reference),
+    );
+    assert.equal(bigintSum(serviceFastPathShadowPriceScoreAllocations(fast) ?? []), fixture.amountIn);
+  }
+});
+
+void test('reconstructs and exact-scores every driver in exactly three route passes', () => {
+  const routes = [
+    route(100n, 100n),
+    route(100n, 100n),
+    route(100n, 100n),
+    route(100n, 100n),
+  ];
+  for (const driverId of DRIVER_IDS) {
+    const state = prepareFastState(
+      100n,
+      routes,
+      driverId,
+      'final-finite-replay',
+    );
+    runFastShares(state);
+    const metadata = serviceFastPathShadowPriceProposalMetadata(state);
+    const reconstruction = finishFastReconstruction(state);
+    assert.equal(reconstruction.integerWeights.length, routes.length);
+    assert.equal(reconstruction.baseAllocations.length, routes.length);
+    assert.equal(
+      bigintSum(reconstruction.baseAllocations) + reconstruction.residualUnits,
+      100n,
+    );
+    assert.ok(reconstruction.integerWeights.some((weight) => weight > 0n));
+    const score = finishFastCurrentScore(state);
+    assert.equal(bigintSum(score), 100n);
+    assert.deepEqual(serviceFastPathShadowPriceProposalMetadata(state), metadata);
+    assert.equal(serviceFastPathShadowPriceProgress(state).reconstructionSteps, 12);
+  }
+});
+
+void test('preserves exact sums for 255-bit inputs across all six drivers', () => {
+  const amountIn = (1n << 255n) - 19n;
+  const routes = [route(amountIn, amountIn), route(amountIn, amountIn)];
+  for (const driverId of DRIVER_IDS) {
+    const state = prepareFastState(
+      amountIn,
+      routes,
+      driverId,
+      'final-finite-replay',
+    );
+    runFastShares(state);
+    const reconstruction = finishFastReconstruction(state);
+    assert.equal(
+      bigintSum(reconstruction.baseAllocations) + reconstruction.residualUnits,
+      amountIn,
+    );
+    assert.ok(reconstruction.baseAllocations.some((allocation) => allocation > 1n << 253n));
+    const score = finishFastCurrentScore(state);
+    assert.equal(bigintSum(score), amountIn);
+    assert.equal(serviceFastPathShadowPriceProgress(state).reconstructionSteps, 6);
+  }
+});
+
+void test('reconstructs zero weights and still offers every canonical residual route', () => {
+  const state = prepareFastState(
+    1n,
+    [route(100n, 100n), route(100n, 100n), route(100n, 1n)],
+    'bisection-o64-i64',
+    'final-finite-replay',
+  );
+  runFastShares(state);
+  const reconstruction = finishFastReconstruction(state);
+  assert.equal(reconstruction.integerWeights.length, 3);
+  assert.equal(reconstruction.integerWeights[2], 0n);
+  assert.equal(reconstruction.baseAllocations[2], 0n);
+  const offeredRouteIndices: Array<number | null> = [];
+  while (serviceFastPathShadowPriceProgress(state).phase === 'residual-option') {
+    const option = serviceFastPathShadowPriceResidualOption(state);
+    offeredRouteIndices.push(option.routeIndex);
+    const outcome = option.routeIndex === 2 ? 'valid-best' : 'valid-not-best';
+    assert.equal(settleServiceFastPathShadowPriceResidualOption(state, outcome).ok, true);
+  }
+  assert.deepEqual(offeredRouteIndices, [0, 1, 2]);
+  assert.deepEqual(serviceFastPathShadowPriceScoreAllocations(state), [0n, 0n, 1n]);
+});
+
+void test('fails closed after every current residual option rejects', () => {
+  const state = prepareFastState(
+    5n,
+    [route(1n, 3n), route(3n, 4n)],
+    'bisection-o64-i64',
+  );
+  runFastShares(state);
+  finishFastReconstruction(state);
+  for (let optionIndex = 0; optionIndex < 2; optionIndex += 1) {
+    serviceFastPathShadowPriceResidualOption(state);
+    const settled = settleServiceFastPathShadowPriceResidualOption(state, 'rejected');
+    if (optionIndex === 0) assert.equal(settled.ok, true);
+    else assert.equal(settled.ok, false);
+  }
+  assert.deepEqual(serviceFastPathShadowPriceFailure(state), {
+    code: 'residual-options-exhausted',
+    converged: true,
+    completedOuterUpdates: 64,
+  });
+  assert.equal(serviceFastPathShadowPriceScoreAllocations(state), undefined);
+});
+
+void test('keeps reconstruction and residual observations frozen and phase guarded', () => {
+  const state = prepareFastState(
+    5n,
+    [route(1n, 3n), route(3n, 4n)],
+    'bisection-o64-i64',
+  );
+  assert.throws(
+    () => serviceFastPathShadowPriceResidualOption(state),
+    /No new service-fast shadow-price residual option/u,
+  );
+  runFastShares(state);
+  const reconstruction = finishFastReconstruction(state);
+  const repeated = serviceFastPathShadowPriceReconstruction(state);
+  assert.notEqual(reconstruction, repeated);
+  assert.notEqual(reconstruction.integerWeights, repeated?.integerWeights);
+  assert.notEqual(reconstruction.baseAllocations, repeated?.baseAllocations);
+  assert.equal(Object.isFrozen(reconstruction), true);
+  assert.equal(Object.isFrozen(reconstruction.integerWeights), true);
+  assert.equal(Object.isFrozen(reconstruction.baseAllocations), true);
+  const option = serviceFastPathShadowPriceResidualOption(state);
+  assert.equal(Object.isFrozen(option), true);
+  assert.equal(Object.isFrozen(option.allocations), true);
+  const stopped = serviceFastPathShadowPriceProgress(state);
+  assert.throws(
+    () => serviceFastPathShadowPriceResidualOption(state),
+    /No new service-fast shadow-price residual option/u,
+  );
+  assert.throws(
+    () => settleServiceFastPathShadowPriceResidualOption(
+      state,
+      'invalid' as 'valid-best',
+    ),
+    /outcome is invalid/u,
+  );
+  assert.deepEqual(serviceFastPathShadowPriceProgress(state), stopped);
+  assert.equal(
+    settleServiceFastPathShadowPriceResidualOption(state, 'valid-not-best').ok,
+    true,
+  );
 });

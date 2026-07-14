@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -16,6 +17,19 @@ type JsonRecord = Record<string, unknown>;
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const RUN_CLI = path.join(ROOT, 'cli/run-historical-numerical-profile.ts');
 const VERIFY_CLI = path.join(ROOT, 'cli/verify-historical-numerical-profile.ts');
+const RETAINED_READER_URL = new URL(
+  '../src/verification/retained-reference-source/index.ts',
+  import.meta.url,
+);
+interface RetainedReferenceReaderModule {
+  readonly createRetainedReferenceSourceReader: (
+    readSource: (filePath: string) => Promise<Uint8Array>,
+  ) => (filePath: string) => Promise<Uint8Array>;
+}
+const retainedReaderModule: RetainedReferenceReaderModule | undefined =
+  existsSync(RETAINED_READER_URL)
+    ? await import(RETAINED_READER_URL.href) as RetainedReferenceReaderModule
+    : undefined;
 
 function parseError(value: string): JsonRecord {
   assert.equal(value.endsWith('\n'), true);
@@ -72,13 +86,16 @@ void test('verifier rejects a declared artifact hash tamper before numerical rep
     await writeFile(path.join(output, 'manifest.json'), `${JSON.stringify(manifest)}\n`);
     await writeFile(path.join(output, 'semantic-work.json'), '{}\n');
     let numericalArtifactRead = false;
+    const readSource = async (filePath: string): Promise<Uint8Array> => {
+      if (filePath.includes('numerical-path-shadow-price-v1/semantic-results.json')) {
+        numericalArtifactRead = true;
+      }
+      return readFile(filePath);
+    };
     const result = await verifyHistoricalNumericalProfile(output, {
-      async readFile(filePath: string): Promise<Uint8Array> {
-        if (filePath.includes('numerical-path-shadow-price-v1/semantic-results.json')) {
-          numericalArtifactRead = true;
-        }
-        return readFile(filePath);
-      },
+      readFile: retainedReaderModule === undefined
+        ? readSource
+        : retainedReaderModule.createRetainedReferenceSourceReader(readSource),
     });
     assert.equal(result.ok, false);
     if (result.ok) throw new Error('Expected a verifier failure.');

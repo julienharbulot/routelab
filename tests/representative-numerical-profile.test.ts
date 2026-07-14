@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -17,6 +18,19 @@ import {
 } from '../src/benchmark/representative-numerical-profile/index.ts';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
+const RETAINED_READER_URL = new URL(
+  '../src/verification/retained-reference-source/index.ts',
+  import.meta.url,
+);
+interface RetainedReferenceReaderModule {
+  readonly createRetainedReferenceSourceReader: (
+    readSource: (filePath: string) => Promise<Uint8Array>,
+  ) => (filePath: string) => Promise<Uint8Array>;
+}
+const retainedReaderModule: RetainedReferenceReaderModule | undefined =
+  existsSync(RETAINED_READER_URL)
+    ? await import(RETAINED_READER_URL.href) as RetainedReferenceReaderModule
+    : undefined;
 
 void test('final profile config retains exact independently reviewed bytes', async () => {
   const bytes = Uint8Array.from(await readFile(path.join(ROOT, REPRESENTATIVE_NUMERICAL_PROFILE_CONFIG_PATH)));
@@ -137,10 +151,15 @@ void test('decision requires twelve positive strict candidate-set leaders and po
 void test('environment mismatch stops before any numerical call or profiler connection', { timeout: 20_000 }, async () => {
   let calls = 0;
   let connects = 0;
+  const readSource = async (filePath: string): Promise<Uint8Array> => (
+    Uint8Array.from(await readFile(path.join(ROOT, filePath)))
+  );
   const result = await createRepresentativeNumericalProfile({
     repositoryRoot: ROOT,
     evidenceRevision: 'fd9cadc5f9783dda0052b02d8c6316a8f47bc8e2',
-    readFile: async (filePath) => Uint8Array.from(await readFile(path.join(ROOT, filePath))),
+    readFile: retainedReaderModule === undefined
+      ? readSource
+      : retainedReaderModule.createRetainedReferenceSourceReader(readSource),
     environment: {
       nodeVersion: 'wrong', v8Version: 'wrong', uvVersion: 'wrong',
       profilerApi: 'node:inspector/promises', samplingIntervalMicroseconds: 1000,

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -8,6 +8,12 @@ import { fileURLToPath } from 'node:url';
 type JsonRecord = Record<string, unknown>;
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const HISTORICAL_REFERENCE_SOURCES: Readonly<Record<string, string>> = Object.freeze({
+  'src/router/numerical-exact-input-split/index.ts':
+    'fixtures/m7/numerical-representative-profile/provenance/numerical-exact-input-split.index.source.ts',
+  'cli/verify-historical-numerical-profile.ts':
+    'fixtures/m7/numerical-representative-profile/provenance/verify-historical-numerical-profile.source.ts',
+});
 const CONFIG = 'fixtures/m7/numerical-baseline-profile/profile-config.v1.json';
 const ELIGIBILITY = 'fixtures/m7/numerical-historical/eligibility.v1.json';
 const NUMERICAL_SEMANTIC =
@@ -72,7 +78,11 @@ function absolute(relative: string): string {
 }
 
 function bytes(relative: string): Buffer {
-  return readFileSync(absolute(relative));
+  const archived = HISTORICAL_REFERENCE_SOURCES[relative];
+  const retained = archived !== undefined && existsSync(absolute(archived))
+    ? archived
+    : relative;
+  return readFileSync(absolute(retained));
 }
 
 function text(relative: string): string {

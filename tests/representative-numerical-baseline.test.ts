@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -6,6 +7,21 @@ import {
   defaultRepresentativeBaselineDependencies,
   verifyRepresentativeNumericalBaseline,
 } from '../src/benchmark/representative-numerical-baseline/index.ts';
+
+interface RetainedReferenceReaderModule {
+  readonly createRetainedReferenceSourceReader: (
+    readFile: (filePath: string) => Promise<Uint8Array>,
+  ) => (filePath: string) => Promise<Uint8Array>;
+}
+
+const RETAINED_READER_URL = new URL(
+  '../src/verification/retained-reference-source/index.ts',
+  import.meta.url,
+);
+const retainedReaderModule: RetainedReferenceReaderModule | undefined =
+  existsSync(RETAINED_READER_URL)
+    ? await import(RETAINED_READER_URL.href) as RetainedReferenceReaderModule
+    : undefined;
 
 void test('runtime identity mismatch rejects before any bound input read or baseline call', async () => {
   let reads = 0;
@@ -29,8 +45,16 @@ void test('runtime identity mismatch rejects before any bound input read or base
 });
 
 void test('accepted representative baseline reconstructs exact snapshots, requests, results, and eligibility', { timeout: 60_000 }, async () => {
+  const defaultDependencies = defaultRepresentativeBaselineDependencies();
   const result = await verifyRepresentativeNumericalBaseline(
-    defaultRepresentativeBaselineDependencies(),
+    {
+      ...defaultDependencies,
+      readFile: retainedReaderModule === undefined
+        ? defaultDependencies.readFile
+        : retainedReaderModule.createRetainedReferenceSourceReader(
+          defaultDependencies.readFile,
+        ),
+    },
   );
   assert.equal(result.ok, true, result.ok ? undefined : JSON.stringify(result.error));
   if (!result.ok) return;

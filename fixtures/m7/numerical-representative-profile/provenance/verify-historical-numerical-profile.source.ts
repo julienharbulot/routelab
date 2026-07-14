@@ -4,7 +4,6 @@ import {
   CANONICAL_HISTORICAL_NUMERICAL_BASELINE_PROFILE_DIRECTORY,
   verifyHistoricalNumericalProfile,
 } from '../src/benchmark/historical-numerical-profile/index.ts';
-import { createRetainedReferenceSourceReader } from '../src/verification/retained-reference-source/index.ts';
 
 const rawArguments = process.argv.slice(2);
 const arguments_ = rawArguments[0] === '--' ? rawArguments.slice(1) : rawArguments;
@@ -22,7 +21,7 @@ if (arguments_.length !== 0) {
 } else {
   const result = await verifyHistoricalNumericalProfile(
     CANONICAL_HISTORICAL_NUMERICAL_BASELINE_PROFILE_DIRECTORY,
-    { readFile: createRetainedReferenceSourceReader(readFile) },
+    { readFile },
   );
   if (result.ok) {
     process.stdout.write(`${JSON.stringify(result.value)}\n`);

@@ -4,7 +4,6 @@ import {
   CANONICAL_REPRESENTATIVE_NUMERICAL_PROFILE_DIRECTORY,
   verifyRepresentativeNumericalProfile,
 } from '../src/benchmark/representative-numerical-profile/index.ts';
-import { createRetainedReferenceSourceReader } from '../src/verification/retained-reference-source/index.ts';
 
 const rawArguments = process.argv.slice(2);
 const arguments_ = rawArguments[0] === '--' ? rawArguments.slice(1) : rawArguments;
@@ -18,7 +17,7 @@ if (arguments_.length !== 0) {
 } else {
   const result = await verifyRepresentativeNumericalProfile(
     CANONICAL_REPRESENTATIVE_NUMERICAL_PROFILE_DIRECTORY,
-    { readFile: createRetainedReferenceSourceReader(readFile) },
+    { readFile },
   );
   if (result.ok) process.stdout.write(`${JSON.stringify(result.value)}\n`);
   else {

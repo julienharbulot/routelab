@@ -10,18 +10,12 @@ import {
   type PathShadowPriceReadyState,
 } from '../../allocation/path-shadow-price/index.ts';
 import type {
+  ExactInputSplitReplayLegRequest,
   ExactInputSplitReplayReceipt,
   ExactInputSplitReplayRequest,
   ExactInputSplitReplayResult,
 } from '../../replay/exact-input-split/index.ts';
 import type { DirectionalRouteHop } from '../../replay/exact-input-route/index.ts';
-import {
-  isPreparedRoutingContext,
-  preparedRoutingContextHasAsset,
-  preparedRoutingContextMatchesIdentity,
-  resolvePreparedPathShadowPriceRoutes,
-  type PreparedRoutingContext,
-} from '../../runtime/prepared-routing-context/index.ts';
 import {
   type ExactInputSplitRuntimeControlError,
   type ExactInputSplitRuntimeControlValidationError,
@@ -35,30 +29,25 @@ import {
   type ExactInputSplitWorkCounters,
 } from '../anytime-exact-input-split/index.ts';
 import {
-  appendExactInputSplitSessionDiagnostic,
-  authorizeExactInputSplitSessionNumericalCandidate,
-  chargeExactInputSplitSessionWork,
-  createExactInputSplitSession,
-  exactInputSplitSessionCandidateSets,
-  exactInputSplitSessionCounters,
-  exactInputSplitSessionDiagnostics,
-  exactInputSplitSessionHadCandidate,
-  exactInputSplitSessionIncumbent,
-  exactInputSplitSessionWorkLimited,
-  isStrictlyBetterExactInputSplitSessionReceipt,
-  observeExactInputSplitSessionBoundary,
-  positiveExactInputSplitSessionLegs,
-  recordExactInputSplitSessionNumericalProposalFailure,
-  recordExactInputSplitSessionNumericalResidualReplayRejection,
-  replayExactInputSplitSessionFull,
-  replayExactInputSplitSessionPartial,
-  runExactInputSplitReferencePolicy,
-  type ExactInputSplitReferencePolicyOutcome,
-  type ExactInputSplitSession,
-  type ExactInputSplitSessionBoundary,
-  type ExactInputSplitSessionCheckpoint,
-  type ExactInputSplitSessionWorkCounters,
-} from '../exact-input-split-session/index.ts';
+  createPreparedSimplePathFrontier,
+  expandPreparedSimplePathFrontier,
+  hasPreparedSimplePathExpansion,
+  isPreparedRoutingContext,
+  materializePreparedSimplePaths,
+  preparedDirectRoutes,
+  preparedRoutingContextHasAsset,
+  preparedRoutingContextMatchesIdentity,
+  replayPreparedExactInputSplit,
+  resolvePreparedPathShadowPriceRoutes,
+  type PreparedRoutingContext,
+} from '../../runtime/prepared-routing-context/index.ts';
+import {
+  createSharedCandidateSetFrontier,
+  expandSharedCandidateSetFrontier,
+  hasSharedCandidateSetExpansion,
+  materializeSharedCandidateSets,
+} from '../../search/shared-route-discovery/index.ts';
+import { isStrictlyBetterSplitReceipt } from '../split-exact-input/objective.ts';
 
 export interface NumericalExactInputSplitConfiguration {
   readonly outerIterations: number;
@@ -210,6 +199,9 @@ export interface NumericalExactInputSplitProposalDriver {
   readonly finalize: typeof finalizePathShadowPriceProposal;
 }
 
+type MutableCounters = {
+  -readonly [Key in keyof NumericalExactInputSplitWorkCounters]: number;
+};
 type MutableCandidateCounters = {
   -readonly [Key in keyof NumericalExactInputSplitCandidateCounters]: number;
 };
@@ -231,6 +223,12 @@ interface CapturedControl {
   readonly shouldInterrupt: NumericalExactInputSplitRuntimeControl['shouldInterrupt'];
   readonly deadlineNanoseconds: bigint | undefined;
   readonly nowNanoseconds: (() => bigint) | undefined;
+}
+
+interface SplitProposal {
+  readonly key: string;
+  readonly receipt: ExactInputSplitReplayReceipt;
+  readonly legs: readonly ExactInputSplitReplayLegRequest[];
 }
 
 interface CandidateDiagnosticState {
@@ -257,6 +255,38 @@ const NUMERICAL_CAP_FIELDS = [
   'maxNumericalResidualReplays',
   'maxNumericalAuthorizationReplays',
 ] as const;
+
+const KIND_CAP: Record<
+  NumericalExactInputSplitRuntimeWorkKind,
+  keyof NumericalExactInputSplitWorkCaps
+> = {
+  'path-expansion': 'maxPathExpansions',
+  'best-single-candidate-replay': 'maxBestSingleCandidateReplays',
+  'candidate-set-expansion': 'maxCandidateSetExpansions',
+  'equal-proposal-replay': 'maxEqualProposalReplays',
+  'greedy-option-replay': 'maxGreedyOptionReplays',
+  'final-authorization-replay': 'maxFinalAuthorizationReplays',
+  'numerical-proposal': 'maxNumericalProposals',
+  'numerical-iteration': 'maxNumericalIterations',
+  'numerical-residual-replay': 'maxNumericalResidualReplays',
+  'numerical-authorization-replay': 'maxNumericalAuthorizationReplays',
+};
+
+const KIND_COUNTER: Record<
+  NumericalExactInputSplitRuntimeWorkKind,
+  keyof NumericalExactInputSplitWorkCounters
+> = {
+  'path-expansion': 'pathExpansions',
+  'best-single-candidate-replay': 'bestSingleCandidateReplays',
+  'candidate-set-expansion': 'candidateSetExpansions',
+  'equal-proposal-replay': 'equalProposalReplays',
+  'greedy-option-replay': 'greedyOptionReplays',
+  'final-authorization-replay': 'finalAuthorizationReplays',
+  'numerical-proposal': 'numericalProposals',
+  'numerical-iteration': 'numericalIterations',
+  'numerical-residual-replay': 'numericalResidualReplays',
+  'numerical-authorization-replay': 'numericalAuthorizationReplays',
+};
 
 const REAL_PROPOSAL_DRIVER: NumericalExactInputSplitProposalDriver = Object.freeze({
   prepare: preparePathShadowPriceProposal,
@@ -522,6 +552,31 @@ function captureControl(
   });
 }
 
+function freshCounters(): MutableCounters {
+  return {
+    directCandidates: 0,
+    directCandidateReplays: 0,
+    directCandidateRejections: 0,
+    pathExpansions: 0,
+    bestSingleCandidateReplays: 0,
+    bestSingleCandidateRejections: 0,
+    candidateSetExpansions: 0,
+    equalProposalReplays: 0,
+    equalProposalRejections: 0,
+    greedyOptionReplays: 0,
+    greedyOptionRejections: 0,
+    finalAuthorizationReplays: 0,
+    finalAuthorizationRejections: 0,
+    numericalProposals: 0,
+    numericalProposalFailures: 0,
+    numericalIterations: 0,
+    numericalResidualReplays: 0,
+    numericalResidualReplayRejections: 0,
+    numericalAuthorizationReplays: 0,
+    numericalAuthorizationReplayRejections: 0,
+  };
+}
+
 function freshCandidateCounters(): MutableCandidateCounters {
   return {
     numericalProposals: 0,
@@ -535,7 +590,7 @@ function freshCandidateCounters(): MutableCandidateCounters {
 }
 
 function frozenCounters(
-  counters: ExactInputSplitSessionWorkCounters,
+  counters: MutableCounters,
 ): NumericalExactInputSplitWorkCounters {
   return Object.freeze({
     directCandidates: counters.directCandidates,
@@ -555,8 +610,7 @@ function frozenCounters(
     numericalProposalFailures: counters.numericalProposalFailures,
     numericalIterations: counters.numericalIterations,
     numericalResidualReplays: counters.numericalResidualReplays,
-    numericalResidualReplayRejections:
-      counters.numericalResidualReplayRejections,
+    numericalResidualReplayRejections: counters.numericalResidualReplayRejections,
     numericalAuthorizationReplays: counters.numericalAuthorizationReplays,
     numericalAuthorizationReplayRejections:
       counters.numericalAuthorizationReplayRejections,
@@ -579,7 +633,7 @@ function frozenCandidateCounters(
 }
 
 function search(
-  counters: ExactInputSplitSessionWorkCounters,
+  counters: MutableCounters,
   termination: ExactInputSplitRuntimeTermination,
   diagnostics: readonly NumericalExactInputSplitDiagnostic[],
 ): NumericalExactInputSplitRuntimeSearchSummary {
@@ -591,12 +645,12 @@ function search(
 }
 
 function finish(
-  session: ExactInputSplitSession<NumericalExactInputSplitDiagnostic>,
+  counters: MutableCounters,
   termination: 'complete' | 'work-limit' | 'interrupted' | 'deadline',
+  incumbent: ExactInputSplitReplayReceipt | undefined,
+  hadCandidate: boolean,
+  diagnostics: readonly NumericalExactInputSplitDiagnostic[],
 ): NumericalExactInputSplitRuntimeResult {
-  const counters = exactInputSplitSessionCounters(session);
-  const incumbent = exactInputSplitSessionIncumbent(session);
-  const diagnostics = exactInputSplitSessionDiagnostics(session);
   const summary = search(counters, termination, diagnostics);
   if (incumbent !== undefined) {
     return Object.freeze({
@@ -609,28 +663,105 @@ function finish(
   }
   return Object.freeze({
     status: 'no-route',
-    reason: exactInputSplitSessionHadCandidate(session)
-      ? 'all-candidates-rejected'
-      : 'no-candidate',
+    reason: hadCandidate ? 'all-candidates-rejected' : 'no-candidate',
     search: summary,
   });
 }
 
-type OperationalStop = Exclude<
-  ExactInputSplitSessionBoundary | ExactInputSplitReferencePolicyOutcome,
-  { readonly outcome: 'execute' | 'cap' | 'complete' | 'work-limit' }
->;
+type Boundary =
+  | { readonly outcome: 'execute' }
+  | { readonly outcome: 'cap' }
+  | { readonly outcome: 'interrupted' }
+  | { readonly outcome: 'deadline' }
+  | {
+      readonly outcome: 'control-error';
+      readonly error: ExactInputSplitRuntimeControlError;
+    }
+  | {
+      readonly outcome: 'deadline-error';
+      readonly error: ExactInputSplitRuntimeDeadlineError;
+    };
+
+function boundary(
+  kind: NumericalExactInputSplitRuntimeWorkKind,
+  control: CapturedControl,
+  counters: MutableCounters,
+  incumbent: ExactInputSplitReplayReceipt | undefined,
+  priorClock: { value: bigint | undefined },
+): Boundary {
+  if (counters[KIND_COUNTER[kind]] === control.caps[KIND_CAP[kind]]) {
+    return { outcome: 'cap' };
+  }
+  if (control.shouldInterrupt !== undefined) {
+    const checkpoint: NumericalExactInputSplitRuntimeCheckpoint = Object.freeze({
+      nextWorkKind: kind,
+      counters: frozenCounters(counters),
+      incumbent: incumbent ?? null,
+    });
+    let interrupted: unknown;
+    try {
+      interrupted = control.shouldInterrupt(checkpoint);
+    } catch {
+      return {
+        outcome: 'control-error',
+        error: Object.freeze({ code: 'interruption-check-failed' }),
+      };
+    }
+    if (typeof interrupted !== 'boolean') {
+      return {
+        outcome: 'control-error',
+        error: Object.freeze({ code: 'invalid-interruption-result' }),
+      };
+    }
+    if (interrupted) return { outcome: 'interrupted' };
+  }
+  if (control.nowNanoseconds !== undefined) {
+    let sample: unknown;
+    try {
+      sample = control.nowNanoseconds();
+    } catch {
+      return {
+        outcome: 'deadline-error',
+        error: Object.freeze({
+          code: 'deadline-clock-failed',
+          field: 'nowNanoseconds',
+        }),
+      };
+    }
+    if (typeof sample !== 'bigint' || sample < 0n) {
+      return {
+        outcome: 'deadline-error',
+        error: Object.freeze({
+          code: 'deadline-clock-failed',
+          field: 'nowNanoseconds',
+        }),
+      };
+    }
+    if (priorClock.value !== undefined && sample < priorClock.value) {
+      return {
+        outcome: 'deadline-error',
+        error: Object.freeze({
+          code: 'deadline-clock-regressed',
+          field: 'nowNanoseconds',
+        }),
+      };
+    }
+    priorClock.value = sample;
+    if (sample >= control.deadlineNanoseconds!) return { outcome: 'deadline' };
+  }
+  return { outcome: 'execute' };
+}
 
 function operationalResult(
-  stop: OperationalStop,
-  session: ExactInputSplitSession<NumericalExactInputSplitDiagnostic>,
+  stop: Exclude<Boundary, { readonly outcome: 'execute' | 'cap' }>,
+  counters: MutableCounters,
+  incumbent: ExactInputSplitReplayReceipt | undefined,
+  hadCandidate: boolean,
+  diagnostics: readonly NumericalExactInputSplitDiagnostic[],
 ): NumericalExactInputSplitRuntimeResult {
   if (stop.outcome === 'interrupted' || stop.outcome === 'deadline') {
-    return finish(session, stop.outcome);
+    return finish(counters, stop.outcome, incumbent, hadCandidate, diagnostics);
   }
-  const counters = exactInputSplitSessionCounters(session);
-  const incumbent = exactInputSplitSessionIncumbent(session);
-  const diagnostics = exactInputSplitSessionDiagnostics(session);
   if (stop.outcome === 'control-error') {
     return Object.freeze({
       status: 'control-error',
@@ -645,6 +776,82 @@ function operationalResult(
     incumbent: incumbent ?? null,
     search: search(counters, 'deadline-error', diagnostics),
   });
+}
+
+function partialReplayRequest(
+  request: ExactInputSplitRuntimeRequest,
+  legs: readonly ExactInputSplitReplayLegRequest[],
+): ExactInputSplitReplayRequest {
+  return Object.freeze({
+    snapshotId: request.snapshotId,
+    snapshotChecksum: request.snapshotChecksum,
+    assetIn: request.assetIn,
+    assetOut: request.assetOut,
+    amountIn: legs.reduce((sum, leg) => sum + leg.allocation, 0n),
+    legs: Object.freeze(legs),
+  });
+}
+
+function fullReplayRequest(
+  request: ExactInputSplitRuntimeRequest,
+  legs: readonly ExactInputSplitReplayLegRequest[],
+): ExactInputSplitReplayRequest {
+  return Object.freeze({
+    snapshotId: request.snapshotId,
+    snapshotChecksum: request.snapshotChecksum,
+    assetIn: request.assetIn,
+    assetOut: request.assetOut,
+    amountIn: request.amountIn,
+    legs: Object.freeze(legs),
+  });
+}
+
+function positiveLegs(
+  routes: readonly (readonly DirectionalRouteHop[])[],
+  allocations: readonly bigint[],
+): readonly ExactInputSplitReplayLegRequest[] {
+  return Object.freeze(
+    routes.flatMap((route, index) => {
+      const allocation = allocations[index];
+      return allocation === undefined || allocation === 0n
+        ? []
+        : [Object.freeze({ allocation, route })];
+    }),
+  );
+}
+
+function* positiveChunks(amountIn: bigint, parts: number): Generator<bigint> {
+  const divisor = BigInt(parts);
+  const base = amountIn / divisor;
+  const remainder = amountIn % divisor;
+  if (base === 0n) {
+    for (let index = 0n; index < remainder; index += 1n) yield 1n;
+  } else {
+    for (let index = 0; index < parts; index += 1) {
+      yield base + (BigInt(index) < remainder ? 1n : 0n);
+    }
+  }
+}
+
+function proposalKey(legs: readonly ExactInputSplitReplayLegRequest[]): string {
+  return JSON.stringify(
+    legs.map((leg) => ({
+      allocation: leg.allocation.toString(10),
+      route: leg.route.map(({ assetIn, poolId, assetOut }) => ({
+        assetIn,
+        poolId,
+        assetOut,
+      })),
+    })),
+  );
+}
+
+function compareProposals(left: SplitProposal, right: SplitProposal): number {
+  if (isStrictlyBetterSplitReceipt(left.receipt, right.receipt)) return -1;
+  if (isStrictlyBetterSplitReceipt(right.receipt, left.receipt)) return 1;
+  if (left.key < right.key) return -1;
+  if (left.key > right.key) return 1;
+  return 0;
 }
 
 function routeKey(route: readonly DirectionalRouteHop[]): string {
@@ -695,24 +902,123 @@ function diagnostic(
   });
 }
 
-function appendDiagnostic(
-  session: ExactInputSplitSession<NumericalExactInputSplitDiagnostic>,
-  state: CandidateDiagnosticState,
-  configuredInnerIterations: number,
-  status: NumericalExactInputSplitDiagnostic['status'],
-  failureCode: NumericalExactInputSplitFailureCode | null,
-): void {
-  appendExactInputSplitSessionDiagnostic(
-    session,
-    diagnostic(state, configuredInnerIterations, status, failureCode),
+function transitionReceiptEquals(
+  left: ExactInputSplitReplayReceipt['legs'][number]['receipt']['hops'][number],
+  right: ExactInputSplitReplayReceipt['legs'][number]['receipt']['hops'][number],
+): boolean {
+  return (
+    left.poolId === right.poolId &&
+    left.assetIn === right.assetIn &&
+    left.assetOut === right.assetOut &&
+    left.amountIn === right.amountIn &&
+    left.amountOut === right.amountOut &&
+    left.reserveInBefore === right.reserveInBefore &&
+    left.reserveOutBefore === right.reserveOutBefore &&
+    left.reserveInAfter === right.reserveInAfter &&
+    left.reserveOutAfter === right.reserveOutAfter
   );
+}
+
+function receiptSemanticallyEquals(
+  left: ExactInputSplitReplayReceipt,
+  right: ExactInputSplitReplayReceipt,
+): boolean {
+  if (
+    left.snapshotId !== right.snapshotId ||
+    left.snapshotChecksum !== right.snapshotChecksum ||
+    left.assetIn !== right.assetIn ||
+    left.assetOut !== right.assetOut ||
+    left.amountIn !== right.amountIn ||
+    left.amountOut !== right.amountOut ||
+    left.legs.length !== right.legs.length
+  ) {
+    return false;
+  }
+  for (let legIndex = 0; legIndex < left.legs.length; legIndex += 1) {
+    const leftLeg = left.legs[legIndex];
+    const rightLeg = right.legs[legIndex];
+    if (
+      leftLeg === undefined ||
+      rightLeg === undefined ||
+      leftLeg.allocation !== rightLeg.allocation ||
+      leftLeg.receipt.snapshotId !== rightLeg.receipt.snapshotId ||
+      leftLeg.receipt.snapshotChecksum !== rightLeg.receipt.snapshotChecksum ||
+      leftLeg.receipt.assetIn !== rightLeg.receipt.assetIn ||
+      leftLeg.receipt.assetOut !== rightLeg.receipt.assetOut ||
+      leftLeg.receipt.amountIn !== rightLeg.receipt.amountIn ||
+      leftLeg.receipt.amountOut !== rightLeg.receipt.amountOut ||
+      leftLeg.receipt.hops.length !== rightLeg.receipt.hops.length
+    ) {
+      return false;
+    }
+    for (let hopIndex = 0; hopIndex < leftLeg.receipt.hops.length; hopIndex += 1) {
+      const leftHop = leftLeg.receipt.hops[hopIndex];
+      const rightHop = rightLeg.receipt.hops[hopIndex];
+      if (
+        leftHop === undefined ||
+        rightHop === undefined ||
+        !transitionReceiptEquals(leftHop, rightHop)
+      ) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+function captureReplayReceipt(
+  source: ExactInputSplitReplayReceipt,
+): ExactInputSplitReplayReceipt | undefined {
+  try {
+    const legs = Object.freeze(
+      Array.from(source.legs, (sourceLeg) => {
+        const sourceReceipt = sourceLeg.receipt;
+        const hops = Object.freeze(
+          Array.from(sourceReceipt.hops, (hop) =>
+            Object.freeze({
+              poolId: hop.poolId,
+              assetIn: hop.assetIn,
+              assetOut: hop.assetOut,
+              amountIn: hop.amountIn,
+              amountOut: hop.amountOut,
+              reserveInBefore: hop.reserveInBefore,
+              reserveOutBefore: hop.reserveOutBefore,
+              reserveInAfter: hop.reserveInAfter,
+              reserveOutAfter: hop.reserveOutAfter,
+            }),
+          ),
+        );
+        const receipt = Object.freeze({
+          snapshotId: sourceReceipt.snapshotId,
+          snapshotChecksum: sourceReceipt.snapshotChecksum,
+          assetIn: sourceReceipt.assetIn,
+          assetOut: sourceReceipt.assetOut,
+          amountIn: sourceReceipt.amountIn,
+          amountOut: sourceReceipt.amountOut,
+          hops,
+        });
+        return Object.freeze({ allocation: sourceLeg.allocation, receipt });
+      }),
+    );
+    return Object.freeze({
+      snapshotId: source.snapshotId,
+      snapshotChecksum: source.snapshotChecksum,
+      assetIn: source.assetIn,
+      assetOut: source.assetOut,
+      amountIn: source.amountIn,
+      amountOut: source.amountOut,
+      legs,
+    });
+  } catch {
+    return undefined;
+  }
 }
 
 function runNumericalRuntime(
   context: PreparedRoutingContext,
   sourceRequest: NumericalExactInputSplitRuntimeRequest,
   sourceControl: NumericalExactInputSplitRuntimeControl,
-  authorizationReplay: NumericalExactInputSplitAuthorizationReplay | undefined,
+  authorizationReplay: NumericalExactInputSplitAuthorizationReplay,
   proposalDriver: NumericalExactInputSplitProposalDriver,
 ): NumericalExactInputSplitRuntimeResult {
   const capturedRequest = captureRequest(context, sourceRequest);
@@ -720,79 +1026,312 @@ function runNumericalRuntime(
   const capturedControl = captureControl(sourceControl);
   if ('status' in capturedControl) return capturedControl;
 
-  const shouldInterrupt = capturedControl.shouldInterrupt;
-  const session = createExactInputSplitSession<NumericalExactInputSplitDiagnostic>(
+  const counters = freshCounters();
+  const diagnostics: NumericalExactInputSplitDiagnostic[] = [];
+  let incumbent: ExactInputSplitReplayReceipt | undefined;
+  let hadCandidate = false;
+  let workLimited = false;
+  const priorClock: { value: bigint | undefined } = { value: undefined };
+  const proposals = new Map<string, SplitProposal>();
+
+  const directRoutes = preparedDirectRoutes(
     context,
-    capturedRequest,
-    {
-      workCaps: capturedControl.caps,
-      shouldInterrupt: shouldInterrupt === undefined
-        ? undefined
-        : (checkpoint: ExactInputSplitSessionCheckpoint) => shouldInterrupt(
-            Object.freeze({
-              nextWorkKind: checkpoint.nextWorkKind,
-              counters: frozenCounters(checkpoint.counters),
-              incumbent: checkpoint.incumbent,
-            }),
-          ),
-      deadlineNanoseconds: capturedControl.deadlineNanoseconds,
-      nowNanoseconds: capturedControl.nowNanoseconds,
-    },
+    capturedRequest.assetIn,
+    capturedRequest.assetOut,
   );
-  const referenceOutcome = runExactInputSplitReferencePolicy(session);
-  if (
-    referenceOutcome.outcome !== 'complete' &&
-    referenceOutcome.outcome !== 'work-limit'
-  ) {
-    return operationalResult(referenceOutcome, session);
+  for (const route of directRoutes) {
+    hadCandidate = true;
+    counters.directCandidates += 1;
+    counters.directCandidateReplays += 1;
+    const replay = replayPreparedExactInputSplit(
+      context,
+      fullReplayRequest(capturedRequest, [
+        Object.freeze({ allocation: capturedRequest.amountIn, route }),
+      ]),
+    );
+    if (!replay.ok) counters.directCandidateRejections += 1;
+    else if (
+      incumbent === undefined ||
+      isStrictlyBetterSplitReceipt(replay.value, incumbent)
+    ) {
+      incumbent = replay.value;
+    }
   }
 
-  if (exactInputSplitSessionIncumbent(session) === undefined) {
+  const collectProposal = (
+    receipt: ExactInputSplitReplayReceipt,
+    legs: readonly ExactInputSplitReplayLegRequest[],
+  ): void => {
+    const key = proposalKey(legs);
+    if (!proposals.has(key)) {
+      proposals.set(key, Object.freeze({ key, receipt, legs }));
+    }
+  };
+
+  const pathFrontier = createPreparedSimplePathFrontier(context, capturedRequest);
+  while (hasPreparedSimplePathExpansion(pathFrontier)) {
+    const stop = boundary(
+      'path-expansion',
+      capturedControl,
+      counters,
+      incumbent,
+      priorClock,
+    );
+    if (stop.outcome === 'cap') {
+      workLimited = true;
+      break;
+    }
+    if (stop.outcome !== 'execute') {
+      return operationalResult(stop, counters, incumbent, hadCandidate, diagnostics);
+    }
+    expandPreparedSimplePathFrontier(pathFrontier);
+    counters.pathExpansions += 1;
+  }
+  const paths = materializePreparedSimplePaths(pathFrontier);
+  hadCandidate ||= paths.length > 0;
+
+  for (const route of paths) {
+    const stop = boundary(
+      'best-single-candidate-replay',
+      capturedControl,
+      counters,
+      incumbent,
+      priorClock,
+    );
+    if (stop.outcome === 'cap') {
+      workLimited = true;
+      break;
+    }
+    if (stop.outcome !== 'execute') {
+      return operationalResult(stop, counters, incumbent, hadCandidate, diagnostics);
+    }
+    counters.bestSingleCandidateReplays += 1;
+    const legs = Object.freeze([
+      Object.freeze({ allocation: capturedRequest.amountIn, route }),
+    ]);
+    const replay = replayPreparedExactInputSplit(
+      context,
+      fullReplayRequest(capturedRequest, legs),
+    );
+    if (!replay.ok) counters.bestSingleCandidateRejections += 1;
+    else if (
+      incumbent === undefined ||
+      isStrictlyBetterSplitReceipt(replay.value, incumbent)
+    ) {
+      incumbent = replay.value;
+    }
+  }
+
+  const setFrontier = createSharedCandidateSetFrontier(paths, capturedRequest.maxRoutes);
+  while (hasSharedCandidateSetExpansion(setFrontier)) {
+    const stop = boundary(
+      'candidate-set-expansion',
+      capturedControl,
+      counters,
+      incumbent,
+      priorClock,
+    );
+    if (stop.outcome === 'cap') {
+      workLimited = true;
+      break;
+    }
+    if (stop.outcome !== 'execute') {
+      return operationalResult(stop, counters, incumbent, hadCandidate, diagnostics);
+    }
+    expandSharedCandidateSetFrontier(setFrontier);
+    counters.candidateSetExpansions += 1;
+  }
+  const candidateSets = materializeSharedCandidateSets(setFrontier);
+
+  for (const { routes } of candidateSets) {
+    const cardinality = BigInt(routes.length);
+    const base = capturedRequest.amountIn / cardinality;
+    if (base === 0n) continue;
+    const remainder = capturedRequest.amountIn % cardinality;
+    const legs = Object.freeze(
+      routes.map((route, index) =>
+        Object.freeze({
+          allocation: base + (BigInt(index) < remainder ? 1n : 0n),
+          route,
+        }),
+      ),
+    );
+    const stop = boundary(
+      'equal-proposal-replay',
+      capturedControl,
+      counters,
+      incumbent,
+      priorClock,
+    );
+    if (stop.outcome === 'cap') {
+      workLimited = true;
+      break;
+    }
+    if (stop.outcome !== 'execute') {
+      return operationalResult(stop, counters, incumbent, hadCandidate, diagnostics);
+    }
+    counters.equalProposalReplays += 1;
+    const replay = replayPreparedExactInputSplit(
+      context,
+      fullReplayRequest(capturedRequest, legs),
+    );
+    if (!replay.ok) counters.equalProposalRejections += 1;
+    else collectProposal(replay.value, legs);
+  }
+
+  candidateSets: for (const { routes } of candidateSets) {
+    const allocations = routes.map(() => 0n);
+    let allocated = 0n;
+    let finalProposal: ExactInputSplitReplayReceipt | undefined;
+    for (const chunk of positiveChunks(
+      capturedRequest.amountIn,
+      capturedRequest.greedyParts,
+    )) {
+      let winningIndex: number | undefined;
+      let winningOutput: bigint | undefined;
+      let winningReceipt: ExactInputSplitReplayReceipt | undefined;
+      for (let routeIndex = 0; routeIndex < routes.length; routeIndex += 1) {
+        const stop = boundary(
+          'greedy-option-replay',
+          capturedControl,
+          counters,
+          incumbent,
+          priorClock,
+        );
+        if (stop.outcome === 'cap') {
+          workLimited = true;
+          break candidateSets;
+        }
+        if (stop.outcome !== 'execute') {
+          return operationalResult(stop, counters, incumbent, hadCandidate, diagnostics);
+        }
+        const optionAllocations = [...allocations];
+        optionAllocations[routeIndex] = optionAllocations[routeIndex]! + chunk;
+        counters.greedyOptionReplays += 1;
+        const replay = replayPreparedExactInputSplit(
+          context,
+          partialReplayRequest(
+            capturedRequest,
+            positiveLegs(routes, optionAllocations),
+          ),
+        );
+        if (!replay.ok) {
+          counters.greedyOptionRejections += 1;
+          continue;
+        }
+        if (winningOutput === undefined || replay.value.amountOut > winningOutput) {
+          winningIndex = routeIndex;
+          winningOutput = replay.value.amountOut;
+          winningReceipt = replay.value;
+        }
+      }
+      if (winningIndex === undefined) continue candidateSets;
+      allocations[winningIndex] = allocations[winningIndex]! + chunk;
+      allocated += chunk;
+      finalProposal = winningReceipt;
+    }
+    if (allocated !== capturedRequest.amountIn || finalProposal === undefined) continue;
+    const legs = positiveLegs(routes, allocations);
+    collectProposal(finalProposal, legs);
+  }
+
+  const orderedProposals = [...proposals.values()].sort(compareProposals);
+  for (const proposal of orderedProposals) {
+    if (
+      incumbent !== undefined &&
+      !isStrictlyBetterSplitReceipt(proposal.receipt, incumbent)
+    ) {
+      continue;
+    }
+    const stop = boundary(
+      'final-authorization-replay',
+      capturedControl,
+      counters,
+      incumbent,
+      priorClock,
+    );
+    if (stop.outcome === 'cap') {
+      workLimited = true;
+      break;
+    }
+    if (stop.outcome !== 'execute') {
+      return operationalResult(stop, counters, incumbent, hadCandidate, diagnostics);
+    }
+    counters.finalAuthorizationReplays += 1;
+    const replay = replayPreparedExactInputSplit(
+      context,
+      fullReplayRequest(capturedRequest, proposal.legs),
+    );
+    if (!replay.ok) counters.finalAuthorizationRejections += 1;
+    else if (
+      incumbent === undefined ||
+      isStrictlyBetterSplitReceipt(replay.value, incumbent)
+    ) {
+      incumbent = replay.value;
+    }
+  }
+
+  if (incumbent === undefined) {
     return finish(
-      session,
-      exactInputSplitSessionWorkLimited(session) ? 'work-limit' : 'complete',
+      counters,
+      workLimited ? 'work-limit' : 'complete',
+      incumbent,
+      hadCandidate,
+      diagnostics,
     );
   }
 
-  for (const { routes } of exactInputSplitSessionCandidateSets(session)) {
+  for (const { routes } of candidateSets) {
     const candidate = createDiagnosticState(routes);
-    const proposalStop = observeExactInputSplitSessionBoundary(
-      session,
+    const proposalStop = boundary(
       'numerical-proposal',
+      capturedControl,
+      counters,
+      incumbent,
+      priorClock,
     );
     if (proposalStop.outcome === 'cap') {
-      appendDiagnostic(
-        session,
-        candidate,
-        capturedRequest.numerical.innerIterations,
-        'stopped',
-        null,
+      diagnostics.push(
+        diagnostic(
+          candidate,
+          capturedRequest.numerical.innerIterations,
+          'stopped',
+          null,
+        ),
       );
-      return finish(session, 'work-limit');
+      return finish(counters, 'work-limit', incumbent, hadCandidate, diagnostics);
     }
     if (proposalStop.outcome !== 'execute') {
-      appendDiagnostic(
-        session,
-        candidate,
-        capturedRequest.numerical.innerIterations,
-        'stopped',
-        null,
+      diagnostics.push(
+        diagnostic(
+          candidate,
+          capturedRequest.numerical.innerIterations,
+          'stopped',
+          null,
+        ),
       );
-      return operationalResult(proposalStop, session);
+      return operationalResult(
+        proposalStop,
+        counters,
+        incumbent,
+        hadCandidate,
+        diagnostics,
+      );
     }
-    chargeExactInputSplitSessionWork(session, 'numerical-proposal');
+    counters.numericalProposals += 1;
     candidate.counters.numericalProposals += 1;
 
     const resolution = resolvePreparedPathShadowPriceRoutes(context, routes);
     if (!resolution.ok) {
-      recordExactInputSplitSessionNumericalProposalFailure(session);
+      counters.numericalProposalFailures += 1;
       candidate.counters.numericalProposalFailures += 1;
-      appendDiagnostic(
-        session,
-        candidate,
-        capturedRequest.numerical.innerIterations,
-        'failed',
-        'invalid-route-model',
+      diagnostics.push(
+        diagnostic(
+          candidate,
+          capturedRequest.numerical.innerIterations,
+          'failed',
+          'invalid-route-model',
+        ),
       );
       continue;
     }
@@ -805,16 +1344,17 @@ function runNumericalRuntime(
       }),
     );
     if (!prepared.ok) {
-      recordExactInputSplitSessionNumericalProposalFailure(session);
+      counters.numericalProposalFailures += 1;
       candidate.counters.numericalProposalFailures += 1;
       candidate.converged = prepared.error.converged;
       candidate.completedOuterIterations = prepared.error.completedOuterIterations;
-      appendDiagnostic(
-        session,
-        candidate,
-        capturedRequest.numerical.innerIterations,
-        'failed',
-        prepared.error.code,
+      diagnostics.push(
+        diagnostic(
+          candidate,
+          capturedRequest.numerical.innerIterations,
+          'failed',
+          prepared.error.code,
+        ),
       );
       continue;
     }
@@ -823,50 +1363,61 @@ function runNumericalRuntime(
     let readyState: PathShadowPriceReadyState | undefined;
     let coreFailed = false;
     while (readyState === undefined) {
-      const iterationStop = observeExactInputSplitSessionBoundary(
-        session,
+      const iterationStop = boundary(
         'numerical-iteration',
+        capturedControl,
+        counters,
+        incumbent,
+        priorClock,
       );
       if (iterationStop.outcome === 'cap') {
-        appendDiagnostic(
-          session,
-          candidate,
-          capturedRequest.numerical.innerIterations,
-          'stopped',
-          null,
+        diagnostics.push(
+          diagnostic(
+            candidate,
+            capturedRequest.numerical.innerIterations,
+            'stopped',
+            null,
+          ),
         );
-        return finish(session, 'work-limit');
+        return finish(counters, 'work-limit', incumbent, hadCandidate, diagnostics);
       }
       if (iterationStop.outcome !== 'execute') {
-        appendDiagnostic(
-          session,
-          candidate,
-          capturedRequest.numerical.innerIterations,
-          'stopped',
-          null,
+        diagnostics.push(
+          diagnostic(
+            candidate,
+            capturedRequest.numerical.innerIterations,
+            'stopped',
+            null,
+          ),
         );
-        return operationalResult(iterationStop, session);
+        return operationalResult(
+          iterationStop,
+          counters,
+          incumbent,
+          hadCandidate,
+          diagnostics,
+        );
       }
-      chargeExactInputSplitSessionWork(session, 'numerical-iteration');
+      counters.numericalIterations += 1;
       candidate.counters.numericalIterations += 1;
       const advanced = proposalDriver.advance(iterationState);
       if (!advanced.ok) {
-        recordExactInputSplitSessionNumericalProposalFailure(session);
+        counters.numericalProposalFailures += 1;
         candidate.counters.numericalProposalFailures += 1;
         candidate.converged = advanced.error.converged;
         candidate.completedOuterIterations = advanced.error.completedOuterIterations;
-        appendDiagnostic(
-          session,
-          candidate,
-          capturedRequest.numerical.innerIterations,
-          'failed',
-          advanced.error.code,
+        diagnostics.push(
+          diagnostic(
+            candidate,
+            capturedRequest.numerical.innerIterations,
+            'failed',
+            advanced.error.code,
+          ),
         );
         coreFailed = true;
         break;
       }
-      candidate.completedOuterIterations =
-        advanced.value.state.completedOuterIterations;
+      candidate.completedOuterIterations = advanced.value.state.completedOuterIterations;
       if (advanced.value.status === 'ready') readyState = advanced.value.state;
       else iterationState = advanced.value.state;
     }
@@ -874,16 +1425,17 @@ function runNumericalRuntime(
 
     const finalized = proposalDriver.finalize(readyState);
     if (!finalized.ok) {
-      recordExactInputSplitSessionNumericalProposalFailure(session);
+      counters.numericalProposalFailures += 1;
       candidate.counters.numericalProposalFailures += 1;
       candidate.converged = finalized.error.converged;
       candidate.completedOuterIterations = finalized.error.completedOuterIterations;
-      appendDiagnostic(
-        session,
-        candidate,
-        capturedRequest.numerical.innerIterations,
-        'failed',
-        finalized.error.code,
+      diagnostics.push(
+        diagnostic(
+          candidate,
+          capturedRequest.numerical.innerIterations,
+          'failed',
+          finalized.error.code,
+        ),
       );
       continue;
     }
@@ -897,38 +1449,49 @@ function runNumericalRuntime(
     let residualFailed = false;
 
     if (residualUnits === 0n) {
-      const residualStop = observeExactInputSplitSessionBoundary(
-        session,
+      const residualStop = boundary(
         'numerical-residual-replay',
+        capturedControl,
+        counters,
+        incumbent,
+        priorClock,
       );
       if (residualStop.outcome === 'cap') {
-        appendDiagnostic(
-          session,
-          candidate,
-          capturedRequest.numerical.innerIterations,
-          'stopped',
-          null,
+        diagnostics.push(
+          diagnostic(
+            candidate,
+            capturedRequest.numerical.innerIterations,
+            'stopped',
+            null,
+          ),
         );
-        return finish(session, 'work-limit');
+        return finish(counters, 'work-limit', incumbent, hadCandidate, diagnostics);
       }
       if (residualStop.outcome !== 'execute') {
-        appendDiagnostic(
-          session,
-          candidate,
-          capturedRequest.numerical.innerIterations,
-          'stopped',
-          null,
+        diagnostics.push(
+          diagnostic(
+            candidate,
+            capturedRequest.numerical.innerIterations,
+            'stopped',
+            null,
+          ),
         );
-        return operationalResult(residualStop, session);
+        return operationalResult(
+          residualStop,
+          counters,
+          incumbent,
+          hadCandidate,
+          diagnostics,
+        );
       }
-      chargeExactInputSplitSessionWork(session, 'numerical-residual-replay');
+      counters.numericalResidualReplays += 1;
       candidate.counters.numericalResidualReplays += 1;
-      const replay = replayExactInputSplitSessionFull(
-        session,
-        positiveExactInputSplitSessionLegs(routes, allocations),
+      const replay = replayPreparedExactInputSplit(
+        context,
+        fullReplayRequest(capturedRequest, positiveLegs(routes, allocations)),
       );
       if (!replay.ok) {
-        recordExactInputSplitSessionNumericalResidualReplayRejection(session);
+        counters.numericalResidualReplayRejections += 1;
         candidate.counters.numericalResidualReplayRejections += 1;
         residualFailed = true;
       } else {
@@ -939,49 +1502,60 @@ function runNumericalRuntime(
         let winningIndex: number | undefined;
         let winningReceipt: ExactInputSplitReplayReceipt | undefined;
         for (let routeIndex = 0; routeIndex < routes.length; routeIndex += 1) {
-          const residualStop = observeExactInputSplitSessionBoundary(
-            session,
+          const residualStop = boundary(
             'numerical-residual-replay',
+            capturedControl,
+            counters,
+            incumbent,
+            priorClock,
           );
           if (residualStop.outcome === 'cap') {
-            appendDiagnostic(
-              session,
-              candidate,
-              capturedRequest.numerical.innerIterations,
-              'stopped',
-              null,
+            diagnostics.push(
+              diagnostic(
+                candidate,
+                capturedRequest.numerical.innerIterations,
+                'stopped',
+                null,
+              ),
             );
-            return finish(session, 'work-limit');
+            return finish(counters, 'work-limit', incumbent, hadCandidate, diagnostics);
           }
           if (residualStop.outcome !== 'execute') {
-            appendDiagnostic(
-              session,
-              candidate,
-              capturedRequest.numerical.innerIterations,
-              'stopped',
-              null,
+            diagnostics.push(
+              diagnostic(
+                candidate,
+                capturedRequest.numerical.innerIterations,
+                'stopped',
+                null,
+              ),
             );
-            return operationalResult(residualStop, session);
+            return operationalResult(
+              residualStop,
+              counters,
+              incumbent,
+              hadCandidate,
+              diagnostics,
+            );
           }
           const optionAllocations = [...allocations];
           optionAllocations[routeIndex] = optionAllocations[routeIndex]! + 1n;
-          chargeExactInputSplitSessionWork(session, 'numerical-residual-replay');
+          counters.numericalResidualReplays += 1;
           candidate.counters.numericalResidualReplays += 1;
-          const replay = replayExactInputSplitSessionPartial(
-            session,
-            positiveExactInputSplitSessionLegs(routes, optionAllocations),
+          const replay = replayPreparedExactInputSplit(
+            context,
+            partialReplayRequest(
+              capturedRequest,
+              positiveLegs(routes, optionAllocations),
+            ),
           );
           if (!replay.ok) {
-            recordExactInputSplitSessionNumericalResidualReplayRejection(session);
+            counters.numericalResidualReplayRejections += 1;
             candidate.counters.numericalResidualReplayRejections += 1;
             continue;
           }
           if (
             winningReceipt === undefined ||
-            isStrictlyBetterExactInputSplitSessionReceipt(
-              replay.value,
-              winningReceipt,
-            )
+            isStrictlyBetterSplitReceipt(replay.value, winningReceipt)
           ) {
             winningIndex = routeIndex;
             winningReceipt = replay.value;
@@ -997,96 +1571,118 @@ function runNumericalRuntime(
     }
 
     if (residualFailed || score === undefined) {
-      appendDiagnostic(
-        session,
-        candidate,
-        capturedRequest.numerical.innerIterations,
-        'failed',
-        'residual-options-exhausted',
+      diagnostics.push(
+        diagnostic(
+          candidate,
+          capturedRequest.numerical.innerIterations,
+          'failed',
+          'residual-options-exhausted',
+        ),
       );
       continue;
     }
 
-    const incumbent = exactInputSplitSessionIncumbent(session);
-    if (
-      incumbent === undefined ||
-      !isStrictlyBetterExactInputSplitSessionReceipt(score, incumbent)
-    ) {
-      appendDiagnostic(
-        session,
-        candidate,
-        capturedRequest.numerical.innerIterations,
-        'not-better',
-        null,
+    if (!isStrictlyBetterSplitReceipt(score, incumbent)) {
+      diagnostics.push(
+        diagnostic(
+          candidate,
+          capturedRequest.numerical.innerIterations,
+          'not-better',
+          null,
+        ),
       );
       continue;
     }
 
-    const authorizationStop = observeExactInputSplitSessionBoundary(
-      session,
+    const authorizationStop = boundary(
       'numerical-authorization-replay',
+      capturedControl,
+      counters,
+      incumbent,
+      priorClock,
     );
     if (authorizationStop.outcome === 'cap') {
-      appendDiagnostic(
-        session,
-        candidate,
-        capturedRequest.numerical.innerIterations,
-        'stopped',
-        null,
+      diagnostics.push(
+        diagnostic(
+          candidate,
+          capturedRequest.numerical.innerIterations,
+          'stopped',
+          null,
+        ),
       );
-      return finish(session, 'work-limit');
+      return finish(counters, 'work-limit', incumbent, hadCandidate, diagnostics);
     }
     if (authorizationStop.outcome !== 'execute') {
-      appendDiagnostic(
-        session,
-        candidate,
-        capturedRequest.numerical.innerIterations,
-        'stopped',
-        null,
+      diagnostics.push(
+        diagnostic(
+          candidate,
+          capturedRequest.numerical.innerIterations,
+          'stopped',
+          null,
+        ),
       );
-      return operationalResult(authorizationStop, session);
+      return operationalResult(
+        authorizationStop,
+        counters,
+        incumbent,
+        hadCandidate,
+        diagnostics,
+      );
     }
+    counters.numericalAuthorizationReplays += 1;
     candidate.counters.numericalAuthorizationReplays += 1;
-    const authorization = authorizeExactInputSplitSessionNumericalCandidate(
-      session,
-      positiveExactInputSplitSessionLegs(routes, allocations),
-      score,
-      authorizationReplay,
+    const authorization = authorizationReplay(
+      context,
+      fullReplayRequest(capturedRequest, positiveLegs(routes, allocations)),
     );
-    if (authorization === 'rejected') {
+    if (!authorization.ok) {
+      counters.numericalAuthorizationReplayRejections += 1;
       candidate.counters.numericalAuthorizationReplayRejections += 1;
-      appendDiagnostic(
-        session,
-        candidate,
-        capturedRequest.numerical.innerIterations,
-        'failed',
-        'authorization-replay-rejected',
+      diagnostics.push(
+        diagnostic(
+          candidate,
+          capturedRequest.numerical.innerIterations,
+          'failed',
+          'authorization-replay-rejected',
+        ),
       );
       continue;
     }
-    if (authorization === 'mismatch') {
+    const capturedAuthorization = captureReplayReceipt(authorization.value);
+    if (
+      capturedAuthorization === undefined ||
+      !receiptSemanticallyEquals(capturedAuthorization, score) ||
+      !isStrictlyBetterSplitReceipt(capturedAuthorization, incumbent)
+    ) {
+      counters.numericalAuthorizationReplayRejections += 1;
       candidate.counters.numericalAuthorizationReplayRejections += 1;
-      appendDiagnostic(
-        session,
-        candidate,
-        capturedRequest.numerical.innerIterations,
-        'failed',
-        'authorization-result-mismatch',
+      diagnostics.push(
+        diagnostic(
+          candidate,
+          capturedRequest.numerical.innerIterations,
+          'failed',
+          'authorization-result-mismatch',
+        ),
       );
       continue;
     }
-    appendDiagnostic(
-      session,
-      candidate,
-      capturedRequest.numerical.innerIterations,
-      'improved',
-      null,
+    incumbent = capturedAuthorization;
+    diagnostics.push(
+      diagnostic(
+        candidate,
+        capturedRequest.numerical.innerIterations,
+        'improved',
+        null,
+      ),
     );
   }
 
   return finish(
-    session,
-    exactInputSplitSessionWorkLimited(session) ? 'work-limit' : 'complete',
+    counters,
+    workLimited ? 'work-limit' : 'complete',
+    incumbent,
+    hadCandidate,
+    diagnostics,
   );
 }
 
@@ -1099,7 +1695,7 @@ export function routeExactInputSplitNumericalAnytime(
     context,
     request,
     control,
-    undefined,
+    replayPreparedExactInputSplit,
     REAL_PROPOSAL_DRIVER,
   );
 }
@@ -1131,7 +1727,7 @@ export function routeExactInputSplitNumericalAnytimeWithProposalDriver(
     context,
     request,
     control,
-    undefined,
+    replayPreparedExactInputSplit,
     proposalDriver,
   );
 }

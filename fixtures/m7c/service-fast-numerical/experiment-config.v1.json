@@ -1,0 +1,1580 @@
+{
+  "schemaVersion": "routelab.service-fast-numerical-experiment-config.v1",
+  "experimentId": "m7c-core12-service-fast-numerical-v1",
+  "taskId": "RLT-087",
+  "acceptedBaseRevision": "aaf5608856b8ca3ed940f3ec47db48442b6adcd5",
+  "observationPerformed": false,
+  "fixtureSerialization": "two-space-json-utf8-one-trailing-line-feed",
+  "observationState": {
+    "configIsOutputFree": true,
+    "correctnessFixturesMayRunAfterConfigIntegration": true,
+    "inputOnlyCommandRequiresIntegratedReviewedImplementation": true,
+    "acceptedCorpusObservationAuthorizedByThisConfigAlone": false,
+    "acceptedCorpusRequiresCommittedInputAndSourceClosure": true,
+    "acceptedCorpusRequiresExplicitLeadAuthorization": true,
+    "parametersMayChangeAfterCandidateOutput": false
+  },
+  "authorities": [
+    "docs/invariants.md",
+    "docs/adr/accepted/0004-path-level-numerical-allocation.md",
+    "docs/adr/accepted/0005-service-routing-runtime.md",
+    "IMPLEMENTATION_PLAN.md"
+  ],
+  "authorityBindings": {
+    "invariants": {
+      "path": "docs/invariants.md",
+      "bytes": 34592,
+      "sha256": "sha256:33f2e343e17ae2e7904cec5a00c7079dcfad851f14a098310358e57916643683",
+      "baseGitBlob": "3f22f3740f5fabdd3a55b1a4d0bda2cdfd982a74"
+    },
+    "allocationAdr": {
+      "path": "docs/adr/accepted/0004-path-level-numerical-allocation.md",
+      "bytes": 27620,
+      "sha256": "sha256:cc36c9e9866d8991bca737aad535e416ea280851fc238b176524aa630cd62a4a",
+      "baseGitBlob": "74aea580ef64f842d5e90f805503dba23b8715e2"
+    },
+    "serviceRuntimeAdr": {
+      "path": "docs/adr/accepted/0005-service-routing-runtime.md",
+      "bytes": 42630,
+      "sha256": "sha256:9113376c036d0cc0c894927ea433836eb33d5969c83414fc3fdcc56533c73423",
+      "baseGitBlob": "621fb1d580d64cc98e85c6f49c4ee23a3df5f6b1"
+    },
+    "implementationPlan": {
+      "path": "IMPLEMENTATION_PLAN.md",
+      "bytes": 20268,
+      "sha256": "sha256:3b72bca5ced13377b2c21c36adfade775a87458e3481bda0d32180f16f024de4",
+      "baseGitBlob": "87cceafc37520513bbb4d335aae0f909d0d83ded"
+    }
+  },
+  "artifactSchema": {
+    "path": "fixtures/m7c/service-fast-numerical/experiment-artifact-schema.v1.json",
+    "bytes": 64860,
+    "sha256": "sha256:ab4291f2fdb4fe3640b865e584a27ccbb6894b5f7cc8ee987fc8234e08c9fe1d"
+  },
+  "boundInputs": {
+    "suiteConfig": {
+      "path": "fixtures/m7/numerical-representative-profile/snapshot-suite-config.v1.json",
+      "bytes": 8842,
+      "sha256": "sha256:c2391d79a230d532918339a390b9150a58789a9263a906cae1ea4192219361c1"
+    },
+    "baselineConfig": {
+      "path": "fixtures/m7/numerical-representative-profile/baseline-config.v1.json",
+      "bytes": 6813,
+      "sha256": "sha256:fb35f57912007bb4a72835cb1aecb49c3110049e5f097dca029960f65bcfb73a"
+    },
+    "profileConfig": {
+      "path": "fixtures/m7/numerical-representative-profile/profile-config.v1.json",
+      "bytes": 16462,
+      "sha256": "sha256:b2ac31c4781471872110bbd2546e8681cee3a3301477db34b3931f06a8648734"
+    },
+    "stressManifest": {
+      "path": "datasets/stress/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/manifest.json",
+      "bytes": 3132,
+      "sha256": "sha256:c6cca3ac050be2c1df4eaa77cfc0e0fb44dae9a47830bcc67c47791f7affd55b"
+    },
+    "requestManifest": {
+      "path": "datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/manifest.json",
+      "bytes": 1284,
+      "sha256": "sha256:03430839c6294b1bf59b7623fb1a6a69bdd08841144613fcef7f18c6ae265088"
+    },
+    "requests": {
+      "path": "datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/requests.json",
+      "bytes": 416450,
+      "sha256": "sha256:d1ecc93d93dcc245f08345bfedaa01b03dea158edaeb16e73524819218bf7504"
+    },
+    "baselineManifest": {
+      "path": "datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-preprofile-baseline-v1/manifest.json",
+      "bytes": 3415,
+      "sha256": "sha256:1615c5c9a9e792389a7839847b2895ecd195e67d8151a0d1a2ba288812c72027"
+    },
+    "baselineSemanticResults": {
+      "path": "datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-preprofile-baseline-v1/semantic-results.json",
+      "bytes": 49696939,
+      "sha256": "sha256:14b4fc63f3480922fad3741db0556346b982fdaf2c1ae49a51f05f22a9fb29e6"
+    },
+    "baselineEligibility": {
+      "path": "datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-preprofile-baseline-v1/eligibility.json",
+      "bytes": 482951,
+      "sha256": "sha256:2dcf8a3e3dfc80c47924859d91a73d9e5049191f5927f10cf5822024f10849c5"
+    },
+    "historicalSnapshot": {
+      "path": "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/snapshot.json",
+      "bytes": 18502,
+      "sha256": "sha256:4c43d4920f0edb487a262f1d321ba4790d07c7563e2a3b0157c5b51122fb3478"
+    },
+    "dualTreeSnapshot": {
+      "path": "datasets/stress/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/synthetic-dual-spanning-tree.snapshot.json",
+      "bytes": 6212,
+      "sha256": "sha256:974642eca6cd851ac5dc5a03f47f84e41d0d7fe4348156fe77d31e0763eb98db"
+    },
+    "compressedSnapshot": {
+      "path": "datasets/stress/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/synthetic-reserve-compressed-1e12.snapshot.json",
+      "bytes": 13872,
+      "sha256": "sha256:17bae1e80197b96c9855fe9aae994b50a633d10ea2f4aa96a82fbd972c2ff9ca"
+    },
+    "amplifiedSnapshot": {
+      "path": "datasets/stress/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/synthetic-reserve-amplified-1e60.snapshot.json",
+      "bytes": 21438,
+      "sha256": "sha256:d9f8ebdfdfb8d8b8da595c37ce54bb949da1b3ef599c2929cbb597fe589a8ef7"
+    }
+  },
+  "protectedSurfaces": [
+    {
+      "path": "fixtures/m7/numerical-historical",
+      "baseGitTree": "8f871fc7874d937f69df5f0b86ff7b3a18ccbcc7"
+    },
+    {
+      "path": "fixtures/m7/numerical-baseline-profile",
+      "baseGitTree": "025221477108ec6a956d0bfa49ae4928e681a0fb"
+    },
+    {
+      "path": "fixtures/m7/numerical-representative-profile",
+      "baseGitTree": "37f8d3d613dfcb901a225894008d31a264ef0a0a"
+    },
+    {
+      "path": "datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/numerical-path-shadow-price-v1",
+      "baseGitTree": "9b11eb746de160d8c333c773147df0d1511eaff3"
+    },
+    {
+      "path": "datasets/profiles/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/numerical-path-shadow-price-baseline-v1",
+      "baseGitTree": "4cf9088c796a27d2d1af14670b580a8ac4e31c17"
+    },
+    {
+      "path": "datasets/profiles/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/numerical-path-shadow-price-preacceleration-v1",
+      "baseGitTree": "903dd57852db37fad3ffdf3ddb75115e50d5ee36"
+    }
+  ],
+  "protectedRuntimeSources": {
+    "coarseReference": {
+      "path": "src/allocation/path-shadow-price/index.ts",
+      "bytes": 31345,
+      "sha256": "sha256:5034a82f41f7f51b02a69cd8754f860f7268c8b93b6d867ec749267ad8cce693"
+    },
+    "fineServiceReference": {
+      "path": "src/allocation/service-path-shadow-price/index.ts",
+      "bytes": 31025,
+      "sha256": "sha256:5b9bc5013baa1286403c6867fba6e32826763d31f7c323576596fa8644b5a1db"
+    },
+    "sharedSession": {
+      "path": "src/router/exact-input-split-session/index.ts",
+      "bytes": 118350,
+      "sha256": "sha256:b882f034ab4871dde9cb6edd3d9d2ba93691766855aa8ed5c158688f6cdede6a"
+    },
+    "serviceRouter": {
+      "path": "src/router/service-exact-input-split/index.ts",
+      "bytes": 24401,
+      "sha256": "sha256:558df7aacc2b0503cebb627cb890b4686cd07774ff068f6bbd2be0e4b362e39f"
+    },
+    "preparedServiceContext": {
+      "path": "src/runtime/prepared-service-routing-context/index.ts",
+      "bytes": 18793,
+      "sha256": "sha256:fed5e062ffbdedddc9a477de99b9e18ce3ffbafad2755213325734dc1b99fed7"
+    },
+    "serviceDiscovery": {
+      "path": "src/search/service-route-discovery/index.ts",
+      "bytes": 9864,
+      "sha256": "sha256:20fbfc0bb2efc2ab1e489c69ec41fa2ecd35df00d5152678452658a63e73492f"
+    },
+    "preparedRoutingContext": {
+      "path": "src/runtime/prepared-routing-context/index.ts",
+      "bytes": 25220,
+      "sha256": "sha256:1b0804c535a4800a10891e49d4553b335132ad81d04a54bfad30d0dc3274ab59"
+    },
+    "boundedSnapshotJson": {
+      "path": "src/runtime/prepared-service-routing-context/bounded-snapshot-json.ts",
+      "bytes": 18297,
+      "sha256": "sha256:c5d74710d3c70c8159d2639b8ac5e28cecf41dd429357e78cb10132cfbd5e070"
+    },
+    "splitObjective": {
+      "path": "src/router/split-exact-input/objective.ts",
+      "bytes": 3328,
+      "sha256": "sha256:6061ae07bd4035fa866c3a17d2b2540044295dc119252d21ca8d1bc70e0d5f65"
+    },
+    "splitReplay": {
+      "path": "src/replay/exact-input-split/index.ts",
+      "bytes": 4150,
+      "sha256": "sha256:0efc6f584f898c15c3853fab4e99bc6fc8a6fc2c944cf40215674ca94699e74a"
+    },
+    "routeReplay": {
+      "path": "src/replay/exact-input-route/index.ts",
+      "bytes": 2064,
+      "sha256": "sha256:08bf8a20de24f48bdd09add924c39d2696ce9d1a55576a81467dc06b44e754ef"
+    },
+    "replayKernel": {
+      "path": "src/replay/exact-input-kernel/index.ts",
+      "bytes": 12790,
+      "sha256": "sha256:5e789f55f7fc89e3f7be1496f8d84805e15e4a540b17e46b45819d455e496e36"
+    },
+    "constantProduct": {
+      "path": "src/pools/constant-product/index.ts",
+      "bytes": 4760,
+      "sha256": "sha256:20953626b5d5bb533e419da6ccd089389a4a3cc852b5973c3355e6b54c7304fe"
+    }
+  },
+  "cohorts": {
+    "identityEncoding": "utf8-json-stringify-array-of-objects-with-caseId-then-requestId",
+    "subsetRule": "filter-full-source-sequence-preserve-relative-order-never-regroup-or-sort",
+    "caseOrder": [
+      "historical-anchor",
+      "synthetic-dual-spanning-tree",
+      "synthetic-reserve-compressed-1e12",
+      "synthetic-reserve-amplified-1e60"
+    ],
+    "cases": [
+      {
+        "caseId": "historical-anchor",
+        "snapshotId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1",
+        "snapshotChecksum": "sha256:5d21166cf218997776efc23b203c2f70637b1fb822807fb236bfc6fd0bf3e755",
+        "requestCount": 396,
+        "serviceDecision": true,
+        "operational": true,
+        "hotspot": true,
+        "classification": "historical-stored-reserve-anchor"
+      },
+      {
+        "caseId": "synthetic-dual-spanning-tree",
+        "snapshotId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1-synthetic-dual-spanning-tree-v1",
+        "snapshotChecksum": "sha256:76a6d1b90541af4b799c2aa7a9fa6bdf49a7bac0398fba4d9ee32bb1c81f6832",
+        "requestCount": 396,
+        "serviceDecision": true,
+        "operational": true,
+        "hotspot": false,
+        "classification": "synthetic-structural-stress"
+      },
+      {
+        "caseId": "synthetic-reserve-compressed-1e12",
+        "snapshotId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1-synthetic-reserve-compressed-1e12-v1",
+        "snapshotChecksum": "sha256:bc28e5ef7cbe5709995c4dba56e2313996334df0107775e10218c9fe0878deb1",
+        "requestCount": 396,
+        "serviceDecision": true,
+        "operational": true,
+        "hotspot": true,
+        "classification": "synthetic-numerical-stress"
+      },
+      {
+        "caseId": "synthetic-reserve-amplified-1e60",
+        "snapshotId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1-synthetic-reserve-amplified-1e60-v1",
+        "snapshotChecksum": "sha256:40c3abaa585d2bb48a5e167577afc9ac17f3dec7944967536fd375c7bb501575",
+        "requestCount": 396,
+        "serviceDecision": false,
+        "operational": false,
+        "hotspot": false,
+        "classification": "non-service-synthetic-numerical-stress"
+      }
+    ],
+    "full": {
+      "count": 1584,
+      "sha256": "sha256:b344aba7c7e7c443b3e4136d637c17c16cf951b98ac19ea21c0c4fe2225c9657"
+    },
+    "serviceDecision": {
+      "count": 1188,
+      "sha256": "sha256:e63aa2df6bea98374c28d56d6f6e3cbd494bab7af879aea938953f66cde30939"
+    },
+    "amplifiedStress": {
+      "count": 396,
+      "sha256": "sha256:fa50db7d2e5371c23cf20477a979395b864f29a3b47b1c20c466489b9813403a"
+    },
+    "priorEligibleBoundOnly": {
+      "count": 1269,
+      "sha256": "sha256:48f86261df3e87a2add397e3456f049640fbdfd3e964524201051b452327b5e7"
+    },
+    "priorEligibleServiceBoundOnly": {
+      "count": 873,
+      "sha256": "sha256:2cb10f45ce4424d4c7012dd7adc0a6d9f7ad23b972e121de9507a14e6590b5a3"
+    },
+    "operational": {
+      "selection": "first-12-in-source-order-per-nonempty-caseId-topology-amountBucket-stratum-then-full-source-relative-order",
+      "count": 252,
+      "perCaseCounts": {
+        "historical-anchor": 72,
+        "synthetic-dual-spanning-tree": 108,
+        "synthetic-reserve-compressed-1e12": 72
+      },
+      "nonemptyStrataPerCase": {
+        "historical-anchor": 6,
+        "synthetic-dual-spanning-tree": 9,
+        "synthetic-reserve-compressed-1e12": 6
+      },
+      "sha256": "sha256:6c6efab5b94f549c51547bd8158efe13b01a0c70f2d9d12b5bd224f2faa46c58"
+    }
+  },
+  "inputConstruction": {
+    "request": {
+      "maxHops": 2,
+      "maxRoutes": 2,
+      "greedyParts": 16
+    },
+    "workProfile": {
+      "profileId": "structural-complete",
+      "workCaps": {
+        "maxPathExpansions": 121,
+        "maxBestSingleCandidateReplays": 11,
+        "maxCandidateSetExpansions": 110,
+        "maxEqualProposalReplays": 55,
+        "maxGreedyOptionReplays": 1760,
+        "maxFinalAuthorizationReplays": 110,
+        "maxNumericalProposals": 55,
+        "maxNumericalIterations": 3520,
+        "maxNumericalResidualReplays": 110,
+        "maxNumericalAuthorizationReplays": 55
+      }
+    },
+    "preparedContext": "one-checksum-verified-ordinary-context-per-snapshot-never-cross-snapshot",
+    "baseline": "reproduce-complete-exact-retained-baseline-before-accepting-input-cell",
+    "candidateSets": {
+      "discovery": "accepted-shared-canonical-pool-disjoint-order",
+      "retainFirst": 4,
+      "outputFiltering": false,
+      "retainResolutionFailureForEveryPolicy": true,
+      "resolveModelsOnceOutsideCandidateStage": true
+    },
+    "repairTarget": "first-retained-successfully-model-resolved-set-index-or-null-no-output-reassignment",
+    "inputArtifact": {
+      "schemaVersion": "routelab.service-fast-numerical-experiment-input.v1",
+      "path": "fixtures/m7c/service-fast-numerical/experiment-inputs.v1.ndjson",
+      "command": "pnpm experiment:service-fast:inputs",
+      "candidatePolicyImportsOrCalls": "forbidden",
+      "recordCount": 1584,
+      "maxBytes": 67108864,
+      "serialization": "canonical-minified-utf8-ndjson-one-record-per-line-one-trailing-line-feed",
+      "recordFieldOrder": [
+        "schemaVersion",
+        "sourceIndex",
+        "caseId",
+        "requestId",
+        "snapshot",
+        "request",
+        "priorEligibility",
+        "serviceDecisionMember",
+        "amplifiedStressMember",
+        "timingCohortIndex",
+        "entryBaseline",
+        "candidateDiscovery",
+        "repairTargetSetIndex",
+        "actionCeilingProfileId"
+      ],
+      "exactEncoding": "canonical-decimal-strings",
+      "binary64Encoding": "lowercase-16-hex-big-endian-bits",
+      "noCandidateOutputsOrTiming": true
+    }
+  },
+  "policyMatrix": {
+    "tolerance": {
+      "expression": "2 ** -40",
+      "binary64Hex": "3d70000000000000"
+    },
+    "driverOrder": [
+      "bisection-o64-i64",
+      "bisection-o64-i24",
+      "bisection-o32-i16",
+      "bisection-o16-i12",
+      "pinned-sqrt-o64",
+      "fixed-newton-sqrt-o64-n8"
+    ],
+    "nonConvergenceOrder": [
+      "strict-reject",
+      "final-finite-replay"
+    ],
+    "reconstructionOrder": [
+      "current",
+      "bounded-exact-neighborhood-v1"
+    ],
+    "policyIdGrammar": "driver--nonConvergence--reconstruction",
+    "loopOrder": "driver-outer-nonConvergence-middle-reconstruction-inner",
+    "policyIds": [
+      "bisection-o64-i64--strict-reject--current",
+      "bisection-o64-i64--strict-reject--bounded-exact-neighborhood-v1",
+      "bisection-o64-i64--final-finite-replay--current",
+      "bisection-o64-i64--final-finite-replay--bounded-exact-neighborhood-v1",
+      "bisection-o64-i24--strict-reject--current",
+      "bisection-o64-i24--strict-reject--bounded-exact-neighborhood-v1",
+      "bisection-o64-i24--final-finite-replay--current",
+      "bisection-o64-i24--final-finite-replay--bounded-exact-neighborhood-v1",
+      "bisection-o32-i16--strict-reject--current",
+      "bisection-o32-i16--strict-reject--bounded-exact-neighborhood-v1",
+      "bisection-o32-i16--final-finite-replay--current",
+      "bisection-o32-i16--final-finite-replay--bounded-exact-neighborhood-v1",
+      "bisection-o16-i12--strict-reject--current",
+      "bisection-o16-i12--strict-reject--bounded-exact-neighborhood-v1",
+      "bisection-o16-i12--final-finite-replay--current",
+      "bisection-o16-i12--final-finite-replay--bounded-exact-neighborhood-v1",
+      "pinned-sqrt-o64--strict-reject--current",
+      "pinned-sqrt-o64--strict-reject--bounded-exact-neighborhood-v1",
+      "pinned-sqrt-o64--final-finite-replay--current",
+      "pinned-sqrt-o64--final-finite-replay--bounded-exact-neighborhood-v1",
+      "fixed-newton-sqrt-o64-n8--strict-reject--current",
+      "fixed-newton-sqrt-o64-n8--strict-reject--bounded-exact-neighborhood-v1",
+      "fixed-newton-sqrt-o64-n8--final-finite-replay--current",
+      "fixed-newton-sqrt-o64-n8--final-finite-replay--bounded-exact-neighborhood-v1"
+    ],
+    "anchorPolicyId": "bisection-o64-i64--strict-reject--current",
+    "componentSelection": "forbidden-complete-policy-only",
+    "drivers": [
+      {
+        "driverId": "bisection-o64-i64",
+        "method": "bisection",
+        "outerUpdates": 64,
+        "innerUpdates": 64,
+        "maximumShareActions": 68640
+      },
+      {
+        "driverId": "bisection-o64-i24",
+        "method": "bisection",
+        "outerUpdates": 64,
+        "innerUpdates": 24,
+        "maximumShareActions": 27040
+      },
+      {
+        "driverId": "bisection-o32-i16",
+        "method": "bisection",
+        "outerUpdates": 32,
+        "innerUpdates": 16,
+        "maximumShareActions": 9504
+      },
+      {
+        "driverId": "bisection-o16-i12",
+        "method": "bisection",
+        "outerUpdates": 16,
+        "innerUpdates": 12,
+        "maximumShareActions": 3808
+      },
+      {
+        "driverId": "pinned-sqrt-o64",
+        "method": "pinned-sqrt",
+        "outerUpdates": 64,
+        "innerUpdates": null,
+        "maximumShareActions": 2080
+      },
+      {
+        "driverId": "fixed-newton-sqrt-o64-n8",
+        "method": "fixed-newton-sqrt",
+        "outerUpdates": 64,
+        "innerUpdates": 8,
+        "maximumShareActions": 11440
+      }
+    ]
+  },
+  "anchorContract": {
+    "semantic": {
+      "source": "src/allocation/path-shadow-price/index.ts",
+      "configuration": {
+        "outerIterations": 64,
+        "innerIterations": 64,
+        "convergenceToleranceBinary64Hex": "3d70000000000000"
+      },
+      "apiOrder": [
+        "capturePathShadowPriceConfiguration",
+        "preparePathShadowPriceProposal",
+        "advancePathShadowPriceProposal-times-64-unless-failure",
+        "finalizePathShadowPriceProposal",
+        "accepted-current-exact-residual-scoring"
+      ],
+      "timed": false,
+      "deadlineInterrupted": false
+    },
+    "operational": {
+      "source": "src/allocation/service-path-shadow-price/index.ts",
+      "unmeasuredSetupApiOrder": [
+        "createServicePathShadowPriceState",
+        "appendServicePathShadowPriceModelRoute-canonical-route-order",
+        "startServicePathShadowPriceProposal"
+      ],
+      "measuredBoundaryApiOrder": [
+        "advanceServicePathShadowPriceShareMicrostep",
+        "advanceServicePathShadowPriceReconstructionStep",
+        "servicePathShadowPriceResidualOption",
+        "settleServicePathShadowPriceResidualOption",
+        "servicePathShadowPriceScoreAllocations",
+        "experiment-exact-score",
+        "experiment-distinct-authorization"
+      ],
+      "sameCellSemanticParityRequired": true,
+      "configurableCandidateUsedForAnchor": false
+    },
+    "configurable64Parity": [
+      "binary64-weight-bits",
+      "reconstruction",
+      "fine-counters",
+      "failures",
+      "exact-output"
+    ]
+  },
+  "shareMethods": {
+    "bisection": {
+      "preserveReferenceBranchesAndOperationOrder": true,
+      "actionOrderPerRouteSample": [
+        "endpoint",
+        "each-inner-update",
+        "final-share"
+      ],
+      "maximumActionFormula": "4*4*(outerUpdates+1)*(innerUpdates+2)"
+    },
+    "pinnedSqrt": {
+      "endpointChecks": "same-as-reference-first",
+      "interiorOperationOrder": [
+        "ratio=s/lambda",
+        "root=Math.sqrt(ratio)",
+        "numerator=root-1",
+        "share=numerator/q"
+      ],
+      "domain": {
+        "sAndQ": "finite-positive-normal",
+        "lambda": "finite-positive-normal-or-subnormal",
+        "ratio": "finite-greater-than-one",
+        "root": "finite-at-least-one",
+        "numeratorAndShare": "positive-zero-or-positive-normal-reject-negative-zero-and-subnormal",
+        "shareRange": "closed-zero-one"
+      },
+      "actionsPerRouteSample": 2,
+      "clampNormalizeFallbackOrSentinel": false
+    },
+    "fixedNewtonSqrt": {
+      "endpointChecks": "same-as-reference-first",
+      "ratioDomain": "finite-normal-greater-than-one",
+      "decompositionOrder": [
+        "E=raw-binary64-exponent-bits",
+        "fraction=raw-binary64-fraction-bits",
+        "k=E-1023",
+        "z=1+fraction/2**52",
+        "if-k-even-m=z-e=k-else-m=2*z-e=k-1"
+      ],
+      "decompositionDomain": {
+        "m": "one-inclusive-four-exclusive",
+        "e": "even-zero-through-1022"
+      },
+      "initialY": 1,
+      "updates": 8,
+      "updateOperationOrder": [
+        "quotient=m/y",
+        "sum=y+quotient",
+        "y=sum/2"
+      ],
+      "finalOperationOrder": [
+        "scale=2**(e/2)",
+        "root=y*scale",
+        "numerator=root-1",
+        "share=numerator/q"
+      ],
+      "domain": {
+        "updatesScaleQ": "finite-positive-normal",
+        "root": "finite-at-least-one",
+        "numeratorAndShare": "positive-zero-or-positive-normal-reject-negative-zero-and-subnormal",
+        "shareRange": "closed-zero-one"
+      },
+      "actionsPerRouteSample": 11,
+      "clampNormalizeFallbackOrSentinel": false
+    }
+  },
+  "nonConvergence": {
+    "strictReject": "existing-typed-non-convergence",
+    "finalFiniteReplay": {
+      "sample": "only-final-sample-recomputed-after-last-configured-completed-outer-update",
+      "weightDomain": "finite-nonnegative-positive-normal-or-positive-zero-within-zero-one",
+      "reject": [
+        "negative-zero",
+        "subnormal",
+        "nonfinite",
+        "out-of-range",
+        "earlier-sample"
+      ],
+      "clampOrRenormalize": false,
+      "converged": false,
+      "diagnostic": "finite-nonconverged-replayed",
+      "exactReplayChangesConvergence": false
+    }
+  },
+  "reconstruction": {
+    "current": "accepted-ieee-weight-reconstruction-and-canonical-exact-residual-option-scoring",
+    "repair": {
+      "policyId": "bounded-exact-neighborhood-v1",
+      "target": "first-model-resolved-set-only",
+      "nontargetDisposition": "current-only-nontarget",
+      "currentBranchAlwaysRetained": true,
+      "anchor": "base-allocation-plus-one-unit-to-each-first-residualUnits-positive-weight-route",
+      "enumerationOrder": [
+        "deduplicated-anchor",
+        "single-route-endpoints-route-index-ascending",
+        "radius-one-donor-outer-receiver-inner-ascending-skip-equal-from-anchor",
+        "radius-two-donor-outer-receiver-inner-ascending-skip-equal-from-anchor"
+      ],
+      "deduplicationKey": "canonical-decimal-allocation-vector",
+      "maximumNeighbors": 29,
+      "maximumPolicyRepairNeighbors": 32,
+      "partialBranch": "discard-repair-proposal-retain-completed-current-for-later-authorization",
+      "score": "fresh-exact-replay-every-enumerated-neighbor-complete-objective",
+      "approximateScore": false
+    },
+    "authorization": {
+      "setWinner": "one-best-complete-objective-score-across-current-and-completed-repair",
+      "targetCurrentAuthorizationDeferredUntilRepairTerminal": true,
+      "maximumPerSet": 1,
+      "maximumPerPolicy": 4,
+      "freshFullInputReplay": true,
+      "recursiveReceiptEquality": true,
+      "strictLiveIncumbentImprovement": true,
+      "scoringReplayIsAuthorization": false
+    }
+  },
+  "actionCaps": {
+    "numericalProposals": 4,
+    "modelRouteSetupSteps": 16,
+    "reconstructionRoutePassSteps": 48,
+    "currentResidualOptionReplays": 48,
+    "servicePolicyCurrentResidualReplayCap": 64,
+    "repairNeighborReplays": 29,
+    "servicePolicyRepairNeighborCap": 32,
+    "authorizations": 4,
+    "maximumMeasuredExperimentStageActions": 68773,
+    "maximumConservativeIncludingUnmeasuredModelSetup": 68789,
+    "aggregateServiceTransitionCap": 100000,
+    "aggregateIncludesUnmeasuredModelSetup": true,
+    "actionKindsRemainSeparate": true
+  },
+  "semanticEvidence": {
+    "cellCount": 38016,
+    "order": "case-then-request-source-then-policy-matrix",
+    "candidateSetOrder": "retained-canonical-order",
+    "exactValues": "bigint-in-memory-canonical-decimal-strings-on-disk",
+    "semanticHashesExclude": [
+      "timing",
+      "environment",
+      "prose"
+    ],
+    "regret": {
+      "signedNumerator": "(anchorOutput-policyOutput)*10000",
+      "positiveDenominator": "anchorOutput",
+      "integerProjection": "truncate-toward-zero",
+      "anchorNoPlan": "rational-and-integer-null-use-plan-presence-and-objective-relation",
+      "policyNoPlanAnchorHasPlan": "policy-output-zero-for-same-cell-delta-only-and-anchor-plan-lost",
+      "crossRequestOrAssetAggregation": false
+    },
+    "rationalStorage": "unreduced-canonical-signed-decimal-numerator-positive-decimal-denominator",
+    "compactReplayEncoding": {
+      "identity": "semanticIndex-sourceIndex-policyMatrixIndex-derive-case-request-policy-and-cohort-membership-from-the-bound-input-and-config",
+      "entryIncumbent": "sha256-binding-to-the-complete-input-entryBaseline-incumbent",
+      "proposal": "retain-final-weight-bits-and-sha256-of-regenerated-integerWeights-baseAllocations-residualUnits-drop-policy-derived-configuration",
+      "currentScore": "selected-attempt-index-plus-complete-regenerated-score-transcript-hash-and-receipt-hash",
+      "repair": "target-only-null-for-nontarget-selected-attempt-index-plus-complete-regenerated-neighbor-transcript-hash-and-receipt-hash",
+      "incumbent": "entry-input-reference-or-candidate-set-score-attempt-reference-plus-complete-objective-hash-and-receipt-hash",
+      "selectionBinding": "candidate-incumbent-source-index-and-hashes-must-equal-the-parent-diagnostic-selected-current-or-repair-attempt-and-its-distinct-accepted-authorization-final-and-deadline-incumbents-are-last-monotonic-accepted-installs",
+      "replayAuthority": "artifact-verifier-regenerates-every-referenced-allocation-transcript-receipt-and-complete-objective-from-input-policy-and-frozen-operation-order-before-analysis-admission",
+      "objectiveComparison": "decoded-regenerated-objective-fields-never-hash-or-serialized-key-lexicographic-comparison"
+    },
+    "objectiveRelations": [
+      "policy-plan-gained",
+      "both-no-plan",
+      "anchor-plan-lost",
+      "policy-objective-strictly-better",
+      "objective-equal",
+      "policy-objective-strictly-worse"
+    ],
+    "candidateSetTerminalStatuses": [
+      "model-resolution-failed",
+      "proposal-failed",
+      "score-rejected",
+      "not-better",
+      "authorization-rejected",
+      "improved",
+      "work-limited"
+    ],
+    "counterOrder": [
+      "methodActions",
+      "outerUpdates",
+      "shareActions",
+      "reconstructionSteps",
+      "residualReplays",
+      "residualRejections",
+      "repairReplays",
+      "repairRejections",
+      "authorizationReplays",
+      "authorizationRejections",
+      "proposals",
+      "diagnostics"
+    ],
+    "candidateFailureCodes": [
+      "invalid-route-model",
+      "non-finite-normalization",
+      "non-finite-proposal",
+      "non-convergence",
+      "zero-total-weight",
+      "invalid-reconstruction",
+      "residual-options-exhausted",
+      "finite-nonconverged-replayed",
+      "repair-no-valid-neighbor",
+      "repair-work-limit",
+      "authorization-rejected",
+      "authorization-mismatch"
+    ],
+    "integrityFailureCodes": [
+      "runtime-mismatch",
+      "config-hash-mismatch",
+      "input-hash-mismatch",
+      "source-closure-mismatch",
+      "protected-source-mismatch",
+      "baseline-mismatch",
+      "cohort-mismatch",
+      "semantic-anchor-parity-mismatch",
+      "exact-replay-mismatch",
+      "counter-invariant-failure",
+      "clock-invariant-failure",
+      "artifact-shape-failure",
+      "artifact-cap-failure",
+      "unexpected-exception"
+    ],
+    "failureFamilyDerivation": {
+      "nonConvergence": {
+        "population": "candidateSetDiagnostics-in-named-semantic-cohort",
+        "incrementWhenFailureCodeEquals": [
+          "non-convergence"
+        ]
+      },
+      "residualOptionsExhausted": {
+        "population": "candidateSetDiagnostics-in-named-semantic-cohort",
+        "incrementWhenFailureCodeEquals": [
+          "residual-options-exhausted"
+        ]
+      },
+      "untypedFailures": {
+        "population": "all-candidate-actions-in-named-semantic-cohort-before-artifact-admission",
+        "incrementWhen": "thrown-or-returned-failure-has-no-exact-member-of-candidateFailureCodes",
+        "artifactAdmission": "any-positive-count-is-integrity-failure-and-no-accepted-publication"
+      },
+      "exactSafetyFailures": {
+        "population": "all-score-authorization-and-incumbent-replays-in-named-semantic-cohort-before-artifact-admission",
+        "incrementWhenAny": [
+          "allocation-negative-or-not-exact-input-sum",
+          "exact-replay-receipt-missing-invalid-or-not-recursively-equal",
+          "stored-receipt-hash-mismatch",
+          "authorization-mismatch",
+          "approximate-value-used-to-authorize-or-compare-exact-objective"
+        ],
+        "artifactAdmission": "any-positive-count-is-exact-replay-mismatch-integrity-failure-and-no-accepted-publication"
+      },
+      "invalidFreshReplayCount": {
+        "population": "semantic-current-repair-authorization-final-incumbent-plus-call-timeline-validated-outcomes-plus-deadline-incumbents-and-completed-score-authorization-transcripts",
+        "incrementWhen": "fresh-replay-or-recursive-receipt-or-frozen-outcome-hash-validation-fails",
+        "counting": "one-per-invalid-retained-replay-or-outcome-binding-never-deduplicate"
+      },
+      "forcedFailureIncumbentMismatchCount": {
+        "population": "every-typed-failure-rejection-work-limit-and-deadline-stop-branch-in-semantic-and-operational-policy-calls",
+        "incrementWhen": "branch-changes-the-live-incumbent-without-a-distinct-successful-fresh-authorization",
+        "counting": "one-per-illegal-incumbent-transition"
+      }
+    },
+    "reconstructionDispositions": [
+      "current",
+      "current-only-nontarget",
+      "repair-complete",
+      "repair-incomplete"
+    ],
+    "integrityFailuresRejectCompleteObservation": true
+  },
+  "runtime": {
+    "required": {
+      "nodeVersion": "v24.18.0",
+      "v8Version": "13.6.233.17-node.50",
+      "uvVersion": "1.52.1",
+      "platform": "linux",
+      "arch": "x64",
+      "endianness": "LE",
+      "osType": "Linux",
+      "osRelease": "6.18.33.2-microsoft-standard-WSL2",
+      "cpuModel": "13th Gen Intel(R) Core(TM) i9-13900H",
+      "logicalCpuCount": 20,
+      "availableParallelism": 20,
+      "execArgv": [],
+      "nodeOptionsState": [
+        "unset",
+        "empty"
+      ],
+      "mainThread": true
+    },
+    "recordOnly": [
+      "cpuSpeedMHz",
+      "totalMemoryBytes",
+      "timezone"
+    ],
+    "clock": "process.hrtime.bigint",
+    "clockUnit": "nanoseconds",
+    "deadlineMillisecondMultiplier": "1000000",
+    "noProfilerNetworkLoggingOrForcedGc": true,
+    "runtimeMismatch": "reject-before-any-candidate-call"
+  },
+  "operationalProtocol": {
+    "totalPolicyCalls": 237600,
+    "caseOrder": [
+      "historical-anchor",
+      "synthetic-dual-spanning-tree",
+      "synthetic-reserve-compressed-1e12"
+    ],
+    "indexing": {
+      "requestIndex": "stable-zero-based-full-252-cohort-index-independent-of-case-slice-or-traversal",
+      "sweepIndex": "zero-based-within-retained-phase",
+      "deadlineIndex": "zero-based-ascending-deadline-index",
+      "warmupSweepIndex": 0,
+      "warmupPolicyReversal": false,
+      "oddRetainedSweepPolicyReversal": true
+    },
+    "phaseOrder": [
+      "complete-preflight",
+      "deterministic-semantics-four-case-request-policy-order",
+      "call-only-service-case-order-each-case-warmup-then-five-sweeps",
+      "instrumented-service-case-order-no-second-warmup-three-sweeps",
+      "deadline-service-case-order-each-case-deadline-ascending-warmup-then-three-sweeps",
+      "validation-analysis",
+      "serialization-publication"
+    ],
+    "callOnly": {
+      "timingScope": "first-candidate-stage-pre-action-boundary-through-return-only",
+      "unmeasuredSetup": true,
+      "warmupsPerCase": 1,
+      "warmupRequestOrder": "forward",
+      "retainedSweeps": 5,
+      "requestOrders": [
+        "forward",
+        "reverse",
+        "forward",
+        "reverse",
+        "forward"
+      ],
+      "policyRotation": "(requestIndex+sweepIndex)%24",
+      "retainedRecordCount": 30240,
+      "warmupCallCount": 6048,
+      "resultValidationOutsideTimedInterval": true
+    },
+    "instrumented": {
+      "warmups": 0,
+      "retainedSweeps": 3,
+      "requestOrders": [
+        "forward",
+        "reverse",
+        "forward"
+      ],
+      "policyRotation": "(requestIndex+sweepIndex)%24",
+      "observer": "false-returning-pre-action-sample-new-prior-action-events-plus-final-terminal-sentinel",
+      "eventTimeOrigin": "candidate-stage-entry-sample-relative-nanoseconds",
+      "events": [
+        "first-valid-exact-score",
+        "first-exact-authorization-strictly-improving-entry-incumbent",
+        "final-best-incumbent-first-installed"
+      ],
+      "retainedRecordCount": 18144,
+      "mixedWithCallOnlyTiming": false
+    },
+    "deadline": {
+      "milliseconds": [
+        1,
+        5,
+        10,
+        25,
+        50,
+        100
+      ],
+      "absoluteDeadline": "entrySample+BigInt(deadlineMs)*1000000n",
+      "stopRule": "before-action-sample-greater-than-or-equal-to-deadline-do-not-execute-action",
+      "warmupsPerCaseDeadline": 1,
+      "warmupRequestOrder": "forward",
+      "retainedSweepsPerCaseDeadline": 3,
+      "requestOrders": [
+        "forward",
+        "reverse",
+        "forward"
+      ],
+      "policyRotation": "(requestIndex+deadlineIndex+sweepIndex)%24",
+      "retainedRecordCount": 108864,
+      "warmupCallCount": 36288,
+      "flags": {
+        "entryPlan": "exact-entry-incumbent-has-plan",
+        "anyValidScore": "at-least-one-complete-candidate-scoring-replay-returned-valid-exact-receipt-before-stop",
+        "anyImprovement": "fresh-authorization-installed-objective-strictly-better-than-entry-before-stop",
+        "anchorQuality": "deadline-incumbent-complete-objective-at-least-unbounded-coarse-semantic-anchor-absence-worst",
+        "completeStage": "all-retained-sets-terminal-typed-diagnostic-and-no-candidate-action-remains-integrity-failure-never-success"
+      },
+      "timingHasDeterminismHash": false
+    },
+    "casesRemainSeparate": true,
+    "crossCaseElapsedPooling": false,
+    "amplifiedOperationalTiming": false
+  },
+  "metricArithmetic": {
+    "elapsedAndEventType": "nonnegative-bigint-nanoseconds",
+    "negativeNonmonotonicOrStructuralOverflow": "integrity-failure",
+    "perRequestCallMedian": "middle-of-five-sorted-values",
+    "pairedCallDelta": "candidate-per-request-median-minus-anchor-per-request-median",
+    "evenCaseMedian": "exact-average-of-two-middle-values",
+    "caseElapsedRatio": "sum-candidate-per-request-medians-over-sum-anchor-per-request-medians",
+    "anchorCaseSum": "strictly-positive-or-integrity-failure",
+    "pairing": "matching-case-request-sweep-identity-never-execution-adjacency",
+    "instrumentedPerRequestMedian": "middle-of-three-with-null-after-all-finite-values",
+    "instrumentedAvailability": "count-finite-per-case-event",
+    "instrumentedPairedFiniteMedian": "same-exact-even-median-on-requests-finite-for-both",
+    "emptyPairedFinitePopulation": "neither-improvement-nor-regression",
+    "deadlineSuccessPopulation": "all-three-retained-sweeps-per-matching-case-deadline-flag",
+    "rationalComparison": "exact-bigint-cross-multiplication"
+  },
+  "selection": {
+    "candidatePopulation": "23-non-anchor-complete-policy-ids",
+    "fallbackDecisionId": "strict-reference-fallback",
+    "qualifyingClauses": [
+      "all-incumbents-and-scores-fresh-exact-replay-forced-failures-preserve-entry-no-integrity-failure",
+      "all-1584-final-objectives-never-worse-no-anchor-plan-lost-every-set-terminal-typed-diagnostic",
+      "service-1188-non-convergence-and-residual-options-exhausted-each-nonincreasing-and-one-family-strictly-decreasing-amplified-no-untyped-or-exact-safety-failure",
+      "each-service-timing-case-paired-delta-median-nonpositive-and-summed-median-ratio-at-most-one",
+      "historical-and-compressed-summed-median-ratio-at-most-nine-tenths-dual-satisfies-no-regression",
+      "every-service-case-deadline-entry-plan-and-anchor-quality-count-nondecreasing-hotspot-instrumented-first-improvement-and-final-best-availability-nondecreasing-and-nonempty-paired-finite-medians-nonpositive-with-one-strict-hotspot-deadline-or-event-benefit"
+    ],
+    "qualification": {
+      "candidateOrder": "policyIds-excluding-anchor-preserve-matrix-order",
+      "allClausesRequired": true,
+      "clauseResultOrder": [
+        "fresh-exact-safety",
+        "full-semantic-nonregression",
+        "service-failure-reduction",
+        "service-timing-nonregression",
+        "hotspot-speedup",
+        "deadline-and-event-quality"
+      ],
+      "clauses": [
+        {
+          "clauseId": "fresh-exact-safety",
+          "population": "all-semantic-and-operational-records",
+          "operator": "all",
+          "requirements": [
+            {
+              "metric": "invalid-fresh-exact-replay-count",
+              "comparison": "equal",
+              "target": 0
+            },
+            {
+              "metric": "forced-failure-incumbent-mismatch-count",
+              "comparison": "equal",
+              "target": 0
+            },
+            {
+              "metric": "integrity-failure-count",
+              "comparison": "equal",
+              "target": 0
+            }
+          ]
+        },
+        {
+          "clauseId": "full-semantic-nonregression",
+          "population": "full-1584-semantic-cells",
+          "operator": "all",
+          "requirements": [
+            {
+              "metric": "final-complete-objective",
+              "comparison": "greater-than-or-equal-complete-objective",
+              "reference": "same-cell-anchor"
+            },
+            {
+              "metric": "anchor-plan-lost-count",
+              "comparison": "equal",
+              "target": 0
+            },
+            {
+              "metric": "candidate-sets-without-terminal-typed-diagnostic",
+              "comparison": "equal",
+              "target": 0
+            }
+          ]
+        },
+        {
+          "clauseId": "service-failure-reduction",
+          "population": "serviceDecision-1188-semantic-cells",
+          "operator": "all-plus-strict-any",
+          "nonincreaseMetrics": [
+            "non-convergence-count",
+            "residual-options-exhausted-count"
+          ],
+          "comparison": "candidate-less-than-or-equal-anchor",
+          "strictAny": {
+            "metrics": [
+              "non-convergence-count",
+              "residual-options-exhausted-count"
+            ],
+            "comparison": "candidate-strictly-less-than-anchor"
+          },
+          "amplifiedRequirements": [
+            {
+              "metric": "untyped-failure-count",
+              "comparison": "equal",
+              "target": 0
+            },
+            {
+              "metric": "exact-safety-failure-count",
+              "comparison": "equal",
+              "target": 0
+            }
+          ]
+        },
+        {
+          "clauseId": "service-timing-nonregression",
+          "population": "operational-252-cells",
+          "caseOrder": [
+            "historical-anchor",
+            "synthetic-dual-spanning-tree",
+            "synthetic-reserve-compressed-1e12"
+          ],
+          "operator": "all-cases-all-requirements",
+          "requirements": [
+            {
+              "metric": "paired-call-delta-case-median",
+              "comparison": "less-than-or-equal-rational",
+              "target": {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            },
+            {
+              "metric": "summed-request-median-elapsed-ratio",
+              "comparison": "less-than-or-equal-rational",
+              "target": {
+                "numerator": "1",
+                "denominator": "1"
+              }
+            }
+          ]
+        },
+        {
+          "clauseId": "hotspot-speedup",
+          "population": "operational-hotspot-cases",
+          "caseOrder": [
+            "historical-anchor",
+            "synthetic-reserve-compressed-1e12"
+          ],
+          "operator": "all-cases",
+          "metric": "summed-request-median-elapsed-ratio",
+          "comparison": "less-than-or-equal-rational",
+          "target": {
+            "numerator": "9",
+            "denominator": "10"
+          },
+          "amplifiedCanQualifyOrRescue": false
+        },
+        {
+          "clauseId": "deadline-and-event-quality",
+          "population": "operational-252-cells",
+          "operator": "all-nonregression-plus-strict-any",
+          "deadlineCaseOrder": [
+            "historical-anchor",
+            "synthetic-dual-spanning-tree",
+            "synthetic-reserve-compressed-1e12"
+          ],
+          "deadlineOrderMilliseconds": [
+            1,
+            5,
+            10,
+            25,
+            50,
+            100
+          ],
+          "deadlineNonregressionRequirements": [
+            {
+              "metric": "entry-plan-success-count",
+              "comparison": "candidate-greater-than-or-equal-anchor"
+            },
+            {
+              "metric": "anchor-quality-success-count",
+              "comparison": "candidate-greater-than-or-equal-anchor"
+            }
+          ],
+          "hotspotCaseOrder": [
+            "historical-anchor",
+            "synthetic-reserve-compressed-1e12"
+          ],
+          "instrumentedEventOrder": [
+            "first-exact-authorization-strictly-improving-entry-incumbent",
+            "final-best-incumbent-first-installed"
+          ],
+          "instrumentedNonregressionRequirements": [
+            {
+              "metric": "finite-availability-count",
+              "comparison": "candidate-greater-than-or-equal-anchor"
+            },
+            {
+              "metric": "nonempty-paired-finite-median-delta",
+              "comparison": "less-than-or-equal-rational",
+              "target": {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              "emptyPopulation": "requirement-passes-without-strict-benefit"
+            }
+          ],
+          "strictAny": [
+            {
+              "metric": "anchor-quality-success-count",
+              "population": "any-hotspot-case-and-deadline",
+              "comparison": "candidate-strictly-greater-than-anchor"
+            },
+            {
+              "metric": "finite-availability-count",
+              "population": "any-hotspot-case-and-instrumented-event",
+              "comparison": "candidate-strictly-greater-than-anchor"
+            },
+            {
+              "metric": "nonempty-paired-finite-median-delta",
+              "population": "any-hotspot-case-and-instrumented-event",
+              "comparison": "strictly-less-than-rational",
+              "target": {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              "emptyPopulation": "not-a-strict-benefit"
+            }
+          ]
+        }
+      ]
+    },
+    "elapsedRatioThresholds": {
+      "historical-anchor": {
+        "numerator": "9",
+        "denominator": "10"
+      },
+      "synthetic-dual-spanning-tree": {
+        "numerator": "1",
+        "denominator": "1"
+      },
+      "synthetic-reserve-compressed-1e12": {
+        "numerator": "9",
+        "denominator": "10"
+      }
+    },
+    "rankOrder": [
+      "smallest-worst-exact-historical-compressed-elapsed-ratio",
+      "lexicographically-greatest-anchor-quality-vector-service-case-order-then-ascending-deadline",
+      "lower-mapped-share-action-ceiling",
+      "earlier-complete-policy-id-matrix-index"
+    ],
+    "ranking": {
+      "eligiblePopulation": "qualifying-policy-ids-only",
+      "compareKeysInOrderUntilNonTie": true,
+      "nullOrMissingKey": "integrity-failure-reject-observation",
+      "rationalComparison": "exact-bigint-cross-multiplication-positive-denominators",
+      "keys": [
+        {
+          "keyId": "worst-hotspot-elapsed-ratio",
+          "construction": "maximum",
+          "caseOrder": [
+            "historical-anchor",
+            "synthetic-reserve-compressed-1e12"
+          ],
+          "metric": "summed-request-median-elapsed-ratio",
+          "direction": "ascending-smallest-wins",
+          "tie": "continue"
+        },
+        {
+          "keyId": "anchor-quality-vector",
+          "construction": "vector",
+          "caseOrder": [
+            "historical-anchor",
+            "synthetic-dual-spanning-tree",
+            "synthetic-reserve-compressed-1e12"
+          ],
+          "deadlineOrderMilliseconds": [
+            1,
+            5,
+            10,
+            25,
+            50,
+            100
+          ],
+          "metric": "anchor-quality-success-count",
+          "direction": "lexicographically-descending-greatest-wins",
+          "tie": "continue"
+        },
+        {
+          "keyId": "mapped-share-action-ceiling",
+          "metric": "driver-maximum-share-actions",
+          "direction": "ascending-smallest-wins",
+          "tie": "continue"
+        },
+        {
+          "keyId": "policy-matrix-index",
+          "metric": "policyMatrixIndex",
+          "direction": "ascending-smallest-wins",
+          "tie": "impossible-for-distinct-policy-ids"
+        }
+      ]
+    },
+    "trustworthyCompleteNoQualifier": "strict-reference-fallback",
+    "incompleteOrUntrustworthy": "reject-observation-select-nothing",
+    "preadmissionCandidateFailure": "stop-before-corpus-and-require-new-reviewed-freeze",
+    "negativeResultCompletesExperiment": true,
+    "outputTuning": false
+  },
+  "artifacts": {
+    "inputSourcePath": "fixtures/m7c/service-fast-numerical/experiment-inputs.v1.ndjson",
+    "sourceClosure": {
+      "schemaVersion": "routelab.service-fast-numerical-source-closure.v1",
+      "path": "fixtures/m7c/service-fast-numerical/source-closure.v1.json",
+      "requiredBeforeCandidateCorpus": true,
+      "observationPerformed": false,
+      "serialization": "two-space-json-utf8-one-trailing-line-feed",
+      "recordFieldOrder": [
+        "schemaVersion",
+        "experimentId",
+        "implementationInputRevision",
+        "observationPerformed",
+        "config",
+        "artifactSchema",
+        "inputArtifact",
+        "sources",
+        "protectedSources"
+      ],
+      "sourceEntryFieldOrder": [
+        "roles",
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "descriptorFieldOrder": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "sourceArrayOrder": "implementation-roots-in-config-order-each-recursive-regular-file-path-raw-utf16-ascending-then-required-files-in-config-order-deduplicate-by-first-occurrence",
+      "protectedSourceArrayOrder": "protectedPaths-in-config-order",
+      "sourceRolesOrder": "requiredRoles-in-config-order-filtered-to-roles-owned-by-that-path",
+      "sourceRoleAssignments": {
+        "implementationRoots": {
+          "src/allocation/service-fast-path-shadow-price": [
+            "candidate"
+          ],
+          "src/allocation/bounded-exact-split-repair": [
+            "repair"
+          ],
+          "src/benchmark/service-fast-numerical-experiment": [
+            "evaluator",
+            "input-builder"
+          ]
+        },
+        "requiredFiles": {
+          "package.json": [
+            "command-manifest"
+          ],
+          "cli/build-service-fast-numerical-experiment-inputs.ts": [
+            "input-builder",
+            "input-cli"
+          ],
+          "cli/run-service-fast-numerical-experiment.ts": [
+            "accepted-run-cli"
+          ],
+          "cli/verify-service-fast-numerical-experiment-config.ts": [
+            "config-verifier"
+          ],
+          "cli/verify-service-fast-numerical-experiment.ts": [
+            "artifact-verifier"
+          ],
+          "tests/service-fast-path-shadow-price.test.ts": [
+            "production-test"
+          ],
+          "tests/bounded-exact-split-repair.test.ts": [
+            "production-test"
+          ],
+          "tests/service-fast-numerical-experiment-config.test.ts": [
+            "production-test"
+          ],
+          "tests/service-fast-numerical-experiment.test.ts": [
+            "production-test"
+          ],
+          "tests/oracle/service-fast-path-shadow-price-oracle.test.ts": [
+            "oracle"
+          ],
+          "tests/oracle/bounded-exact-split-repair-oracle.test.ts": [
+            "oracle"
+          ],
+          "tests/oracle/service-fast-numerical-experiment-oracle.test.ts": [
+            "oracle"
+          ],
+          "fixtures/m7c/service-fast-numerical/experiment-config.v1.json": [
+            "command-manifest"
+          ],
+          "fixtures/m7c/service-fast-numerical/experiment-artifact-schema.v1.json": [
+            "artifact-verifier"
+          ],
+          "fixtures/m7c/service-fast-numerical/experiment-inputs.v1.ndjson": [
+            "input-builder"
+          ]
+        }
+      },
+      "executionRevisionGate": {
+        "requiredBeforeCandidateCalls": true,
+        "observationHeadRelation": "HEAD-is-exactly-one-child-commit-of-implementationInputRevision",
+        "parentToHeadTrackedDiff": "exactly-one-added-or-modified-file-at-fixtures/m7c/service-fast-numerical/source-closure.v1.json-with-bytes-equal-current-closure",
+        "trackedIndexAndWorktreeDiff": "empty",
+        "untrackedFiles": "none",
+        "submodules": "none",
+        "runtimeImportClosure": "node-builtins-or-repository-relative-files-tracked-at-implementationInputRevision-only-source-closure-is-read-as-data-from-HEAD",
+        "bare-package-runtimeImports": "forbidden",
+        "ignored-or-untracked-runtimeImportTargets": "forbidden",
+        "mismatchDisposition": "integrity-failure-before-candidate-call"
+      },
+      "maxBytes": 1048576,
+      "maxSourceEntries": 128,
+      "maxProtectedSourceEntries": 13,
+      "unknown-duplicate-symlink-absolute-traversal-noncanonical-order-or-cap-excess": "reject",
+      "binds": [
+        "implementation-and-input-revision",
+        "experiment-config",
+        "experiment-artifact-schema",
+        "input-artifact",
+        "candidate-and-repair-sources",
+        "evaluator-and-input-builder-sources",
+        "run-and-verifier-clis",
+        "independent-oracle-sources",
+        "protected-reference-and-service-sources"
+      ],
+      "implementationRoots": [
+        "src/allocation/service-fast-path-shadow-price",
+        "src/allocation/bounded-exact-split-repair",
+        "src/benchmark/service-fast-numerical-experiment"
+      ],
+      "requiredFiles": [
+        "package.json",
+        "cli/build-service-fast-numerical-experiment-inputs.ts",
+        "cli/run-service-fast-numerical-experiment.ts",
+        "cli/verify-service-fast-numerical-experiment-config.ts",
+        "cli/verify-service-fast-numerical-experiment.ts",
+        "tests/service-fast-path-shadow-price.test.ts",
+        "tests/bounded-exact-split-repair.test.ts",
+        "tests/service-fast-numerical-experiment-config.test.ts",
+        "tests/service-fast-numerical-experiment.test.ts",
+        "tests/oracle/service-fast-path-shadow-price-oracle.test.ts",
+        "tests/oracle/bounded-exact-split-repair-oracle.test.ts",
+        "tests/oracle/service-fast-numerical-experiment-oracle.test.ts",
+        "fixtures/m7c/service-fast-numerical/experiment-config.v1.json",
+        "fixtures/m7c/service-fast-numerical/experiment-artifact-schema.v1.json",
+        "fixtures/m7c/service-fast-numerical/experiment-inputs.v1.ndjson"
+      ],
+      "requiredRoles": [
+        "candidate",
+        "repair",
+        "evaluator",
+        "input-builder",
+        "input-cli",
+        "accepted-run-cli",
+        "artifact-verifier",
+        "config-verifier",
+        "oracle",
+        "production-test",
+        "command-manifest"
+      ],
+      "protectedPaths": [
+        "src/allocation/path-shadow-price/index.ts",
+        "src/allocation/service-path-shadow-price/index.ts",
+        "src/router/exact-input-split-session/index.ts",
+        "src/router/service-exact-input-split/index.ts",
+        "src/runtime/prepared-service-routing-context/index.ts",
+        "src/search/service-route-discovery/index.ts",
+        "src/runtime/prepared-routing-context/index.ts",
+        "src/runtime/prepared-service-routing-context/bounded-snapshot-json.ts",
+        "src/router/split-exact-input/objective.ts",
+        "src/replay/exact-input-split/index.ts",
+        "src/replay/exact-input-route/index.ts",
+        "src/replay/exact-input-kernel/index.ts",
+        "src/pools/constant-product/index.ts"
+      ],
+      "enumeration": "all-regular-files-under-implementation-roots-plus-required-files-exactly-once-no-symlinks"
+    },
+    "retainedDirectory": "datasets/experiments/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/service-fast-numerical-v1",
+    "files": [
+      {
+        "name": "inputs.ndjson",
+        "schemaVersion": "routelab.service-fast-numerical-experiment-input.v1",
+        "recordCount": 1584,
+        "maxBytes": 67108864
+      },
+      {
+        "name": "semantic-results.ndjson",
+        "schemaVersion": "routelab.service-fast-numerical-semantic-result.v1",
+        "recordCount": 38016,
+        "maxBytes": 268435456,
+        "recordFieldOrder": [
+          "schemaVersion",
+          "semanticIndex",
+          "sourceIndex",
+          "policyMatrixIndex",
+          "entryIncumbentHash",
+          "candidateSetDiagnostics",
+          "finalIncumbent",
+          "anchorComparison",
+          "exactRegret",
+          "counters",
+          "semanticHash"
+        ]
+      },
+      {
+        "name": "call-timing-observations.ndjson",
+        "schemaVersion": "routelab.service-fast-numerical-call-timing-observation.v1",
+        "recordCount": 30240,
+        "maxBytes": 134217728,
+        "recordFieldOrder": [
+          "schemaVersion",
+          "observationIndex",
+          "caseId",
+          "requestId",
+          "timingCohortIndex",
+          "sweepIndex",
+          "policyId",
+          "policyMatrixIndex",
+          "elapsedNanoseconds",
+          "validatedOutcomeHash"
+        ]
+      },
+      {
+        "name": "incumbent-timeline-observations.ndjson",
+        "schemaVersion": "routelab.service-fast-numerical-incumbent-timeline-observation.v1",
+        "recordCount": 18144,
+        "maxBytes": 134217728,
+        "recordFieldOrder": [
+          "schemaVersion",
+          "observationIndex",
+          "caseId",
+          "requestId",
+          "timingCohortIndex",
+          "sweepIndex",
+          "policyId",
+          "policyMatrixIndex",
+          "firstValidScoreNanoseconds",
+          "firstStrictImprovementNanoseconds",
+          "finalBestInstallNanoseconds",
+          "validatedOutcomeHash"
+        ]
+      },
+      {
+        "name": "deadline-observations.ndjson",
+        "schemaVersion": "routelab.service-fast-numerical-deadline-observation.v1",
+        "recordCount": 108864,
+        "maxBytes": 268435456,
+        "recordFieldOrder": [
+          "schemaVersion",
+          "observationIndex",
+          "caseId",
+          "requestId",
+          "timingCohortIndex",
+          "deadlineIndex",
+          "deadlineMilliseconds",
+          "sweepIndex",
+          "policyId",
+          "policyMatrixIndex",
+          "elapsedNanoseconds",
+          "termination",
+          "entryPlan",
+          "anyValidScore",
+          "anyImprovement",
+          "anchorQuality",
+          "completeStage",
+          "incumbent",
+          "diagnosticStateHash",
+          "counters",
+          "validatedOutcomeHash"
+        ]
+      },
+      {
+        "name": "analysis.json",
+        "schemaVersion": "routelab.service-fast-numerical-analysis.v1",
+        "recordCount": null,
+        "maxBytes": 8388608,
+        "recordFieldOrder": [
+          "schemaVersion",
+          "experimentId",
+          "inputBinding",
+          "sourceClosure",
+          "environment",
+          "populations",
+          "integrity",
+          "policyResults",
+          "qualifiers",
+          "decision",
+          "limitations"
+        ]
+      },
+      {
+        "name": "manifest.json",
+        "schemaVersion": "routelab.service-fast-numerical-manifest.v1",
+        "recordCount": null,
+        "maxBytes": 1048576,
+        "recordFieldOrder": [
+          "schemaVersion",
+          "experimentId",
+          "taskId",
+          "config",
+          "artifactSchema",
+          "sourceClosure",
+          "inputArtifact",
+          "implementationRevision",
+          "environment",
+          "executionSchedule",
+          "artifacts",
+          "decision",
+          "limitations"
+        ]
+      },
+      {
+        "name": "README.md",
+        "schemaVersion": null,
+        "recordCount": null,
+        "maxBytes": 1048576
+      }
+    ],
+    "maximumDirectoryBytes": 805306368,
+    "sizeAdmission": {
+      "requiredBeforeSourceClosure": true,
+      "method": "config-verifier-first-proves-the-output-independent-uniform-semantic-envelope-then-source-closure-admission-dry-serializes-schema-maximal-records-using-tighter-widths-proved-from-the-committed-input-artifact-without-accepted-candidate-calls",
+      "uniformSemanticEnvelope": {
+        "requiredAtConfigVerification": true,
+        "candidateSetCount": 4,
+        "maximumRoutesPerCandidateSet": 4,
+        "maximumRequestAndAllocationDecimalDigits": 83,
+        "maximumReserveOutputAndDeltaDecimalDigits": 86,
+        "maximumBpsNumeratorAndIntegerDecimalDigits": 90,
+        "maximumBinary64IntegerWeightDecimalDigits": 324,
+        "maximumCounterValue": 100000,
+        "syntheticStructuralIntegerValue": 9007199254740991,
+        "maximumSemanticRecordBytesIncludingLineFeed": 6961,
+        "semanticRecordCount": 38016,
+        "semanticFileCapBytes": 268435456,
+        "proof": "verifier-constructs-a-field-order-exact-conservative-four-set-envelope-with-one-maximal-repair-target-four-authorizations-and-the-longest-independent-field-representations-even-when-mutually-exclusive-using-Number.MAX_SAFE_INTEGER-for-every-structural-number-and-counter-even-though-cross-field-caps-are-lower-so-every-valid-record-is-no-larger"
+      },
+      "perFileProof": "record-count-times-maximal-record-bytes-plus-required-line-feeds-is-less-than-or-equal-to-file-cap",
+      "directoryProof": "sum-of-proved-file-maxima-is-less-than-or-equal-to-maximumDirectoryBytes",
+      "runtimeEnforcement": "incremental-byte-accounting-rejects-before-write-exceeding-any-file-or-directory-cap",
+      "failureDisposition": "preadmission-candidate-failure-new-reviewed-freeze-before-corpus"
+    },
+    "ndjsonSerialization": "canonical-minified-utf8-one-record-per-line-one-trailing-line-feed",
+    "jsonSerialization": "canonical-minified-utf8-one-trailing-line-feed",
+    "retainedInputs": "exact-byte-copy-of-pre-observation-input-artifact-never-rederived",
+    "publication": "fresh-sibling-staging-exclusive-files-whole-eight-file-directory-atomic-no-overwrite-rename",
+    "semanticOperationalAnalysisManifestHashesSeparate": true,
+    "unexpectedAbsoluteTraversalUnknownUnsafeIntegerNoncanonicalDecimalPartialOrOverwrite": "reject"
+  },
+  "commands": {
+    "configVerifier": "node cli/verify-service-fast-numerical-experiment-config.ts",
+    "inputOnly": "pnpm experiment:service-fast:inputs",
+    "acceptedRun": "pnpm experiment:service-fast",
+    "artifactVerifier": "pnpm verify:service-fast-experiment"
+  },
+  "failedRun": {
+    "preflightBeforeCandidateCall": "may-correct-implementation-without-changing-protocol",
+    "incompleteAfterCandidateCall": "retain-privately-with-exact-cause",
+    "rerunAuthorization": "same-config-plus-independent-finding-that-only-implementation-or-integrity-defect-was-corrected",
+    "observedPerformanceMayAuthorizeRerunOrParameterChange": false,
+    "parametersAndThresholdsChangeInPlace": false
+  },
+  "claims": {
+    "experimentScope": "numerical-candidate-stage-only",
+    "selectedPolicyBecomesSupportedInThisTask": false,
+    "servicePolicyV1Changes": false,
+    "referenceV1Changes": false,
+    "packageExport": false,
+    "fullServiceLatency": false,
+    "httpWorkerLoadOrConcurrency": false,
+    "latencyGuaranteeOrSla": false,
+    "representativeDemand": false,
+    "transactionCustodyOrProductionExecution": false,
+    "unrestrictedOptimalityOrResearchEquivalence": false,
+    "selectedPolicyIntegrationTask": "RLT-088"
+  }
+}

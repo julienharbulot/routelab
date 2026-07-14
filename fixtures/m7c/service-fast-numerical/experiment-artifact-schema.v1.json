@@ -1,0 +1,2332 @@
+{
+  "schemaVersion": "routelab.service-fast-numerical-artifact-schema.v1",
+  "experimentId": "m7c-core12-service-fast-numerical-v1",
+  "serializationContract": {
+    "strictObjects": "every-object-has-exactly-its-schema-fields-in-listed-order-no-optional-or-unknown-fields",
+    "fieldTypeGrammar": {
+      "primitive": "primitive:<primitiveCodecId>",
+      "literal": "literal:<exact-json-string-value>",
+      "enum": "enum:<enumId>",
+      "configEnum": "config-enum:<dot-path-to-frozen-array>",
+      "object": "object:<objectSchemaId>",
+      "array": "array(<field-type>)",
+      "nullable": "nullable(<field-type>)"
+    },
+    "objectConstruction": "construct-fields-left-to-right-in-schema-order-then-JSON.stringify",
+    "ndjson": "minified-utf8-one-record-per-line-one-final-line-feed-no-bom",
+    "json": "minified-utf8-one-final-line-feed-no-bom",
+    "fixtureJson": "two-space-utf8-one-final-line-feed-no-bom",
+    "arrayOrder": "schema-specific-order-is-semantic-never-resort-unless-the-schema-names-a-sort",
+    "exactValuesNeverJsonNumbers": true,
+    "timingValuesNeverJsonNumbers": true
+  },
+  "primitiveCodecs": {
+    "boolean": "json-boolean",
+    "safeNonnegativeInteger": "json-number-Number.isSafeInteger-and-greater-than-or-equal-zero",
+    "safePositiveInteger": "json-number-Number.isSafeInteger-and-greater-than-zero",
+    "counterVector": "json-array-of-exactly-12-safe-nonnegative-integers-in-config.semanticEvidence.counterOrder-each-less-than-or-equal-config.actionCaps.aggregateServiceTransitionCap-100000",
+    "canonicalUnsignedDecimal": "json-string-regex-^(0|[1-9][0-9]*)$",
+    "canonicalPositiveDecimal": "json-string-regex-^[1-9][0-9]*$",
+    "canonicalSignedDecimal": "json-string-regex-^(0|-?[1-9][0-9]*)$-no-plus-no-negative-zero",
+    "nanoseconds": "canonicalUnsignedDecimal",
+    "binary64Bits": "json-string-regex-^[0-9a-f]{16}$-big-endian-bits",
+    "sha256": "json-string-regex-^sha256:[0-9a-f]{64}$",
+    "gitRevision": "json-string-regex-^[0-9a-f]{40}$",
+    "relativePosixPath": "nonempty-json-string-normalized-posix-relative-no-dot-dot-no-dot-segment-no-backslash-no-nul",
+    "identifier": "nonempty-json-string",
+    "canonicalRouteKey": "JSON.stringify-route-hops-in-execution-order-each-projected-exactly-to-[assetIn,poolId,assetOut]-with-minified-json-and-no-line-feed",
+    "canonicalCandidateSetKey": "JSON.stringify-array-of-route-tuple-arrays-in-the-existing-candidate-set-route-order-each-hop-[assetIn,poolId,assetOut]-candidate-routes-ordered-by-decoded-shared-hop-fieldwise-raw-utf16-assetIn-poolId-assetOut-then-shorter-hop-length-never-by-serialized-key-with-minified-json-and-no-line-feed"
+  },
+  "enums": {
+    "eligibilityStatus": [
+      "eligible",
+      "ineligible"
+    ],
+    "eligibilityReason": [
+      "baseline-no-authorized-incumbent",
+      "no-model-valid-candidate-set"
+    ],
+    "workTermination": [
+      "complete",
+      "work-limit"
+    ],
+    "exactResultStatus": [
+      "success",
+      "no-route",
+      "no-plan"
+    ],
+    "incumbentOrigin": [
+      "entry-baseline",
+      "candidate-set"
+    ],
+    "modelResolutionStatus": [
+      "resolved",
+      "failed"
+    ],
+    "proposalStatus": [
+      "ready",
+      "failed"
+    ],
+    "scoreStatus": [
+      "not-run",
+      "valid",
+      "rejected"
+    ],
+    "repairStatus": [
+      "complete",
+      "incomplete"
+    ],
+    "selectedScoreSource": [
+      "none",
+      "current",
+      "repair"
+    ],
+    "authorizationStatus": [
+      "not-attempted",
+      "accepted",
+      "rejected",
+      "mismatch"
+    ],
+    "candidateSetTerminalStatus": [
+      "model-resolution-failed",
+      "proposal-failed",
+      "score-rejected",
+      "not-better",
+      "authorization-rejected",
+      "improved",
+      "work-limited"
+    ],
+    "candidateFailureCode": [
+      "invalid-route-model",
+      "non-finite-normalization",
+      "non-finite-proposal",
+      "non-convergence",
+      "zero-total-weight",
+      "invalid-reconstruction",
+      "residual-options-exhausted",
+      "finite-nonconverged-replayed",
+      "repair-no-valid-neighbor",
+      "repair-work-limit",
+      "authorization-rejected",
+      "authorization-mismatch"
+    ],
+    "reconstructionDisposition": [
+      "current",
+      "current-only-nontarget",
+      "repair-complete",
+      "repair-incomplete"
+    ],
+    "objectiveRelation": [
+      "policy-plan-gained",
+      "both-no-plan",
+      "anchor-plan-lost",
+      "policy-objective-strictly-better",
+      "objective-equal",
+      "policy-objective-strictly-worse"
+    ],
+    "objectiveComparison": [
+      "policy-better",
+      "equal",
+      "policy-worse"
+    ],
+    "deadlineTermination": [
+      "complete",
+      "deadline",
+      "work-limit"
+    ],
+    "deadlineSetStage": [
+      "model-resolution",
+      "proposal",
+      "reconstruction",
+      "current-score",
+      "repair",
+      "authorization",
+      "terminal"
+    ],
+    "instrumentedEvent": [
+      "first-valid-exact-score",
+      "first-exact-authorization-strictly-improving-entry-incumbent",
+      "final-best-incumbent-first-installed"
+    ],
+    "hotspotCaseId": [
+      "historical-anchor",
+      "synthetic-reserve-compressed-1e12"
+    ],
+    "integrityStatus": [
+      "passed",
+      "failed"
+    ],
+    "integrityFailureCode": [
+      "runtime-mismatch",
+      "config-hash-mismatch",
+      "input-hash-mismatch",
+      "source-closure-mismatch",
+      "protected-source-mismatch",
+      "baseline-mismatch",
+      "cohort-mismatch",
+      "semantic-anchor-parity-mismatch",
+      "exact-replay-mismatch",
+      "counter-invariant-failure",
+      "clock-invariant-failure",
+      "artifact-shape-failure",
+      "artifact-cap-failure",
+      "unexpected-exception"
+    ],
+    "clauseId": [
+      "fresh-exact-safety",
+      "full-semantic-nonregression",
+      "service-failure-reduction",
+      "service-timing-nonregression",
+      "hotspot-speedup",
+      "deadline-and-event-quality"
+    ],
+    "decisionStatus": [
+      "selected-policy",
+      "strict-reference-fallback",
+      "rejected-observation"
+    ],
+    "nodeOptionsState": [
+      "unset",
+      "empty"
+    ],
+    "sourceRole": [
+      "candidate",
+      "repair",
+      "evaluator",
+      "input-builder",
+      "input-cli",
+      "accepted-run-cli",
+      "artifact-verifier",
+      "config-verifier",
+      "oracle",
+      "production-test",
+      "command-manifest"
+    ],
+    "artifactContentRole": [
+      "input",
+      "semantic",
+      "call-timing",
+      "incumbent-timeline",
+      "deadline",
+      "analysis",
+      "readme"
+    ],
+    "limitationId": [
+      "numerical-candidate-stage-only",
+      "policy-not-yet-supported",
+      "no-service-latency-claim",
+      "no-load-or-concurrency-claim",
+      "no-representative-demand-claim",
+      "no-production-financial-execution-claim",
+      "no-unrestricted-optimality-claim"
+    ]
+  },
+  "objectSchemas": [
+    {
+      "schemaId": "Descriptor",
+      "fields": [
+        [
+          "path",
+          "primitive:relativePosixPath"
+        ],
+        [
+          "bytes",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "sha256",
+          "primitive:sha256"
+        ]
+      ]
+    },
+    {
+      "schemaId": "SourceEntry",
+      "fields": [
+        [
+          "roles",
+          "array(enum:sourceRole)"
+        ],
+        [
+          "path",
+          "primitive:relativePosixPath"
+        ],
+        [
+          "bytes",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "sha256",
+          "primitive:sha256"
+        ]
+      ],
+      "arrayRules": {
+        "roles": "sourceRole-enum-order-filtered-to-roles-owned-by-this-path-no-duplicates-nonempty"
+      }
+    },
+    {
+      "schemaId": "SourceClosure",
+      "fields": [
+        [
+          "schemaVersion",
+          "literal:routelab.service-fast-numerical-source-closure.v1"
+        ],
+        [
+          "experimentId",
+          "literal:m7c-core12-service-fast-numerical-v1"
+        ],
+        [
+          "implementationInputRevision",
+          "primitive:gitRevision"
+        ],
+        [
+          "observationPerformed",
+          "primitive:boolean"
+        ],
+        [
+          "config",
+          "object:Descriptor"
+        ],
+        [
+          "artifactSchema",
+          "object:Descriptor"
+        ],
+        [
+          "inputArtifact",
+          "object:Descriptor"
+        ],
+        [
+          "sources",
+          "array(object:SourceEntry)"
+        ],
+        [
+          "protectedSources",
+          "array(object:Descriptor)"
+        ]
+      ],
+      "crossFieldRules": [
+        "observationPerformed-is-false",
+        "config-artifactSchema-inputArtifact-match-frozen-descriptors",
+        "sources-follow-config-sourceArrayOrder-and-caps",
+        "protectedSources-follow-config-protectedPaths-order-and-caps",
+        "accepted-run-before-candidate-calls-proves-HEAD-is-exactly-one-child-of-implementationInputRevision-and-the-only-parent-to-HEAD-diff-is-this-added-or-modified-closure-file-plus-empty-index-worktree-untracked-status-no-submodules-and-only-node-builtin-or-implementation-revision-tracked-relative-runtime-imports"
+      ]
+    },
+    {
+      "schemaId": "SnapshotReference",
+      "fields": [
+        [
+          "snapshotId",
+          "primitive:identifier"
+        ],
+        [
+          "snapshotChecksum",
+          "primitive:sha256"
+        ]
+      ]
+    },
+    {
+      "schemaId": "ExperimentRequest",
+      "fields": [
+        [
+          "assetIn",
+          "primitive:identifier"
+        ],
+        [
+          "assetOut",
+          "primitive:identifier"
+        ],
+        [
+          "amountBucket",
+          "primitive:identifier"
+        ],
+        [
+          "amountIn",
+          "primitive:canonicalPositiveDecimal"
+        ],
+        [
+          "topology",
+          "primitive:identifier"
+        ],
+        [
+          "maxHops",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "maxRoutes",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "greedyParts",
+          "primitive:safePositiveInteger"
+        ]
+      ]
+    },
+    {
+      "schemaId": "EligibilitySearch",
+      "fields": [
+        [
+          "pathExpansions",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "enumeratedPaths",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "pathTermination",
+          "enum:workTermination"
+        ],
+        [
+          "candidateSetExpansions",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "enumeratedCandidateSets",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "candidateSetTermination",
+          "enum:workTermination"
+        ]
+      ]
+    },
+    {
+      "schemaId": "PriorEligibility",
+      "fields": [
+        [
+          "status",
+          "enum:eligibilityStatus"
+        ],
+        [
+          "reason",
+          "nullable(enum:eligibilityReason)"
+        ],
+        [
+          "search",
+          "object:EligibilitySearch"
+        ],
+        [
+          "modelValidCandidateSetCount",
+          "primitive:safeNonnegativeInteger"
+        ]
+      ],
+      "crossFieldRules": [
+        "eligible-requires-null-reason",
+        "ineligible-requires-nonnull-reason"
+      ]
+    },
+    {
+      "schemaId": "DirectionalHop",
+      "fields": [
+        [
+          "poolId",
+          "primitive:identifier"
+        ],
+        [
+          "assetIn",
+          "primitive:identifier"
+        ],
+        [
+          "assetOut",
+          "primitive:identifier"
+        ]
+      ]
+    },
+    {
+      "schemaId": "ResolvedHop",
+      "fields": [
+        [
+          "poolId",
+          "primitive:identifier"
+        ],
+        [
+          "assetIn",
+          "primitive:identifier"
+        ],
+        [
+          "assetOut",
+          "primitive:identifier"
+        ],
+        [
+          "reserveIn",
+          "primitive:canonicalPositiveDecimal"
+        ],
+        [
+          "reserveOut",
+          "primitive:canonicalPositiveDecimal"
+        ],
+        [
+          "feeChargedNumerator",
+          "primitive:canonicalUnsignedDecimal"
+        ],
+        [
+          "feeDenominator",
+          "primitive:canonicalPositiveDecimal"
+        ]
+      ]
+    },
+    {
+      "schemaId": "CandidateRouteInput",
+      "fields": [
+        [
+          "routeKey",
+          "primitive:canonicalRouteKey"
+        ],
+        [
+          "hops",
+          "array(object:DirectionalHop)"
+        ],
+        [
+          "resolvedHops",
+          "nullable(array(object:ResolvedHop))"
+        ]
+      ],
+      "arrayRules": {
+        "hops": "execution-order",
+        "resolvedHops": "same-length-and-order-as-hops-when-nonnull"
+      },
+      "crossFieldRules": [
+        "hops-is-nonempty-and-has-at-most-the-input-request.maxHops-two-members",
+        "resolvedHops-when-nonnull-has-the-same-nonempty-at-most-two-length"
+      ]
+    },
+    {
+      "schemaId": "CandidateSetInput",
+      "fields": [
+        [
+          "setIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "candidateSetKey",
+          "primitive:canonicalCandidateSetKey"
+        ],
+        [
+          "routes",
+          "array(object:CandidateRouteInput)"
+        ],
+        [
+          "resolutionStatus",
+          "enum:modelResolutionStatus"
+        ],
+        [
+          "failureCode",
+          "nullable(enum:candidateFailureCode)"
+        ]
+      ],
+      "arrayRules": {
+        "routes": "canonical-decoded-route-order-shared-hops-fieldwise-raw-utf16-assetIn-poolId-assetOut-then-shorter-hop-length"
+      },
+      "crossFieldRules": [
+        "routes-is-nonempty-has-at-most-the-input-request.maxRoutes-two-members-and-in-all-cases-has-at-most-the-four-route-uniform-semantic-envelope",
+        "resolved-requires-all-resolvedHops-nonnull-and-null-failureCode",
+        "failed-requires-at-least-one-null-resolvedHops-and-nonnull-failureCode"
+      ]
+    },
+    {
+      "schemaId": "DiscoveryCounters",
+      "fields": [
+        [
+          "pathExpansions",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "enumeratedPaths",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "candidateSetExpansions",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "enumeratedCandidateSets",
+          "primitive:safeNonnegativeInteger"
+        ]
+      ]
+    },
+    {
+      "schemaId": "CandidateDiscovery",
+      "fields": [
+        [
+          "termination",
+          "enum:workTermination"
+        ],
+        [
+          "counters",
+          "object:DiscoveryCounters"
+        ],
+        [
+          "candidateSets",
+          "array(object:CandidateSetInput)"
+        ]
+      ],
+      "arrayRules": {
+        "candidateSets": "first-four-accepted-canonical-candidate-sets-in-setIndex-order"
+      }
+    },
+    {
+      "schemaId": "TransitionHopReceipt",
+      "fields": [
+        [
+          "poolId",
+          "primitive:identifier"
+        ],
+        [
+          "assetIn",
+          "primitive:identifier"
+        ],
+        [
+          "assetOut",
+          "primitive:identifier"
+        ],
+        [
+          "amountIn",
+          "primitive:canonicalUnsignedDecimal"
+        ],
+        [
+          "amountOut",
+          "primitive:canonicalUnsignedDecimal"
+        ],
+        [
+          "reserveInBefore",
+          "primitive:canonicalPositiveDecimal"
+        ],
+        [
+          "reserveOutBefore",
+          "primitive:canonicalPositiveDecimal"
+        ],
+        [
+          "reserveInAfter",
+          "primitive:canonicalPositiveDecimal"
+        ],
+        [
+          "reserveOutAfter",
+          "primitive:canonicalPositiveDecimal"
+        ]
+      ]
+    },
+    {
+      "schemaId": "RouteReceipt",
+      "fields": [
+        [
+          "snapshotId",
+          "primitive:identifier"
+        ],
+        [
+          "snapshotChecksum",
+          "primitive:sha256"
+        ],
+        [
+          "assetIn",
+          "primitive:identifier"
+        ],
+        [
+          "assetOut",
+          "primitive:identifier"
+        ],
+        [
+          "amountIn",
+          "primitive:canonicalUnsignedDecimal"
+        ],
+        [
+          "amountOut",
+          "primitive:canonicalUnsignedDecimal"
+        ],
+        [
+          "hops",
+          "array(object:TransitionHopReceipt)"
+        ]
+      ],
+      "arrayRules": {
+        "hops": "execution-order"
+      }
+    },
+    {
+      "schemaId": "SplitLegReceipt",
+      "fields": [
+        [
+          "allocation",
+          "primitive:canonicalPositiveDecimal"
+        ],
+        [
+          "receipt",
+          "object:RouteReceipt"
+        ]
+      ]
+    },
+    {
+      "schemaId": "SplitReceipt",
+      "fields": [
+        [
+          "snapshotId",
+          "primitive:identifier"
+        ],
+        [
+          "snapshotChecksum",
+          "primitive:sha256"
+        ],
+        [
+          "assetIn",
+          "primitive:identifier"
+        ],
+        [
+          "assetOut",
+          "primitive:identifier"
+        ],
+        [
+          "amountIn",
+          "primitive:canonicalPositiveDecimal"
+        ],
+        [
+          "amountOut",
+          "primitive:canonicalUnsignedDecimal"
+        ],
+        [
+          "legs",
+          "array(object:SplitLegReceipt)"
+        ]
+      ],
+      "arrayRules": {
+        "legs": "canonical-decoded-route-order-shared-hops-fieldwise-raw-utf16-assetIn-poolId-assetOut-then-shorter-hop-length-never-serialized-key-order"
+      },
+      "crossFieldRules": [
+        "allocations-are-positive-and-sum-exactly-to-amountIn",
+        "amountOut-equals-sum-of-leg-receipt-amountOut"
+      ]
+    },
+    {
+      "schemaId": "ExactObjective",
+      "fields": [
+        [
+          "hasPlan",
+          "primitive:boolean"
+        ],
+        [
+          "amountOut",
+          "nullable(primitive:canonicalUnsignedDecimal)"
+        ],
+        [
+          "legCount",
+          "nullable(primitive:safePositiveInteger)"
+        ],
+        [
+          "totalHops",
+          "nullable(primitive:safePositiveInteger)"
+        ],
+        [
+          "routeKeys",
+          "array(primitive:canonicalRouteKey)"
+        ],
+        [
+          "allocations",
+          "array(primitive:canonicalPositiveDecimal)"
+        ]
+      ],
+      "crossFieldRules": [
+        "no-plan-requires-null-scalars-and-empty-arrays",
+        "plan-requires-nonnull-scalars-and-arrays-derived-exactly-from-receipt",
+        "comparison-order-is-amountOut-descending-then-legCount-ascending-then-totalHops-ascending-then-decoded-leg-route-sequence-then-allocations-bigint-lexicographic-ascending",
+        "decoded-route-comparison-for-each-leg-compares-shared-hops-fieldwise-assetIn-then-poolId-then-assetOut-by-raw-utf16-then-shorter-hop-length-first-and-compares-legs-in-receipt-order",
+        "routeKeys-are-canonical-transport-and-must-be-decoded-before-objective-comparison-never-compared-as-serialized-json-strings"
+      ]
+    },
+    {
+      "schemaId": "ExactIncumbent",
+      "fields": [
+        [
+          "status",
+          "enum:exactResultStatus"
+        ],
+        [
+          "reason",
+          "nullable(primitive:identifier)"
+        ],
+        [
+          "receipt",
+          "nullable(object:SplitReceipt)"
+        ],
+        [
+          "objective",
+          "object:ExactObjective"
+        ],
+        [
+          "receiptHash",
+          "nullable(primitive:sha256)"
+        ]
+      ],
+      "crossFieldRules": [
+        "success-requires-null-reason-nonnull-receipt-plan-objective-and-hash",
+        "no-route-or-no-plan-requires-nonnull-reason-null-receipt-no-plan-objective-null-hash",
+        "receiptHash-is-sha256-of-minified-utf8-SplitReceipt-without-line-feed"
+      ]
+    },
+    {
+      "schemaId": "EntryBaseline",
+      "fields": [
+        [
+          "boundSemanticCellHash",
+          "primitive:sha256"
+        ],
+        [
+          "freshReplayMatchesBoundCell",
+          "primitive:boolean"
+        ],
+        [
+          "incumbent",
+          "object:ExactIncumbent"
+        ]
+      ],
+      "crossFieldRules": [
+        "boundSemanticCellHash-is-sha256-of-minified-utf8-JSON.stringify-of-the-bound-source-cell-preserving-source-field-order-without-line-feed",
+        "accepted-input-requires-freshReplayMatchesBoundCell-true"
+      ]
+    },
+    {
+      "schemaId": "IncumbentReference",
+      "fields": [
+        [
+          "origin",
+          "enum:incumbentOrigin"
+        ],
+        [
+          "candidateSetIndex",
+          "nullable(primitive:safeNonnegativeInteger)"
+        ],
+        [
+          "selectedScoreSource",
+          "nullable(enum:selectedScoreSource)"
+        ],
+        [
+          "selectedAttemptIndex",
+          "nullable(primitive:safeNonnegativeInteger)"
+        ],
+        [
+          "objectiveHash",
+          "primitive:sha256"
+        ],
+        [
+          "receiptHash",
+          "nullable(primitive:sha256)"
+        ]
+      ],
+      "crossFieldRules": [
+        "entry-baseline-origin-requires-null-candidateSetIndex-selectedScoreSource-selectedAttemptIndex-and-objectiveHash-equal-to-sha256-of-the-input-entryBaseline-incumbent.objective",
+        "entry-baseline-origin-receiptHash-matches-the-input-entryBaseline-incumbent-receiptHash-including-null-for-no-route-or-no-plan",
+        "candidate-set-origin-requires-nonnull-set-index-current-or-repair-selectedScoreSource-nonnull-selectedAttemptIndex-and-nonnull-receiptHash",
+        "candidate-set-current-attempt-index-references-the-completed-current-ScoreAttemptProjection-array-and-repair-attempt-index-references-the-completed-repair-ScoreAttemptProjection-array",
+        "candidate-set-selectedScoreSource-and-selectedAttemptIndex-equal-the-referenced-CandidateSetDiagnostic-selectedScoreSource-and-that-source-currentScore.selectedAttemptIndex-or-repair.winnerAttemptIndex",
+        "candidate-set-receiptHash-equals-the-referenced-CandidateSetDiagnostic-accepted-AuthorizationEvidence-receiptHash-and-the-selected-score-attempt-fresh-replay-hash",
+        "candidate-set-reference-is-invalid-unless-the-referenced-diagnostic-authorization-is-accepted-and-terminalStatus-is-improved",
+        "fresh-replay-of-the-referenced-input-set-and-regenerated-exact-sum-allocation-reconstructs-the-receiptHash-and-the-complete-ExactObjective",
+        "objectiveHash-is-sha256-of-minified-utf8-JSON.stringify-of-the-reconstructed-ExactObjective-preserving-ExactObjective-field-order-without-line-feed"
+      ]
+    },
+    {
+      "schemaId": "ExperimentInputRecord",
+      "fields": [
+        [
+          "schemaVersion",
+          "literal:routelab.service-fast-numerical-experiment-input.v1"
+        ],
+        [
+          "sourceIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "caseId",
+          "config-enum:cohorts.caseOrder"
+        ],
+        [
+          "requestId",
+          "primitive:identifier"
+        ],
+        [
+          "snapshot",
+          "object:SnapshotReference"
+        ],
+        [
+          "request",
+          "object:ExperimentRequest"
+        ],
+        [
+          "priorEligibility",
+          "object:PriorEligibility"
+        ],
+        [
+          "serviceDecisionMember",
+          "primitive:boolean"
+        ],
+        [
+          "amplifiedStressMember",
+          "primitive:boolean"
+        ],
+        [
+          "timingCohortIndex",
+          "nullable(primitive:safeNonnegativeInteger)"
+        ],
+        [
+          "entryBaseline",
+          "object:EntryBaseline"
+        ],
+        [
+          "candidateDiscovery",
+          "object:CandidateDiscovery"
+        ],
+        [
+          "repairTargetSetIndex",
+          "nullable(primitive:safeNonnegativeInteger)"
+        ],
+        [
+          "actionCeilingProfileId",
+          "literal:structural-complete"
+        ]
+      ],
+      "crossFieldRules": [
+        "sourceIndex-is-zero-based-full-cohort-index",
+        "timingCohortIndex-is-zero-based-operational-index-or-null",
+        "repairTargetSetIndex-is-first-resolved-candidate-set-index-or-null",
+        "contains-no-policy-output-convergence-allocation-timing-analysis-or-decision"
+      ]
+    },
+    {
+      "schemaId": "ProposalEvidence",
+      "fields": [
+        [
+          "status",
+          "enum:proposalStatus"
+        ],
+        [
+          "failureCode",
+          "nullable(enum:candidateFailureCode)"
+        ],
+        [
+          "converged",
+          "nullable(primitive:boolean)"
+        ],
+        [
+          "completedOuterIterations",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "weightBits",
+          "nullable(array(primitive:binary64Bits))"
+        ],
+        [
+          "reconstructionHash",
+          "nullable(primitive:sha256)"
+        ]
+      ],
+      "crossFieldRules": [
+        "failed-requires-nonnull-failureCode-and-null-weightBits-and-reconstructionHash",
+        "ready-requires-null-failureCode-nonnull-converged-weightBits-and-reconstructionHash",
+        "under-final-finite-policy-ready-with-converged-false-is-the-canonical-retained-finite-nonconverged-replayed-diagnostic-while-the-parent-failureCode-remains-available-for-any-downstream-terminal-failure",
+        "configured-inner-iterations-and-all-other-driver-parameters-are-derived-from-policyMatrixIndex-and-not-duplicated",
+        "weightBits-array-order-is-candidate-set-route-order-and-has-the-referenced-input-set-route-count",
+        "integerWeights-baseAllocations-and-residualUnits-are-regenerated-exactly-from-weightBits-the-input-amount-and-the-frozen-reconstruction-contract",
+        "reconstructionHash-is-sha256-of-minified-utf8-JSON.stringify-object-with-field-order-integerWeights-baseAllocations-residualUnits-and-array-order-candidate-set-route-order-without-line-feed"
+      ]
+    },
+    {
+      "schemaId": "ScoreAttemptProjection",
+      "fields": [
+        [
+          "attemptIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "allocation",
+          "array(primitive:canonicalUnsignedDecimal)"
+        ],
+        [
+          "status",
+          "enum:scoreStatus"
+        ],
+        [
+          "failureCode",
+          "nullable(enum:candidateFailureCode)"
+        ],
+        [
+          "receiptHash",
+          "nullable(primitive:sha256)"
+        ]
+      ],
+      "crossFieldRules": [
+        "status-is-valid-or-rejected-never-not-run",
+        "valid-requires-null-failureCode-and-nonnull-receiptHash",
+        "rejected-requires-nonnull-failureCode-and-null-receiptHash",
+        "allocation-is-exact-sum-in-candidate-set-route-order"
+      ]
+    },
+    {
+      "schemaId": "ScoreEvidence",
+      "fields": [
+        [
+          "status",
+          "enum:scoreStatus"
+        ],
+        [
+          "failureCode",
+          "nullable(enum:candidateFailureCode)"
+        ],
+        [
+          "selectedAttemptIndex",
+          "nullable(primitive:safeNonnegativeInteger)"
+        ],
+        [
+          "receiptHash",
+          "nullable(primitive:sha256)"
+        ],
+        [
+          "scoreTranscriptHash",
+          "primitive:sha256"
+        ]
+      ],
+      "crossFieldRules": [
+        "valid-requires-null-failureCode-nonnull-selectedAttemptIndex-and-receiptHash",
+        "rejected-requires-nonnull-failureCode-and-null-selectedAttemptIndex-and-receiptHash",
+        "not-run-requires-null-failure-selectedAttemptIndex-receiptHash-and-empty-transcript-hash",
+        "selectedAttemptIndex-references-a-valid-member-of-the-regenerated-current-ScoreAttemptProjection-array",
+        "scoreTranscriptHash-is-sha256-of-minified-utf8-JSON.stringify-array-of-ScoreAttemptProjection-in-current-residual-option-order-without-line-feed",
+        "the-selected-allocation-and-receipt-are-regenerated-from-the-input-proposal-and-frozen-current-residual-option-order"
+      ]
+    },
+    {
+      "schemaId": "RepairEvidence",
+      "fields": [
+        [
+          "status",
+          "enum:repairStatus"
+        ],
+        [
+          "attemptedNeighbors",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "rejectedNeighbors",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "winnerAttemptIndex",
+          "nullable(primitive:safeNonnegativeInteger)"
+        ],
+        [
+          "winnerReceiptHash",
+          "nullable(primitive:sha256)"
+        ],
+        [
+          "failureCode",
+          "nullable(enum:candidateFailureCode)"
+        ],
+        [
+          "scoreTranscriptHash",
+          "primitive:sha256"
+        ]
+      ],
+      "crossFieldRules": [
+        "this-object-exists-only-for-the-result-blind-input-repair-target-set-and-is-null-for-every-nontarget-set",
+        "complete-requires-attemptedNeighbors-at-most-29-and-winnerAttemptIndex-is-null-only-when-no-valid-neighbor-exists",
+        "incomplete-discards-the-winner-with-null-winnerAttemptIndex-and-winnerReceiptHash-and-requires-either-repair-work-limit-or-the-upstream-target-proposal-failureCode",
+        "upstream-proposal-failure-requires-zero-neighbor-counts-and-repair-incomplete-disposition",
+        "winnerAttemptIndex-references-a-valid-member-of-the-regenerated-repair-ScoreAttemptProjection-array",
+        "scoreTranscriptHash-is-sha256-of-minified-utf8-JSON.stringify-array-of-ScoreAttemptProjection-in-frozen-repair-neighbor-order-without-line-feed",
+        "the-anchor-neighbor-allocations-and-winning-receipt-are-regenerated-from-the-input-proposal-and-frozen-neighborhood-enumeration"
+      ]
+    },
+    {
+      "schemaId": "AuthorizationEvidence",
+      "fields": [
+        [
+          "status",
+          "enum:authorizationStatus"
+        ],
+        [
+          "receiptHash",
+          "nullable(primitive:sha256)"
+        ],
+        [
+          "failureCode",
+          "nullable(enum:candidateFailureCode)"
+        ]
+      ],
+      "crossFieldRules": [
+        "accepted-requires-nonnull-fresh-replay-receiptHash-and-null-failure",
+        "rejected-or-mismatch-requires-null-receiptHash-and-matching-failure",
+        "not-attempted-requires-all-other-fields-null",
+        "accepted-replays-exactly-the-parent-diagnostic-selectedScoreSource-selected-attempt-allocation-and-receiptHash-never-another-valid-score"
+      ]
+    },
+    {
+      "schemaId": "CandidateSetDiagnostic",
+      "fields": [
+        [
+          "setIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "resolutionStatus",
+          "enum:modelResolutionStatus"
+        ],
+        [
+          "terminalStatus",
+          "enum:candidateSetTerminalStatus"
+        ],
+        [
+          "failureCode",
+          "nullable(enum:candidateFailureCode)"
+        ],
+        [
+          "proposal",
+          "nullable(object:ProposalEvidence)"
+        ],
+        [
+          "currentScore",
+          "object:ScoreEvidence"
+        ],
+        [
+          "repair",
+          "nullable(object:RepairEvidence)"
+        ],
+        [
+          "selectedScoreSource",
+          "enum:selectedScoreSource"
+        ],
+        [
+          "reconstructionDisposition",
+          "enum:reconstructionDisposition"
+        ],
+        [
+          "authorization",
+          "object:AuthorizationEvidence"
+        ],
+        [
+          "counters",
+          "primitive:counterVector"
+        ]
+      ],
+      "crossFieldRules": [
+        "setIndex-references-the-input-candidateDiscovery-set-so-keys-routes-and-models-are-never-duplicated",
+        "resolution-failure-requires-null-proposal-and-model-resolution-failed-terminal",
+        "parent-failureCode-precedence-is-model-resolution-then-proposal-then-unrecovered-current-score-then-downstream-authorization",
+        "an-upstream-proposal-failure-is-always-the-parent-failureCode-and-target-repair-incomplete-may-repeat-it-only-as-nested-detail",
+        "current-residual-options-exhausted-clears-from-parent-only-when-completed-repair-produces-a-valid-selected-score",
+        "when-repair-produces-no-valid-score-or-is-incomplete-parent-failureCode-remains-residual-options-exhausted-and-nested-repair-retains-repair-no-valid-neighbor-or-repair-work-limit",
+        "authorization-rejected-or-authorization-mismatch-becomes-parent-failureCode-only-after-a-valid-selected-score-reaches-authorization",
+        "selectedScoreSource-current-requires-currentScore-valid-and-its-selectedAttemptIndex-is-the-only-allocation-eligible-for-authorization",
+        "selectedScoreSource-repair-requires-nonnull-complete-repair-with-nonnull-winnerAttemptIndex-and-that-index-is-the-only-allocation-eligible-for-authorization",
+        "authorization-accepted-receiptHash-equals-the-fresh-replay-hash-of-that-exact-selected-source-and-attempt-index",
+        "not-better-or-improved-without-failure-requires-null-parent-failureCode",
+        "every-record-is-terminal-and-retained-even-on-failure-or-work-limit",
+        "repair-is-null-except-on-the-result-blind-input-repair-target-set",
+        "current-only-nontarget-disposition-denotes-that-repair-is-ineligible-and-remains-truthful-even-when-upstream-proposal-or-current-scoring-fails",
+        "repair-target-with-upstream-proposal-failure-uses-repair-incomplete-disposition-and-matching-failureCode-without-neighbor-work",
+        "at-most-one-authorization-per-set"
+      ]
+    },
+    {
+      "schemaId": "AnchorComparison",
+      "fields": [
+        [
+          "relation",
+          "enum:objectiveRelation"
+        ],
+        [
+          "comparison",
+          "enum:objectiveComparison"
+        ],
+        [
+          "anchorHasPlan",
+          "primitive:boolean"
+        ],
+        [
+          "policyHasPlan",
+          "primitive:boolean"
+        ]
+      ]
+    },
+    {
+      "schemaId": "ExactRegret",
+      "fields": [
+        [
+          "outputDelta",
+          "nullable(primitive:canonicalSignedDecimal)"
+        ],
+        [
+          "bpsNumerator",
+          "nullable(primitive:canonicalSignedDecimal)"
+        ],
+        [
+          "bpsDenominator",
+          "nullable(primitive:canonicalPositiveDecimal)"
+        ],
+        [
+          "integerBps",
+          "nullable(primitive:canonicalSignedDecimal)"
+        ]
+      ],
+      "crossFieldRules": [
+        "anchor-no-plan-requires-all-null",
+        "otherwise-outputDelta-is-anchorOutput-minus-policyOutput-policy-absence-uses-zero-only-here",
+        "bpsNumerator-is-outputDelta-times-10000",
+        "bpsDenominator-is-anchorOutput-and-positive",
+        "integerBps-is-truncation-toward-zero"
+      ]
+    },
+    {
+      "schemaId": "SemanticResultRecord",
+      "fields": [
+        [
+          "schemaVersion",
+          "literal:routelab.service-fast-numerical-semantic-result.v1"
+        ],
+        [
+          "semanticIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "sourceIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "policyMatrixIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "entryIncumbentHash",
+          "primitive:sha256"
+        ],
+        [
+          "candidateSetDiagnostics",
+          "array(object:CandidateSetDiagnostic)"
+        ],
+        [
+          "finalIncumbent",
+          "object:IncumbentReference"
+        ],
+        [
+          "anchorComparison",
+          "object:AnchorComparison"
+        ],
+        [
+          "exactRegret",
+          "object:ExactRegret"
+        ],
+        [
+          "counters",
+          "primitive:counterVector"
+        ],
+        [
+          "semanticHash",
+          "primitive:sha256"
+        ]
+      ],
+      "arrayRules": {
+        "candidateSetDiagnostics": "retained-candidate-set-index-order"
+      },
+      "crossFieldRules": [
+        "semanticIndex-equals-sourceIndex-times-24-plus-policyMatrixIndex",
+        "caseId-requestId-policyId-and-cohort-membership-are-derived-exactly-from-sourceIndex-policyMatrixIndex-the-bound-input-and-config-and-are-not-duplicated",
+        "entryIncumbentHash-is-sha256-of-minified-utf8-JSON.stringify-of-the-input-entryBaseline.incumbent-preserving-ExactIncumbent-field-order-without-line-feed",
+        "candidateSetDiagnostics-has-one-member-per-input-candidate-set-and-at-most-four-members",
+        "finalIncumbent-is-the-entry-reference-or-the-last-monotonic-strictly-improving-accepted-candidate-set-install-in-candidate-set-order"
+      ]
+    },
+    {
+      "schemaId": "OperationalCompleteOutcomeProjection",
+      "fields": [
+        [
+          "entryIncumbentHash",
+          "primitive:sha256"
+        ],
+        [
+          "candidateSetDiagnostics",
+          "array(object:CandidateSetDiagnostic)"
+        ],
+        [
+          "finalIncumbent",
+          "object:IncumbentReference"
+        ],
+        [
+          "counters",
+          "primitive:counterVector"
+        ]
+      ],
+      "arrayRules": {
+        "candidateSetDiagnostics": "retained-candidate-set-index-order"
+      }
+    },
+    {
+      "schemaId": "CallTimingRecord",
+      "fields": [
+        [
+          "schemaVersion",
+          "literal:routelab.service-fast-numerical-call-timing-observation.v1"
+        ],
+        [
+          "observationIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "caseId",
+          "config-enum:operationalProtocol.caseOrder"
+        ],
+        [
+          "requestId",
+          "primitive:identifier"
+        ],
+        [
+          "timingCohortIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "sweepIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "policyId",
+          "config-enum:policyMatrix.policyIds"
+        ],
+        [
+          "policyMatrixIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "elapsedNanoseconds",
+          "primitive:nanoseconds"
+        ],
+        [
+          "validatedOutcomeHash",
+          "primitive:sha256"
+        ]
+      ],
+      "crossFieldRules": [
+        "validatedOutcomeHash-is-sha256-of-minified-utf8-JSON.stringify-OperationalCompleteOutcomeProjection-without-line-feed-computed-after-timed-interval",
+        "validatedOutcomeHash-must-equal-the-same-cell-policy-semantic-outcome-projection"
+      ]
+    },
+    {
+      "schemaId": "TimelineRecord",
+      "fields": [
+        [
+          "schemaVersion",
+          "literal:routelab.service-fast-numerical-incumbent-timeline-observation.v1"
+        ],
+        [
+          "observationIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "caseId",
+          "config-enum:operationalProtocol.caseOrder"
+        ],
+        [
+          "requestId",
+          "primitive:identifier"
+        ],
+        [
+          "timingCohortIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "sweepIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "policyId",
+          "config-enum:policyMatrix.policyIds"
+        ],
+        [
+          "policyMatrixIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "firstValidScoreNanoseconds",
+          "nullable(primitive:nanoseconds)"
+        ],
+        [
+          "firstStrictImprovementNanoseconds",
+          "nullable(primitive:nanoseconds)"
+        ],
+        [
+          "finalBestInstallNanoseconds",
+          "nullable(primitive:nanoseconds)"
+        ],
+        [
+          "validatedOutcomeHash",
+          "primitive:sha256"
+        ]
+      ],
+      "crossFieldRules": [
+        "all-finite-values-are-relative-to-candidate-stage-entry-sample",
+        "visible-event-times-are-monotonic-in-event-causality-order-when-both-exist",
+        "validatedOutcomeHash-is-sha256-of-minified-utf8-JSON.stringify-OperationalCompleteOutcomeProjection-without-line-feed-computed-after-instrumented-interval",
+        "validatedOutcomeHash-must-equal-the-same-cell-policy-semantic-outcome-projection"
+      ]
+    },
+    {
+      "schemaId": "AuthorizationAttemptProjection",
+      "fields": [
+        [
+          "attemptIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "allocation",
+          "array(primitive:canonicalUnsignedDecimal)"
+        ],
+        [
+          "status",
+          "enum:authorizationStatus"
+        ],
+        [
+          "failureCode",
+          "nullable(enum:candidateFailureCode)"
+        ],
+        [
+          "receiptHash",
+          "nullable(primitive:sha256)"
+        ]
+      ],
+      "crossFieldRules": [
+        "status-is-accepted-rejected-or-mismatch-never-not-attempted",
+        "accepted-requires-null-failureCode-and-nonnull-fresh-replay-receiptHash",
+        "rejected-or-mismatch-requires-nonnull-failureCode-and-null-receiptHash",
+        "allocation-is-exact-sum-in-candidate-set-route-order"
+      ]
+    },
+    {
+      "schemaId": "DeadlineSetState",
+      "fields": [
+        [
+          "setIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "stage",
+          "enum:deadlineSetStage"
+        ],
+        [
+          "terminalStatus",
+          "nullable(enum:candidateSetTerminalStatus)"
+        ],
+        [
+          "failureCode",
+          "nullable(enum:candidateFailureCode)"
+        ],
+        [
+          "currentScoreTranscriptHash",
+          "primitive:sha256"
+        ],
+        [
+          "repairScoreTranscriptHash",
+          "primitive:sha256"
+        ],
+        [
+          "authorizationTranscriptHash",
+          "primitive:sha256"
+        ],
+        [
+          "counters",
+          "primitive:counterVector"
+        ]
+      ],
+      "crossFieldRules": [
+        "terminal-stage-requires-terminalStatus-nonnull",
+        "nonterminal-stage-requires-terminalStatus-null",
+        "setIndex-references-the-input-candidateDiscovery-set-so-candidateSetKey-is-not-duplicated",
+        "currentScoreTranscriptHash-and-repairScoreTranscriptHash-each-hash-their-completed-ScoreAttemptProjection-array-in-frozen-action-order",
+        "authorizationTranscriptHash-hashes-the-completed-AuthorizationAttemptProjection-array-in-action-order-length-at-most-one",
+        "no-completed-attempts-use-the-sha256-of-empty-json-array"
+      ]
+    },
+    {
+      "schemaId": "DeadlineOutcomeProjection",
+      "fields": [
+        [
+          "termination",
+          "enum:deadlineTermination"
+        ],
+        [
+          "entryPlan",
+          "primitive:boolean"
+        ],
+        [
+          "anyValidScore",
+          "primitive:boolean"
+        ],
+        [
+          "anyImprovement",
+          "primitive:boolean"
+        ],
+        [
+          "anchorQuality",
+          "primitive:boolean"
+        ],
+        [
+          "completeStage",
+          "primitive:boolean"
+        ],
+        [
+          "incumbent",
+          "object:IncumbentReference"
+        ],
+        [
+          "diagnosticStateHash",
+          "primitive:sha256"
+        ],
+        [
+          "counters",
+          "primitive:counterVector"
+        ]
+      ],
+      "crossFieldRules": [
+        "incumbent-is-the-entry-reference-or-the-last-monotonic-strictly-improving-accepted-candidate-set-install-visible-before-the-deadline-stop"
+      ]
+    },
+    {
+      "schemaId": "DeadlineRecord",
+      "fields": [
+        [
+          "schemaVersion",
+          "literal:routelab.service-fast-numerical-deadline-observation.v1"
+        ],
+        [
+          "observationIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "caseId",
+          "config-enum:operationalProtocol.caseOrder"
+        ],
+        [
+          "requestId",
+          "primitive:identifier"
+        ],
+        [
+          "timingCohortIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "deadlineIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "deadlineMilliseconds",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "sweepIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "policyId",
+          "config-enum:policyMatrix.policyIds"
+        ],
+        [
+          "policyMatrixIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "elapsedNanoseconds",
+          "primitive:nanoseconds"
+        ],
+        [
+          "termination",
+          "enum:deadlineTermination"
+        ],
+        [
+          "entryPlan",
+          "primitive:boolean"
+        ],
+        [
+          "anyValidScore",
+          "primitive:boolean"
+        ],
+        [
+          "anyImprovement",
+          "primitive:boolean"
+        ],
+        [
+          "anchorQuality",
+          "primitive:boolean"
+        ],
+        [
+          "completeStage",
+          "primitive:boolean"
+        ],
+        [
+          "incumbent",
+          "object:IncumbentReference"
+        ],
+        [
+          "diagnosticStateHash",
+          "primitive:sha256"
+        ],
+        [
+          "counters",
+          "primitive:counterVector"
+        ],
+        [
+          "validatedOutcomeHash",
+          "primitive:sha256"
+        ]
+      ],
+      "crossFieldRules": [
+        "incumbent-reference-fresh-exact-replays-against-the-requested-snapshot-and-input-candidate-set-after-the-timed-interval",
+        "diagnosticStateHash-is-sha256-of-minified-utf8-JSON.stringify-array-of-DeadlineSetState-in-retained-set-order-without-line-feed",
+        "validatedOutcomeHash-is-sha256-of-minified-utf8-JSON.stringify-DeadlineOutcomeProjection-without-line-feed"
+      ]
+    },
+    {
+      "schemaId": "ExactRational",
+      "fields": [
+        [
+          "numerator",
+          "primitive:canonicalSignedDecimal"
+        ],
+        [
+          "denominator",
+          "primitive:canonicalPositiveDecimal"
+        ]
+      ],
+      "crossFieldRules": [
+        "unreduced-formula-components-retained",
+        "comparisons-use-exact-bigint-cross-multiplication"
+      ]
+    },
+    {
+      "schemaId": "Environment",
+      "fields": [
+        [
+          "nodeVersion",
+          "primitive:identifier"
+        ],
+        [
+          "v8Version",
+          "primitive:identifier"
+        ],
+        [
+          "uvVersion",
+          "primitive:identifier"
+        ],
+        [
+          "platform",
+          "primitive:identifier"
+        ],
+        [
+          "arch",
+          "primitive:identifier"
+        ],
+        [
+          "endianness",
+          "primitive:identifier"
+        ],
+        [
+          "osType",
+          "primitive:identifier"
+        ],
+        [
+          "osRelease",
+          "primitive:identifier"
+        ],
+        [
+          "cpuModel",
+          "primitive:identifier"
+        ],
+        [
+          "cpuSpeedMHz",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "logicalCpuCount",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "availableParallelism",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "totalMemoryBytes",
+          "primitive:canonicalPositiveDecimal"
+        ],
+        [
+          "timezone",
+          "primitive:identifier"
+        ],
+        [
+          "execArgv",
+          "array(primitive:identifier)"
+        ],
+        [
+          "nodeOptionsState",
+          "enum:nodeOptionsState"
+        ],
+        [
+          "mainThread",
+          "primitive:boolean"
+        ]
+      ],
+      "crossFieldRules": [
+        "required-fields-exact-match-operational-runtime-contract",
+        "record-only-fields-do-not-gate-runtime",
+        "execArgv-is-empty"
+      ]
+    },
+    {
+      "schemaId": "AnalysisInputBinding",
+      "fields": [
+        [
+          "acceptedBaseRevision",
+          "primitive:gitRevision"
+        ],
+        [
+          "implementationInputRevision",
+          "primitive:gitRevision"
+        ],
+        [
+          "config",
+          "object:Descriptor"
+        ],
+        [
+          "artifactSchema",
+          "object:Descriptor"
+        ],
+        [
+          "sourceClosure",
+          "object:Descriptor"
+        ],
+        [
+          "inputArtifact",
+          "object:Descriptor"
+        ]
+      ]
+    },
+    {
+      "schemaId": "PopulationSummary",
+      "fields": [
+        [
+          "fullSemanticCells",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "serviceSemanticCells",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "amplifiedSemanticCells",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "operationalCells",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "policyCount",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "semanticRecordCount",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "callRecordCount",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "timelineRecordCount",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "deadlineRecordCount",
+          "primitive:safePositiveInteger"
+        ]
+      ]
+    },
+    {
+      "schemaId": "IntegritySummary",
+      "fields": [
+        [
+          "status",
+          "enum:integrityStatus"
+        ],
+        [
+          "failures",
+          "array(enum:integrityFailureCode)"
+        ]
+      ],
+      "crossFieldRules": [
+        "published-analysis-requires-passed-and-empty-failures",
+        "failure-order-is-integrityFailureCode-enum-order-no-duplicates"
+      ]
+    },
+    {
+      "schemaId": "FailureFamilyCounts",
+      "fields": [
+        [
+          "nonConvergence",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "residualOptionsExhausted",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "untypedFailures",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "exactSafetyFailures",
+          "primitive:safeNonnegativeInteger"
+        ]
+      ]
+    },
+    {
+      "schemaId": "SemanticPolicyMetrics",
+      "fields": [
+        [
+          "invalidFreshReplayCount",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "forcedFailureIncumbentMismatchCount",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "finalObjectivesNeverWorse",
+          "primitive:boolean"
+        ],
+        [
+          "anchorPlanLostCount",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "unterminatedDiagnosticCount",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "anchorServiceFailures",
+          "object:FailureFamilyCounts"
+        ],
+        [
+          "candidateServiceFailures",
+          "object:FailureFamilyCounts"
+        ],
+        [
+          "amplifiedFailures",
+          "object:FailureFamilyCounts"
+        ]
+      ],
+      "crossFieldRules": [
+        "invalidFreshReplayCount-and-forcedFailureIncumbentMismatchCount-follow-config-semanticEvidence-failureFamilyDerivation-across-all-named-semantic-and-operational-sources",
+        "anchorServiceFailures-candidateServiceFailures-and-amplifiedFailures-follow-the-exact-config-failureFamilyDerivation-code-and-condition-sets",
+        "published-trustworthy-analysis-requires-zero-invalid-fresh-replay-forced-mismatch-untyped-and-exact-safety-counts"
+      ]
+    },
+    {
+      "schemaId": "CallCaseMetric",
+      "fields": [
+        [
+          "caseId",
+          "config-enum:operationalProtocol.caseOrder"
+        ],
+        [
+          "pairedDeltaMedian",
+          "object:ExactRational"
+        ],
+        [
+          "elapsedRatio",
+          "object:ExactRational"
+        ]
+      ]
+    },
+    {
+      "schemaId": "InstrumentedEventMetric",
+      "fields": [
+        [
+          "caseId",
+          "enum:hotspotCaseId"
+        ],
+        [
+          "event",
+          "enum:instrumentedEvent"
+        ],
+        [
+          "anchorAvailabilityCount",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "candidateAvailabilityCount",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "pairedFiniteCount",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "pairedFiniteMedianDelta",
+          "nullable(object:ExactRational)"
+        ]
+      ],
+      "crossFieldRules": [
+        "zero-pairedFiniteCount-requires-null-median",
+        "positive-pairedFiniteCount-requires-nonnull-median"
+      ]
+    },
+    {
+      "schemaId": "DeadlineFlagCounts",
+      "fields": [
+        [
+          "entryPlan",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "anyValidScore",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "anyImprovement",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "anchorQuality",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "completeStage",
+          "primitive:safeNonnegativeInteger"
+        ]
+      ]
+    },
+    {
+      "schemaId": "DeadlineCaseMetric",
+      "fields": [
+        [
+          "caseId",
+          "config-enum:operationalProtocol.caseOrder"
+        ],
+        [
+          "deadlineMilliseconds",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "anchor",
+          "object:DeadlineFlagCounts"
+        ],
+        [
+          "candidate",
+          "object:DeadlineFlagCounts"
+        ]
+      ]
+    },
+    {
+      "schemaId": "RankingValues",
+      "fields": [
+        [
+          "worstHotspotElapsedRatio",
+          "object:ExactRational"
+        ],
+        [
+          "anchorQualityVector",
+          "array(primitive:safeNonnegativeInteger)"
+        ],
+        [
+          "mappedShareActionCeiling",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "policyMatrixIndex",
+          "primitive:safeNonnegativeInteger"
+        ]
+      ],
+      "crossFieldRules": [
+        "anchorQualityVector-has-18-values-in-config-case-then-deadline-order"
+      ]
+    },
+    {
+      "schemaId": "PolicyAnalysisResult",
+      "fields": [
+        [
+          "policyId",
+          "config-enum:policyMatrix.policyIds"
+        ],
+        [
+          "policyMatrixIndex",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "driverId",
+          "config-enum:policyMatrix.driverOrder"
+        ],
+        [
+          "mappedShareActionCeiling",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "semantic",
+          "object:SemanticPolicyMetrics"
+        ],
+        [
+          "callCases",
+          "array(object:CallCaseMetric)"
+        ],
+        [
+          "instrumentedEvents",
+          "array(object:InstrumentedEventMetric)"
+        ],
+        [
+          "deadlineCases",
+          "array(object:DeadlineCaseMetric)"
+        ],
+        [
+          "rankingValues",
+          "object:RankingValues"
+        ]
+      ],
+      "arrayRules": {
+        "callCases": "operational-case-order",
+        "instrumentedEvents": "hotspot-case-order-then-config-instrumented-event-order-filtered-to-first-strict-improvement-and-final-best",
+        "deadlineCases": "operational-case-order-then-ascending-deadline-order"
+      },
+      "crossFieldRules": [
+        "policyMatrixIndex-equals-policyId-index-in-config-policyMatrix-policyIds-and-rankingValues-policyMatrixIndex",
+        "mappedShareActionCeiling-equals-the-config-driver-maximumShareActions-and-rankingValues-mappedShareActionCeiling"
+      ]
+    },
+    {
+      "schemaId": "ClauseResult",
+      "fields": [
+        [
+          "clauseId",
+          "enum:clauseId"
+        ],
+        [
+          "passed",
+          "primitive:boolean"
+        ],
+        [
+          "policyEvidenceHash",
+          "primitive:sha256"
+        ]
+      ],
+      "crossFieldRules": [
+        "policyEvidenceHash-is-sha256-of-the-corresponding-minified-PolicyAnalysisResult-without-line-feed"
+      ]
+    },
+    {
+      "schemaId": "PolicyQualification",
+      "fields": [
+        [
+          "policyId",
+          "config-enum:policyMatrix.policyIds"
+        ],
+        [
+          "clauseResults",
+          "array(object:ClauseResult)"
+        ],
+        [
+          "qualifies",
+          "primitive:boolean"
+        ]
+      ],
+      "arrayRules": {
+        "clauseResults": "selection-qualification-clauseResultOrder"
+      },
+      "crossFieldRules": [
+        "qualifies-is-true-if-and-only-if-all-six-clauseResults-pass"
+      ]
+    },
+    {
+      "schemaId": "Decision",
+      "fields": [
+        [
+          "status",
+          "enum:decisionStatus"
+        ],
+        [
+          "policyId",
+          "nullable(config-enum:policyMatrix.policyIds)"
+        ],
+        [
+          "fallbackDecisionId",
+          "nullable(literal:strict-reference-fallback)"
+        ],
+        [
+          "rankedQualifyingPolicyIds",
+          "array(config-enum:policyMatrix.policyIds)"
+        ],
+        [
+          "reason",
+          "primitive:identifier"
+        ]
+      ],
+      "crossFieldRules": [
+        "selected-policy-requires-nonanchor-policyId-null-fallback-and-nonempty-ranking-first-equals-policyId",
+        "strict-reference-fallback-requires-null-policyId-fallback-id-and-empty-ranking",
+        "rejected-observation-requires-null-policyId-null-fallback-and-empty-ranking",
+        "ranking-is-all-qualifiers-sorted-by-frozen-ranking-keys"
+      ]
+    },
+    {
+      "schemaId": "Analysis",
+      "fields": [
+        [
+          "schemaVersion",
+          "literal:routelab.service-fast-numerical-analysis.v1"
+        ],
+        [
+          "experimentId",
+          "literal:m7c-core12-service-fast-numerical-v1"
+        ],
+        [
+          "inputBinding",
+          "object:AnalysisInputBinding"
+        ],
+        [
+          "sourceClosure",
+          "object:Descriptor"
+        ],
+        [
+          "environment",
+          "object:Environment"
+        ],
+        [
+          "populations",
+          "object:PopulationSummary"
+        ],
+        [
+          "integrity",
+          "object:IntegritySummary"
+        ],
+        [
+          "policyResults",
+          "array(object:PolicyAnalysisResult)"
+        ],
+        [
+          "qualifiers",
+          "array(object:PolicyQualification)"
+        ],
+        [
+          "decision",
+          "object:Decision"
+        ],
+        [
+          "limitations",
+          "array(enum:limitationId)"
+        ]
+      ],
+      "arrayRules": {
+        "policyResults": "all-24-policy-matrix-order",
+        "qualifiers": "23-nonanchor-policy-matrix-order",
+        "limitations": "limitationId-enum-order-no-duplicates"
+      },
+      "crossFieldRules": [
+        "sourceClosure-equals-inputBinding-sourceClosure",
+        "all-config-artifactSchema-sourceClosure-inputArtifact-descriptors-equal-the-pre-observation-files-and-agree-with-source-closure-and-manifest",
+        "environment-is-the-single-frozen-runtime-capture-reused-byte-equally-by-manifest",
+        "implementationInputRevision-agrees-with-source-closure-and-manifest-implementationRevision"
+      ]
+    },
+    {
+      "schemaId": "ExecutionSchedule",
+      "fields": [
+        [
+          "totalPolicyCalls",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "semanticCalls",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "callWarmups",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "callRetained",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "timelineRetained",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "deadlineWarmups",
+          "primitive:safePositiveInteger"
+        ],
+        [
+          "deadlineRetained",
+          "primitive:safePositiveInteger"
+        ]
+      ]
+    },
+    {
+      "schemaId": "ArtifactManifestEntry",
+      "fields": [
+        [
+          "name",
+          "primitive:relativePosixPath"
+        ],
+        [
+          "contentRole",
+          "enum:artifactContentRole"
+        ],
+        [
+          "schemaVersion",
+          "nullable(primitive:identifier)"
+        ],
+        [
+          "recordCount",
+          "nullable(primitive:safeNonnegativeInteger)"
+        ],
+        [
+          "bytes",
+          "primitive:safeNonnegativeInteger"
+        ],
+        [
+          "sha256",
+          "primitive:sha256"
+        ]
+      ]
+    },
+    {
+      "schemaId": "Manifest",
+      "fields": [
+        [
+          "schemaVersion",
+          "literal:routelab.service-fast-numerical-manifest.v1"
+        ],
+        [
+          "experimentId",
+          "literal:m7c-core12-service-fast-numerical-v1"
+        ],
+        [
+          "taskId",
+          "literal:RLT-087"
+        ],
+        [
+          "config",
+          "object:Descriptor"
+        ],
+        [
+          "artifactSchema",
+          "object:Descriptor"
+        ],
+        [
+          "sourceClosure",
+          "object:Descriptor"
+        ],
+        [
+          "inputArtifact",
+          "object:Descriptor"
+        ],
+        [
+          "implementationRevision",
+          "primitive:gitRevision"
+        ],
+        [
+          "environment",
+          "object:Environment"
+        ],
+        [
+          "executionSchedule",
+          "object:ExecutionSchedule"
+        ],
+        [
+          "artifacts",
+          "array(object:ArtifactManifestEntry)"
+        ],
+        [
+          "decision",
+          "object:Decision"
+        ],
+        [
+          "limitations",
+          "array(enum:limitationId)"
+        ]
+      ],
+      "arrayRules": {
+        "artifacts": "inputs-semantic-call-timeline-deadline-analysis-readme-order-manifest-excluded-to-avoid-self-hash",
+        "limitations": "limitationId-enum-order-no-duplicates"
+      },
+      "crossFieldRules": [
+        "artifact-descriptors-bind-separate-file-hashes-and-exact-record-counts",
+        "config-artifactSchema-sourceClosure-inputArtifact-descriptors-match-pre-observation-files-and-analysis-inputBinding",
+        "decision-is-byte-equal-to-analysis-decision",
+        "environment-is-byte-equal-to-analysis-environment",
+        "implementationRevision-equals-source-closure-implementationInputRevision-and-analysis-inputBinding-implementationInputRevision"
+      ]
+    }
+  ],
+  "recordBindings": [
+    {
+      "path": "fixtures/m7c/service-fast-numerical/experiment-inputs.v1.ndjson",
+      "schemaId": "ExperimentInputRecord",
+      "recordOrder": "full-cohort-sourceIndex-ascending"
+    },
+    {
+      "path": "inputs.ndjson",
+      "schemaId": "ExperimentInputRecord",
+      "recordOrder": "exact-byte-copy-of-pre-observation-input-artifact"
+    },
+    {
+      "path": "semantic-results.ndjson",
+      "schemaId": "SemanticResultRecord",
+      "recordOrder": "case-order-then-request-source-order-then-policy-matrix-order"
+    },
+    {
+      "path": "call-timing-observations.ndjson",
+      "schemaId": "CallTimingRecord",
+      "recordOrder": "operational-call-only-retained-phase-execution-order"
+    },
+    {
+      "path": "incumbent-timeline-observations.ndjson",
+      "schemaId": "TimelineRecord",
+      "recordOrder": "operational-instrumented-retained-phase-execution-order"
+    },
+    {
+      "path": "deadline-observations.ndjson",
+      "schemaId": "DeadlineRecord",
+      "recordOrder": "operational-deadline-retained-phase-execution-order"
+    },
+    {
+      "path": "analysis.json",
+      "schemaId": "Analysis",
+      "recordOrder": "single-json-object"
+    },
+    {
+      "path": "manifest.json",
+      "schemaId": "Manifest",
+      "recordOrder": "single-json-object"
+    },
+    {
+      "path": "fixtures/m7c/service-fast-numerical/source-closure.v1.json",
+      "schemaId": "SourceClosure",
+      "recordOrder": "single-fixture-json-object"
+    }
+  ],
+  "hashProjections": {
+    "semanticHash": {
+      "recordSchemaId": "SemanticResultRecord",
+      "includedFields": [
+        "schemaVersion",
+        "semanticIndex",
+        "sourceIndex",
+        "policyMatrixIndex",
+        "entryIncumbentHash",
+        "candidateSetDiagnostics",
+        "finalIncumbent",
+        "anchorComparison",
+        "exactRegret",
+        "counters"
+      ],
+      "excludedFields": [
+        "semanticHash"
+      ],
+      "encoding": "sha256-prefix-of-minified-utf8-JSON.stringify-object-in-included-field-order-without-line-feed"
+    },
+    "artifactFiles": "sha256-prefix-of-exact-retained-file-bytes",
+    "operationalAggregate": "sha256-prefix-of-minified-utf8-JSON.stringify-array-of-call-timeline-deadline-file-descriptors-in-that-order-without-line-feed",
+    "semanticAggregate": "semantic-results-file-descriptor-sha256",
+    "analysisAggregate": "analysis-file-descriptor-sha256",
+    "manifestHash": "computed-and-reported-by-verifier-outside-manifest-to-avoid-self-reference"
+  }
+}

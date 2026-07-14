@@ -1,5 +1,22 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { spawnSync, type SpawnSyncOptions } from 'node:child_process';
+import {
+  chmod,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  symlink,
+  truncate,
+  writeFile,
+} from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
+import { pathToFileURL } from 'node:url';
 
 import {
   SERVICE_FAST_EXPERIMENT_ANCHOR_POLICY_ID,
@@ -37,6 +54,92 @@ import {
   type PreparedRoutingContext,
 } from '../src/runtime/prepared-routing-context/index.ts';
 import { computeCanonicalSnapshotChecksum } from '../src/serialization/canonical-snapshot/index.ts';
+import {
+  SERVICE_FAST_CONFIG_PATH,
+  SourceClosureCodecError,
+  decodeServiceFastSourceClosure,
+  parseFrozenServiceFastConfiguration,
+  sha256Bytes,
+  type FrozenServiceFastConfiguration,
+} from '../src/benchmark/service-fast-numerical-experiment/source-closure/codec.ts';
+import {
+  generateServiceFastSourceClosure,
+  prepareServiceFastSourceClosure,
+} from '../src/benchmark/service-fast-numerical-experiment/source-closure/generate.ts';
+import {
+  ServiceFastSourceClosureError,
+  verifyDurableServiceFastSourceClosure,
+  verifyExecutableServiceFastSourceClosure,
+} from '../src/benchmark/service-fast-numerical-experiment/source-closure/verification.ts';
+import {
+  SERVICE_FAST_REVIEWED_INPUT_BINDING_PATH,
+  ServiceFastReviewedInputBindingError,
+  type ReviewedInputBinding,
+} from '../src/benchmark/service-fast-numerical-experiment/source-closure/reviewed-input-binding.ts';
+import {
+  SourceClosureGitError,
+  readGitBlob,
+  readGitHeadRevision,
+  readGitIgnoredPaths,
+  readGitIndexEntries,
+  readGitStatusPorcelain,
+} from '../src/benchmark/service-fast-numerical-experiment/source-closure/git.ts';
+import {
+  SERVICE_FAST_SOURCE_CLOSURE_PUBLICATION_ERROR_CODES,
+  defaultClosurePublicationDependencies,
+  publishCanonicalSourceClosure,
+  SourceClosurePublicationError,
+} from '../src/benchmark/service-fast-numerical-experiment/source-closure/publication.ts';
+import {
+  SERVICE_FAST_ARTIFACT_VERIFIER_HELPER,
+  SERVICE_FAST_SOURCE_CLOSURE_GENERATOR_HELPER,
+  ServiceFastVerifierInvocationError,
+  dispatchServiceFastVerifierChild,
+} from '../src/benchmark/service-fast-numerical-experiment/tooling/dispatcher.ts';
+import {
+  ServiceFastVerifierDispatchError,
+  SERVICE_FAST_PUBLICATION_FAILURE_PROJECTION,
+  encodeProjectedServiceFastToolFailure,
+  projectServiceFastToolFailure,
+} from '../src/benchmark/service-fast-numerical-experiment/tooling/tool-failure.ts';
+import {
+  SERVICE_FAST_EXPERIMENT_ID,
+  ServiceFastReadmeRenderingError,
+  renderMaximalServiceFastExperimentReadme,
+  renderServiceFastExperimentReadme,
+  type ServiceFastReadmeDecision,
+} from '../src/benchmark/service-fast-numerical-experiment/tooling/readme-template.ts';
+import {
+  serviceFastSourceClosureRepositoryRoot,
+  serviceFastVerifierRepositoryRoot,
+} from '../src/benchmark/service-fast-numerical-experiment/tooling/fixed-repository-root.ts';
+import {
+  ServiceFastDurableBootstrapError,
+  admitServiceFastAttestedRuntimeDescriptorBytes,
+  authenticateServiceFastDurableVerifierBeforeDispatch,
+} from '../src/benchmark/service-fast-numerical-experiment/tooling/durable-verifier-bootstrap.ts';
+import {
+  ServiceFastBoundedIdentityReadError,
+  readBoundedIdentityFile,
+} from '../src/benchmark/service-fast-numerical-experiment/tooling/bounded-identity-reader.ts';
+import {
+  SERVICE_FAST_DURABLE_RUNTIME_PROFILE_PATH,
+  ServiceFastDurableRuntimeProfileError,
+  decodeServiceFastDurableRuntimeProfileSource,
+} from '../src/benchmark/service-fast-numerical-experiment/tooling/durable-runtime-profile.ts';
+import {
+  SERVICE_FAST_GENERATION_CHILD_RUNTIME_PATHS,
+  SERVICE_FAST_NO_ARGUMENT_PARENT_RUNTIME_PATHS,
+  ServiceFastRuntimeImportAuditError,
+  auditServiceFastRuntimeImports,
+  generationChildRuntimeAuditProfile,
+  noArgumentParentRuntimeAuditProfile,
+  type RuntimeImportAuditProfile,
+} from '../src/benchmark/service-fast-numerical-experiment/tooling/runtime-import-audit.ts';
+import {
+  ServiceFastSizeAdmissionError,
+  admitPreSourceClosureArtifactSizes,
+} from '../src/benchmark/service-fast-numerical-experiment/tooling/size-admission.ts';
 
 function pool(
   poolId: string,
@@ -1096,4 +1199,3248 @@ void test('types unresolved sets without proposing and rejects hostile cell boun
     ),
     TypeError,
   );
+});
+
+function runSyntheticGit(
+  repositoryRoot: string,
+  arguments_: readonly string[],
+  input?: string,
+): string {
+  const result = spawnSync('git', [...arguments_], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+    input,
+    maxBuffer: 16 * 1024 * 1024,
+    shell: false,
+  });
+  assert.equal(
+    result.status,
+    0,
+    `git ${arguments_.join(' ')} failed: ${result.stderr}`,
+  );
+  return result.stdout;
+}
+
+async function writeSyntheticFile(
+  repositoryRoot: string,
+  relativePath: string,
+  bytes: Uint8Array | string,
+): Promise<void> {
+  const destination = path.join(repositoryRoot, relativePath);
+  await mkdir(path.dirname(destination), { recursive: true });
+  await writeFile(destination, bytes);
+}
+
+async function syntheticInputBytes(config: FrozenServiceFastConfiguration): Promise<Uint8Array> {
+  const requestSource = JSON.parse(
+    await readFile(config.boundInputs['requests']!.path, 'utf8'),
+  ) as {
+    cases: readonly {
+      caseId: string;
+      requests: readonly {
+        requestId: string;
+        assetIn: string;
+        assetOut: string;
+        amountBucket: string;
+        topology: string;
+      }[];
+    }[];
+  };
+  const eligibilitySource = JSON.parse(
+    await readFile(config.boundInputs['baselineEligibility']!.path, 'utf8'),
+  ) as {
+    cells: readonly {
+      caseId: string;
+      requestId: string;
+      status: 'eligible' | 'ineligible';
+      reason?: 'baseline-no-authorized-incumbent' | 'no-model-valid-candidate-set';
+      search: Record<string, unknown>;
+      modelValidCandidateSetCount: number;
+    }[];
+  };
+  const requests = requestSource.cases.flatMap((suiteCase) =>
+    suiteCase.requests.map((request) => ({ caseId: suiteCase.caseId, request })));
+  const eligibilityByIdentity = new Map(eligibilitySource.cells.map((cell) => [
+    `${cell.caseId}\0${cell.requestId}`,
+    cell,
+  ]));
+  const operationalCases = new Set(
+    config.cohorts.cases.filter((suiteCase) => suiteCase.operational).map((suiteCase) => suiteCase.caseId),
+  );
+  const stratumCounts = new Map<string, number>();
+  let timingIndex = 0;
+  const lines: string[] = [];
+  for (const [sourceIndex, source] of requests.entries()) {
+    const suiteCase = config.cohorts.cases.find((candidate) => candidate.caseId === source.caseId)!;
+    const eligibility = eligibilityByIdentity.get(`${source.caseId}\0${source.request.requestId}`)!;
+    const stratum = `${source.caseId}\0${source.request.topology}\0${source.request.amountBucket}`;
+    const priorStratumCount = stratumCounts.get(stratum) ?? 0;
+    const retained = operationalCases.has(source.caseId) && priorStratumCount < 12;
+    if (operationalCases.has(source.caseId)) stratumCounts.set(stratum, priorStratumCount + 1);
+    const timingCohortIndex = retained ? timingIndex++ : null;
+    const amountIn = '9'.repeat(83);
+    const candidateHops = [0, 1].map((routeIndex) => ({
+      poolId: `candidate-pool-${sourceIndex}-${routeIndex}`,
+      assetIn: source.request.assetIn,
+      assetOut: source.request.assetOut,
+    }));
+    const candidateRouteKeys = candidateHops.map((candidateHop) => JSON.stringify([
+      [candidateHop.assetIn, candidateHop.poolId, candidateHop.assetOut],
+    ]));
+    const resolvedCandidate = sourceIndex === 1;
+    let incumbent: Record<string, unknown> = {
+      status: 'no-route',
+      reason: 'no-route',
+      receipt: null,
+      objective: {
+        hasPlan: false,
+        amountOut: null,
+        legCount: null,
+        totalHops: null,
+        routeKeys: [],
+        allocations: [],
+      },
+      receiptHash: null,
+    };
+    if (sourceIndex === 0) {
+      const poolId = 'receipt-pool-0';
+      const reserveInBefore = `1${'0'.repeat(84)}`;
+      const reserveInAfter = (BigInt(reserveInBefore) + BigInt(amountIn)).toString(10);
+      const routeKey = JSON.stringify([[source.request.assetIn, poolId, source.request.assetOut]]);
+      const receipt = {
+        snapshotId: suiteCase.snapshotId,
+        snapshotChecksum: suiteCase.snapshotChecksum,
+        assetIn: source.request.assetIn,
+        assetOut: source.request.assetOut,
+        amountIn,
+        amountOut: '1',
+        legs: [{
+          allocation: amountIn,
+          receipt: {
+            snapshotId: suiteCase.snapshotId,
+            snapshotChecksum: suiteCase.snapshotChecksum,
+            assetIn: source.request.assetIn,
+            assetOut: source.request.assetOut,
+            amountIn,
+            amountOut: '1',
+            hops: [{
+              poolId,
+              assetIn: source.request.assetIn,
+              assetOut: source.request.assetOut,
+              amountIn,
+              amountOut: '1',
+              reserveInBefore,
+              reserveOutBefore: '100',
+              reserveInAfter,
+              reserveOutAfter: '99',
+            }],
+          },
+        }],
+      };
+      incumbent = {
+        status: 'success',
+        reason: null,
+        receipt,
+        objective: {
+          hasPlan: true,
+          amountOut: '1',
+          legCount: 1,
+          totalHops: 1,
+          routeKeys: [routeKey],
+          allocations: [amountIn],
+        },
+        receiptHash: sha256Bytes(new TextEncoder().encode(JSON.stringify(receipt))),
+      };
+    }
+    lines.push(JSON.stringify({
+      schemaVersion: 'routelab.service-fast-numerical-experiment-input.v1',
+      sourceIndex,
+      caseId: source.caseId,
+      requestId: source.request.requestId,
+      snapshot: {
+        snapshotId: suiteCase.snapshotId,
+        snapshotChecksum: suiteCase.snapshotChecksum,
+      },
+      request: {
+        assetIn: source.request.assetIn,
+        assetOut: source.request.assetOut,
+        amountBucket: source.request.amountBucket,
+        amountIn,
+        topology: source.request.topology,
+        maxHops: config.inputConstruction.request.maxHops,
+        maxRoutes: config.inputConstruction.request.maxRoutes,
+        greedyParts: config.inputConstruction.request.greedyParts,
+      },
+      priorEligibility: {
+        status: eligibility.status,
+        reason: eligibility.reason ?? null,
+        search: eligibility.search,
+        modelValidCandidateSetCount: eligibility.modelValidCandidateSetCount,
+      },
+      serviceDecisionMember: suiteCase.serviceDecision,
+      amplifiedStressMember: !suiteCase.serviceDecision,
+      timingCohortIndex,
+      entryBaseline: {
+        boundSemanticCellHash: `sha256:${'2'.repeat(64)}`,
+        freshReplayMatchesBoundCell: true,
+        incumbent,
+      },
+      candidateDiscovery: {
+        termination: 'complete',
+        counters: {
+          pathExpansions: 0,
+          enumeratedPaths: 0,
+          candidateSetExpansions: 1,
+          enumeratedCandidateSets: 1,
+        },
+        candidateSets: [{
+          setIndex: 0,
+          candidateSetKey: JSON.stringify(candidateRouteKeys.map((routeKey) =>
+            JSON.parse(routeKey) as unknown)),
+          routes: candidateHops.map((candidateHop, routeIndex) => ({
+            routeKey: candidateRouteKeys[routeIndex],
+            hops: [candidateHop],
+            resolvedHops: resolvedCandidate
+              ? [{
+                ...candidateHop,
+                reserveIn: '100',
+                reserveOut: '100',
+                feeChargedNumerator: '3',
+                feeDenominator: '1000',
+              }]
+              : null,
+          })),
+          resolutionStatus: resolvedCandidate ? 'resolved' : 'failed',
+          failureCode: resolvedCandidate ? null : 'invalid-route-model',
+        }],
+      },
+      repairTargetSetIndex: resolvedCandidate ? 0 : null,
+      actionCeilingProfileId: config.inputConstruction.workProfile.profileId,
+    }));
+  }
+  return new TextEncoder().encode(`${lines.join('\n')}\n`);
+}
+
+function mutateSyntheticInput(
+  bytes: Uint8Array,
+  mutate: (record: Record<string, unknown>) => void,
+  sourceIndex = 0,
+): Uint8Array {
+  const lines = new TextDecoder().decode(bytes).slice(0, -1).split('\n');
+  const record = JSON.parse(lines[sourceIndex] ?? '') as Record<string, unknown>;
+  mutate(record);
+  lines[sourceIndex] = JSON.stringify(record);
+  return new TextEncoder().encode(`${lines.join('\n')}\n`);
+}
+
+interface SyntheticClosureRepository {
+  readonly root: string;
+  readonly implementationRevision: string;
+  readonly config: FrozenServiceFastConfiguration;
+  readonly reviewedInputBinding: ReviewedInputBinding;
+}
+
+const SYNTHETIC_DURABLE_ENTRY =
+  'src/benchmark/service-fast-numerical-experiment/artifact-verifier/entry.ts';
+const SYNTHETIC_DURABLE_HOST_ADMISSION =
+  'src/benchmark/service-fast-numerical-experiment/artifact-verifier/host-admission.ts';
+const SYNTHETIC_DURABLE_OTHER_SOURCE =
+  'src/benchmark/service-fast-numerical-experiment/artifact-verifier/other.ts';
+const SYNTHETIC_RETAINED_DIRECTORY =
+  'datasets/experiments/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/supported-regime-suite-v1/service-fast-numerical-v1';
+const SYNTHETIC_RETAINED_FILES = Object.freeze([
+  'inputs.ndjson',
+  'semantic-results.ndjson',
+  'call-timing-observations.ndjson',
+  'incumbent-timeline-observations.ndjson',
+  'deadline-observations.ndjson',
+  'analysis.json',
+  'manifest.json',
+  'README.md',
+]);
+
+function syntheticDurableRuntimeProfileSource(
+  overrides: {
+    readonly entryRoots?: readonly string[];
+    readonly projectSources?: readonly string[];
+  } = {},
+): string {
+  const projectSources = overrides.projectSources ?? [
+    SYNTHETIC_DURABLE_ENTRY,
+    SYNTHETIC_DURABLE_HOST_ADMISSION,
+  ];
+  const record = {
+    profileId: 'service-fast-artifact-verifier-runtime-v1',
+    entryRoots: overrides.entryRoots ?? [SYNTHETIC_DURABLE_ENTRY],
+    projectSources,
+    nodeBuiltins: ['node:os', 'node:process'],
+    pathCapabilities: projectSources.map((sourcePath) => ({
+      path: sourcePath,
+      builtins: sourcePath === SYNTHETIC_DURABLE_HOST_ADMISSION
+        ? ['node:os', 'node:process']
+        : [],
+      capabilities: [],
+    })),
+  };
+  return [
+    'const SERVICE_FAST_ARTIFACT_VERIFIER_RUNTIME_PROFILE_RECORD =',
+    `  '${JSON.stringify(record)}';`,
+    'void SERVICE_FAST_ARTIFACT_VERIFIER_RUNTIME_PROFILE_RECORD;',
+    '',
+  ].join('\n');
+}
+
+function syntheticDurableHostAdmissionSource(): string {
+  return [
+    "import { availableParallelism, cpus, endianness, release, type } from 'node:os';",
+    "import { arch, env, execArgv, platform, version, versions } from 'node:process';",
+    'const parallelism = availableParallelism();',
+    'const processors = cpus();',
+    'const byteOrder = endianness();',
+    'const osRelease = release();',
+    'const osType = type();',
+    "const nodeOptions = env['NODE_OPTIONS'];",
+    'const runtimeVersions = versions;',
+    'void [parallelism, processors, byteOrder, osRelease, osType, arch, execArgv, platform, version, runtimeVersions, nodeOptions];',
+    '',
+  ].join('\n');
+}
+
+async function createSyntheticClosureRepository(
+  bindingState: 'reviewed' | 'pending' | 'mismatch' = 'reviewed',
+): Promise<SyntheticClosureRepository> {
+  const root = await mkdtemp(path.join(tmpdir(), 'rlt087-source-closure-repo-'));
+  runSyntheticGit(root, ['init', '--quiet', '--initial-branch=main']);
+  runSyntheticGit(root, ['config', 'user.email', 'source-closure@example.invalid']);
+  runSyntheticGit(root, ['config', 'user.name', 'Source Closure Test']);
+  const configBytes = Uint8Array.from(await readFile(SERVICE_FAST_CONFIG_PATH));
+  const config = parseFrozenServiceFastConfiguration(configBytes);
+
+  const copyPaths = new Set<string>([
+    SERVICE_FAST_CONFIG_PATH,
+    config.artifactSchema.path,
+    ...Object.values(config.authorityBindings).map((descriptor) => descriptor.path),
+    ...config.artifacts.sourceClosure.protectedPaths,
+    ...SERVICE_FAST_NO_ARGUMENT_PARENT_RUNTIME_PATHS,
+    ...SERVICE_FAST_GENERATION_CHILD_RUNTIME_PATHS,
+  ]);
+  for (const relativePath of copyPaths) {
+    await writeSyntheticFile(root, relativePath, Uint8Array.from(await readFile(relativePath)));
+  }
+  const inputBytes = await syntheticInputBytes(config);
+  await writeSyntheticFile(root, config.inputConstruction.inputArtifact.path, inputBytes);
+  const reviewedInputBinding: ReviewedInputBinding = Object.freeze({
+    status: 'reviewed',
+    path: config.inputConstruction.inputArtifact.path,
+    bytes: inputBytes.byteLength + (bindingState === 'mismatch' ? 1 : 0),
+    sha256: sha256Bytes(inputBytes),
+  });
+  if (bindingState !== 'pending') {
+    const bindingSourcePath = path.join(root, SERVICE_FAST_REVIEWED_INPUT_BINDING_PATH);
+    const pendingSource = await readFile(bindingSourcePath, 'utf8');
+    const reviewedSource = pendingSource.replace(
+      '{"status":"pending"}',
+      JSON.stringify(reviewedInputBinding),
+    );
+    assert.notEqual(reviewedSource, pendingSource);
+    await writeFile(bindingSourcePath, reviewedSource);
+  }
+  for (const requiredFile of config.artifacts.sourceClosure.requiredFiles) {
+    if (copyPaths.has(requiredFile) || requiredFile === config.inputConstruction.inputArtifact.path) {
+      continue;
+    }
+    await writeSyntheticFile(root, requiredFile, `export {};\n// ${requiredFile}\n`);
+  }
+  await writeSyntheticFile(
+    root,
+    'src/allocation/service-fast-path-shadow-price/synthetic.ts',
+    'export const candidate = 1;\n',
+  );
+  await writeSyntheticFile(
+    root,
+    'src/allocation/bounded-exact-split-repair/synthetic.ts',
+    'export const repair = 1;\n',
+  );
+  await writeSyntheticFile(
+    root,
+    SYNTHETIC_DURABLE_ENTRY,
+    "import './host-admission.ts';\nexport {};\n",
+  );
+  await writeSyntheticFile(
+    root,
+    SYNTHETIC_DURABLE_HOST_ADMISSION,
+    syntheticDurableHostAdmissionSource(),
+  );
+  await writeSyntheticFile(
+    root,
+    SERVICE_FAST_DURABLE_RUNTIME_PROFILE_PATH,
+    syntheticDurableRuntimeProfileSource(),
+  );
+  runSyntheticGit(root, ['add', '--all']);
+  runSyntheticGit(root, ['commit', '--quiet', '-m', 'RLT-087 Synthetic implementation input']);
+  return Object.freeze({
+    root,
+    implementationRevision: runSyntheticGit(root, ['rev-parse', 'HEAD']).trim(),
+    config,
+    reviewedInputBinding: bindingState === 'pending'
+      ? Object.freeze({ status: 'pending' as const })
+      : reviewedInputBinding,
+  });
+}
+
+void test('decodes only the canonical data-only durable runtime profile', () => {
+  const source = syntheticDurableRuntimeProfileSource();
+  const decoded = decodeServiceFastDurableRuntimeProfileSource(
+    new TextEncoder().encode(source),
+  );
+  assert.equal(decoded.profileId, 'service-fast-artifact-verifier-runtime-v1');
+  assert.deepEqual(decoded.entryRoots, [SYNTHETIC_DURABLE_ENTRY]);
+  assert.deepEqual(decoded.projectSources, [
+    SYNTHETIC_DURABLE_ENTRY,
+    SYNTHETIC_DURABLE_HOST_ADMISSION,
+  ]);
+  for (const hostile of [
+    source.replace('"capabilities":[]', '"capabilities":["fixed-child-dispatch"]'),
+    source.replace(
+      '"nodeBuiltins":["node:os","node:process"]',
+      '"nodeBuiltins":["node:child_process","node:os","node:process"]',
+    ),
+    syntheticDurableRuntimeProfileSource({
+      projectSources: [SYNTHETIC_DURABLE_ENTRY],
+    }),
+    `${source}export {};\n`,
+  ]) {
+    assert.throws(
+      () => decodeServiceFastDurableRuntimeProfileSource(new TextEncoder().encode(hostile)),
+      ServiceFastDurableRuntimeProfileError,
+    );
+  }
+});
+
+void test('rejects substituted or multiple durable entry roots before child dispatch', async () => {
+  const projectSources = [
+    SYNTHETIC_DURABLE_ENTRY,
+    SYNTHETIC_DURABLE_HOST_ADMISSION,
+    SYNTHETIC_DURABLE_OTHER_SOURCE,
+  ];
+  const hostileSources = [
+    syntheticDurableRuntimeProfileSource({
+      entryRoots: [SYNTHETIC_DURABLE_OTHER_SOURCE],
+      projectSources,
+    }),
+    syntheticDurableRuntimeProfileSource({
+      entryRoots: [SYNTHETIC_DURABLE_ENTRY, SYNTHETIC_DURABLE_OTHER_SOURCE],
+      projectSources,
+    }),
+  ];
+  let spawnCount = 0;
+  for (const hostileSource of hostileSources) {
+    const hostileBytes = new TextEncoder().encode(hostileSource);
+    assert.throws(
+      () => decodeServiceFastDurableRuntimeProfileSource(hostileBytes),
+      (error: unknown) =>
+        error instanceof ServiceFastDurableRuntimeProfileError &&
+        error.code === 'invalid-durable-runtime-profile',
+    );
+    await assert.rejects(
+      dispatchServiceFastVerifierChild([], path.resolve('/tmp/rlt087-fixed-root'), {
+        execPath: process.execPath,
+        execArgv: Object.freeze([]),
+        nodeOptions: undefined,
+        authenticateDurableVerifier: () => {
+          decodeServiceFastDurableRuntimeProfileSource(hostileBytes);
+          return Promise.resolve();
+        },
+        spawn: () => {
+          spawnCount += 1;
+          return { status: 0, signal: null };
+        },
+      }),
+      (error: unknown) =>
+        error instanceof ServiceFastDurableRuntimeProfileError &&
+        error.code === 'invalid-durable-runtime-profile',
+    );
+    assert.equal(spawnCount, 0, 'invalid durable entry roots reached child dispatch');
+  }
+});
+
+void test('admits bounded identity and aggregate sizes before runtime file reads', async () => {
+  const hash = `sha256:${'a'.repeat(64)}`;
+  assert.doesNotThrow(() => admitServiceFastAttestedRuntimeDescriptorBytes([
+    { path: 'src/a.ts', bytes: 32 * 1_048_576, sha256: hash },
+    { path: 'src/b.ts', bytes: 32 * 1_048_576, sha256: hash },
+  ]));
+  assert.throws(
+    () => admitServiceFastAttestedRuntimeDescriptorBytes([
+      { path: 'src/a.ts', bytes: 64 * 1_048_576, sha256: hash },
+      { path: 'src/b.ts', bytes: 1, sha256: hash },
+    ]),
+    (error: unknown) =>
+      error instanceof ServiceFastDurableBootstrapError &&
+      error.code === 'bootstrap-runtime-byte-cap-exceeded',
+  );
+
+  const root = await mkdtemp(path.join(tmpdir(), 'rlt087-bounded-identity-'));
+  try {
+    const relativePath = 'oversized.ts';
+    const absolutePath = path.join(root, relativePath);
+    await writeFile(absolutePath, 'x');
+    await truncate(absolutePath, 64 * 1_048_576 + 1);
+    await assert.rejects(
+      readBoundedIdentityFile({
+        repositoryRoot: root,
+        relativePath,
+        maximumBytes: 64 * 1_048_576,
+      }),
+      (error: unknown) =>
+        error instanceof ServiceFastBoundedIdentityReadError &&
+        error.code === 'bounded-file-admission-failure',
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+void test('authenticates before dispatching only the exact two verifier forms', async () => {
+  const calls: {
+    executable: string;
+    arguments_: readonly string[];
+    options: SpawnSyncOptions;
+  }[] = [];
+  const authenticatedRoots: string[] = [];
+  const repositoryRoot = path.resolve('/tmp/rlt087-fixed-root');
+  const dependencies = {
+    execPath: process.execPath,
+    execArgv: Object.freeze([]),
+    nodeOptions: undefined,
+    authenticateDurableVerifier: (root: string) => {
+      authenticatedRoots.push(root);
+      return Promise.resolve();
+    },
+    spawn: (
+      executable: string,
+      arguments_: readonly string[],
+      options: SpawnSyncOptions,
+    ) => {
+      calls.push({ executable, arguments_, options });
+      return { status: 0, signal: null };
+    },
+  };
+  assert.deepEqual(await dispatchServiceFastVerifierChild([], repositoryRoot, dependencies), {
+    status: 0,
+    signal: null,
+  });
+  assert.deepEqual(authenticatedRoots, [repositoryRoot]);
+  assert.deepEqual(calls[0], {
+    executable: process.execPath,
+    arguments_: [path.join(repositoryRoot, SERVICE_FAST_ARTIFACT_VERIFIER_HELPER)],
+    options: { cwd: repositoryRoot, stdio: 'inherit', shell: false },
+  });
+  const revision = 'a'.repeat(40);
+  assert.deepEqual(
+    await dispatchServiceFastVerifierChild(
+      ['--generate-source-closure', revision],
+      repositoryRoot,
+      dependencies,
+    ),
+    { status: 0, signal: null },
+  );
+  assert.deepEqual(calls[1]?.arguments_, [
+    path.join(repositoryRoot, SERVICE_FAST_SOURCE_CLOSURE_GENERATOR_HELPER),
+    revision,
+  ]);
+  assert.equal(Object.hasOwn(calls[1]?.options ?? {}, 'env'), false);
+  assert.deepEqual(authenticatedRoots, [repositoryRoot]);
+
+  for (const hostileEnvironment of [
+    { execArgv: ['--inspect'], nodeOptions: undefined },
+    { execArgv: [] as string[], nodeOptions: '--require=hostile.js' },
+    { execArgv: [] as string[], nodeOptions: ' ' },
+  ]) {
+    const before = calls.length;
+    await assert.rejects(
+      dispatchServiceFastVerifierChild([], repositoryRoot, {
+        ...dependencies,
+        ...hostileEnvironment,
+      }),
+      ServiceFastVerifierInvocationError,
+    );
+    assert.equal(calls.length, before, 'hostile Node environment launched a helper');
+  }
+
+  for (const invalid of [
+    ['--generate-source-closure'],
+    ['--generate-source-closure', 'A'.repeat(40)],
+    ['--generate-source-closure', 'a'.repeat(39)],
+    ['--generate-source-closure', revision, 'extra'],
+    ['--unknown'],
+    [''],
+  ]) {
+    const before = calls.length;
+    await assert.rejects(
+      dispatchServiceFastVerifierChild(invalid, repositoryRoot, dependencies),
+      ServiceFastVerifierInvocationError,
+    );
+    assert.equal(calls.length, before, 'invalid invocation launched a helper');
+  }
+});
+
+void test('derives normalized real CLI roots without a trailing separator', () => {
+  const repositoryRoot = process.cwd();
+  const verifierUrl = pathToFileURL(path.join(
+    repositoryRoot,
+    'cli/verify-service-fast-numerical-experiment.ts',
+  )).href;
+  const generationUrl = pathToFileURL(path.join(
+    repositoryRoot,
+    SERVICE_FAST_SOURCE_CLOSURE_GENERATOR_HELPER,
+  )).href;
+  assert.equal(serviceFastVerifierRepositoryRoot(verifierUrl), repositoryRoot);
+  assert.equal(serviceFastSourceClosureRepositoryRoot(generationUrl), repositoryRoot);
+  assert.equal(path.resolve(serviceFastVerifierRepositoryRoot(verifierUrl)), repositoryRoot);
+});
+
+void test('returns the fixed child exit or signal disposition without reinterpretation', async () => {
+  const repositoryRoot = path.resolve('/tmp/rlt087-fixed-root');
+  const authenticateDurableVerifier = async (): Promise<void> => {};
+  const exit = await dispatchServiceFastVerifierChild([], repositoryRoot, {
+    execPath: process.execPath,
+    execArgv: Object.freeze([]),
+    nodeOptions: '',
+    authenticateDurableVerifier,
+    spawn: () => ({ status: 73, signal: null }),
+  });
+  assert.deepEqual(exit, { status: 73, signal: null });
+  const signal = await dispatchServiceFastVerifierChild([], repositoryRoot, {
+    execPath: process.execPath,
+    execArgv: Object.freeze([]),
+    nodeOptions: undefined,
+    authenticateDurableVerifier,
+    spawn: () => ({ status: null, signal: 'SIGTERM' }),
+  });
+  assert.deepEqual(signal, { status: null, signal: 'SIGTERM' });
+  await assert.rejects(
+    dispatchServiceFastVerifierChild([], repositoryRoot, {
+      execPath: process.execPath,
+      execArgv: Object.freeze([]),
+      nodeOptions: undefined,
+      authenticateDurableVerifier,
+      spawn: () => ({ status: 1, signal: 'SIGTERM' }),
+    }),
+    /both an exit status and signal/u,
+  );
+  for (const result of [
+    { status: null, signal: null },
+    { status: -1, signal: null },
+    { status: Number.NaN, signal: null },
+  ] as const) {
+    await assert.rejects(
+      dispatchServiceFastVerifierChild([], repositoryRoot, {
+        execPath: process.execPath,
+        execArgv: Object.freeze([]),
+        nodeOptions: undefined,
+        authenticateDurableVerifier,
+        spawn: () => result,
+      }),
+      /no valid exit status/u,
+    );
+  }
+});
+
+void test('projects closed CLI failures without arbitrary exception or OS text', () => {
+  const secret = 'raw-os-detail-must-not-escape';
+  assert.deepEqual(projectServiceFastToolFailure(new Error(secret), 'preflight'), {
+    ok: false,
+    cause: 'unexpected-tool-exception',
+    phase: 'preflight',
+    detailCode: 'unexpected-tool-exception',
+    committed: false,
+    secondaryCleanup: null,
+  });
+  const hostileGetter = Object.defineProperty({}, 'code', {
+    get: () => { throw new Error(secret); },
+  });
+  assert.deepEqual(projectServiceFastToolFailure(hostileGetter, 'verification'), {
+    ok: false,
+    cause: 'unexpected-tool-exception',
+    phase: 'verification',
+    detailCode: 'unexpected-tool-exception',
+    committed: false,
+    secondaryCleanup: null,
+  });
+  const repositorySpoof = {
+    code: 'revision-mismatch',
+    toolFailureFamily: 'repository',
+    committed: true,
+    secondaryCleanupCode: 'precommit-owned-temp-cleanup-failure',
+  };
+  assert.deepEqual(projectServiceFastToolFailure(repositorySpoof, 'verification'), {
+    ok: false,
+    cause: 'repository-state-mismatch',
+    phase: 'preflight',
+    detailCode: 'repository-state-mismatch',
+    committed: false,
+    secondaryCleanup: null,
+  });
+  const unknownPublicationSpoof = {
+    code: 'not-a-frozen-publication-code',
+    toolFailureFamily: 'publication',
+    committed: true,
+    secondaryCleanupCode: 'provisional-destination-cleanup-failure',
+  };
+  assert.deepEqual(projectServiceFastToolFailure(unknownPublicationSpoof, 'verification'), {
+    ok: false,
+    cause: 'unexpected-tool-exception',
+    phase: 'publication-precommit',
+    detailCode: 'unexpected-tool-exception',
+    committed: false,
+    secondaryCleanup: null,
+  });
+  const structuralPostcommitSpoof = {
+    code: 'postcommit-parent-sync-failure',
+    toolFailureFamily: 'publication',
+    committed: true,
+    secondaryCleanupCode: 'postcommit-owned-temp-cleanup-failure',
+  };
+  assert.deepEqual(projectServiceFastToolFailure(structuralPostcommitSpoof, 'verification'), {
+    ok: false,
+    cause: 'unexpected-tool-exception',
+    phase: 'publication-precommit',
+    detailCode: 'unexpected-tool-exception',
+    committed: false,
+    secondaryCleanup: null,
+  });
+  const publicationGetterSpoof = Object.defineProperties({}, {
+    code: { value: 'temp-write-failure' },
+    toolFailureFamily: { value: 'publication' },
+    committed: { get: () => { throw new Error(secret); } },
+    secondaryCleanupCode: { get: () => { throw new Error(secret); } },
+  });
+  assert.deepEqual(projectServiceFastToolFailure(publicationGetterSpoof, 'verification'), {
+    ok: false,
+    cause: 'unexpected-tool-exception',
+    phase: 'publication-precommit',
+    detailCode: 'unexpected-tool-exception',
+    committed: false,
+    secondaryCleanup: null,
+  });
+  const launch = encodeProjectedServiceFastToolFailure(
+    new ServiceFastVerifierDispatchError(secret),
+    'verification',
+  );
+  assert.equal(launch.includes(secret), false);
+  assert.deepEqual(JSON.parse(launch), {
+    ok: false,
+    cause: 'unexpected-tool-exception',
+    phase: 'invocation',
+    detailCode: 'unexpected-tool-exception',
+    committed: false,
+    secondaryCleanup: null,
+  });
+
+  for (const [entry, arguments_] of [
+    ['cli/verify-service-fast-numerical-experiment.ts', ['--unknown']],
+    [SERVICE_FAST_SOURCE_CLOSURE_GENERATOR_HELPER, ['BAD-REVISION']],
+  ] as const) {
+    const result = spawnSync(process.execPath, [entry, ...arguments_], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      env: { ...process.env, NODE_OPTIONS: '' },
+      shell: false,
+    });
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.deepEqual(JSON.parse(result.stderr), {
+      ok: false,
+      cause: 'invalid-invocation',
+      phase: 'invocation',
+      detailCode: 'invalid-invocation',
+      committed: false,
+      secondaryCleanup: null,
+    });
+  }
+});
+
+void test('maps every publication detail code exactly into the closed failure wire', () => {
+  assert.deepEqual(
+    [...Object.keys(SERVICE_FAST_PUBLICATION_FAILURE_PROJECTION)].sort(),
+    [...SERVICE_FAST_SOURCE_CLOSURE_PUBLICATION_ERROR_CODES].sort(),
+  );
+  const postcommitCodes = new Set([
+    'postcommit-file-close-failure',
+    'postcommit-parent-sync-failure',
+    'postcommit-parent-close-failure',
+    'postcommit-owned-temp-cleanup-failure',
+    'postcommit-temp-unlink-sync-failure',
+    'postcommit-cleanup-parent-close-failure',
+    'provisional-destination-cleanup-failure',
+  ]);
+  for (const detailCode of SERVICE_FAST_SOURCE_CLOSURE_PUBLICATION_ERROR_CODES) {
+    const expected = SERVICE_FAST_PUBLICATION_FAILURE_PROJECTION[
+      detailCode as keyof typeof SERVICE_FAST_PUBLICATION_FAILURE_PROJECTION
+    ];
+    assert.ok(expected !== undefined);
+    const committed = postcommitCodes.has(detailCode);
+    const projected = projectServiceFastToolFailure(
+      new SourceClosurePublicationError(detailCode, 'artifact', 'raw detail', !committed),
+      'verification',
+    );
+    assert.deepEqual(Object.keys(projected), [
+      'ok',
+      'cause',
+      'phase',
+      'detailCode',
+      'committed',
+      'secondaryCleanup',
+    ]);
+    assert.equal(projected.cause, expected[0]);
+    assert.equal(projected.phase, expected[1]);
+    assert.equal(projected.detailCode, expected[0]);
+    assert.equal(projected.committed, committed);
+    assert.equal(projected.secondaryCleanup, null);
+  }
+  const primaryWithCleanup = new SourceClosurePublicationError(
+    'temp-write-failure',
+    'artifact',
+    'raw primary',
+    false,
+    'precommit-owned-temp-cleanup-failure',
+  );
+  assert.deepEqual(
+    projectServiceFastToolFailure(primaryWithCleanup, 'verification').secondaryCleanup,
+    {
+      cause: 'owned-staging-cleanup-failure',
+      detailCode: 'owned-staging-cleanup-failure',
+    },
+  );
+  for (const hostile of [
+    new SourceClosurePublicationError(
+      'temp-write-failure',
+      'artifact',
+      'raw primary',
+      true,
+      'provisional-destination-cleanup-failure',
+    ),
+    new SourceClosurePublicationError(
+      'postcommit-parent-sync-failure',
+      'artifact',
+      'raw primary',
+      false,
+      'precommit-owned-temp-cleanup-failure',
+    ),
+  ]) {
+    assert.equal(
+      projectServiceFastToolFailure(hostile, 'verification').secondaryCleanup,
+      null,
+    );
+  }
+  const primaryWithProvisionalCleanup = new SourceClosurePublicationError(
+    'postlink-identity-mismatch',
+    'artifact',
+    'raw primary',
+    true,
+    'provisional-destination-cleanup-failure',
+  );
+  assert.deepEqual(
+    projectServiceFastToolFailure(primaryWithProvisionalCleanup, 'verification'),
+    {
+      ok: false,
+      cause: 'artifact-write-failure',
+      phase: 'publication-precommit',
+      detailCode: 'artifact-write-failure',
+      committed: true,
+      secondaryCleanup: {
+        cause: 'provisional-destination-cleanup-failure',
+        detailCode: 'provisional-destination-cleanup-failure',
+      },
+    },
+  );
+});
+
+void test('defaults source-closure generation closed on pending or mismatched reviewed input', async () => {
+  for (const bindingState of ['pending', 'mismatch'] as const) {
+    const fixture = await createSyntheticClosureRepository(bindingState);
+    try {
+      await assert.rejects(
+        prepareServiceFastSourceClosure(
+          fixture.root,
+          fixture.implementationRevision,
+        ),
+        (error: unknown) =>
+          error instanceof ServiceFastReviewedInputBindingError &&
+          error.code === (bindingState === 'pending'
+            ? 'reviewed-input-binding-pending'
+            : 'reviewed-input-binding-mismatch') &&
+          error.toolFailureFamily === 'repository',
+      );
+    } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  }
+});
+
+void test('derives and publishes one canonical revision-tree source closure after size admission', async () => {
+  const fixture = await createSyntheticClosureRepository();
+  try {
+    const result = await generateServiceFastSourceClosure(
+      fixture.root,
+      fixture.implementationRevision,
+    );
+    const closurePath = path.join(
+      fixture.root,
+      fixture.config.artifacts.sourceClosure.path,
+    );
+    assert.deepEqual(Uint8Array.from(await readFile(closurePath)), result.bytes);
+    assert.equal(
+      new TextDecoder().decode(result.bytes),
+      `${JSON.stringify(result.closure, null, 2)}\n`,
+    );
+    assert.ok(result.bytes.byteLength <= fixture.config.artifacts.sourceClosure.maxBytes);
+    assert.deepEqual(
+      result.closure.protectedSources.map((entry) => entry.path),
+      fixture.config.artifacts.sourceClosure.protectedPaths,
+    );
+    assert.equal(
+      new Set(result.closure.sources.map((entry) => entry.path)).size,
+      result.closure.sources.length,
+    );
+    const candidate = result.closure.sources.find((entry) =>
+      entry.path === 'src/allocation/service-fast-path-shadow-price/synthetic.ts');
+    assert.deepEqual(candidate?.roles, ['candidate']);
+    const benchmark = result.closure.sources.find((entry) =>
+      entry.path.endsWith('/source-closure/generate.ts'));
+    assert.deepEqual(benchmark?.roles, ['evaluator', 'input-builder']);
+    const verifierCli = result.closure.sources.find((entry) =>
+      entry.path === 'cli/verify-service-fast-numerical-experiment.ts');
+    assert.deepEqual(verifierCli?.roles, ['artifact-verifier']);
+    for (const descriptor of [
+      result.closure.config,
+      result.closure.artifactSchema,
+      result.closure.inputArtifact,
+      ...result.closure.sources,
+      ...result.closure.protectedSources,
+    ]) {
+      const revisionBytes = runSyntheticGit(
+        fixture.root,
+        ['show', `${fixture.implementationRevision}:${descriptor.path}`],
+      );
+      const bytes = new TextEncoder().encode(revisionBytes);
+      assert.equal(bytes.byteLength, descriptor.bytes);
+      assert.equal(sha256Bytes(bytes), descriptor.sha256);
+    }
+    assert.ok(
+      result.sizeAdmission.maximumDirectoryBytes <=
+        result.sizeAdmission.directoryCapBytes,
+    );
+    assert.equal(result.sizeAdmission.artifacts.length, 8);
+    assert.ok(result.sizeAdmission.artifacts.every((artifact) =>
+      artifact.maximumBytes <= artifact.capBytes));
+    const schema = JSON.parse(
+      await readFile(fixture.config.artifactSchema.path, 'utf8'),
+    ) as { objectSchemas: readonly { schemaId: string; fields: readonly [string, string][] }[] };
+    const analysisSchema = schema.objectSchemas.find((value) => value.schemaId === 'Analysis');
+    const manifestSchema = schema.objectSchemas.find((value) => value.schemaId === 'Manifest');
+    assert.deepEqual(
+      Object.keys(result.sizeAdmission.dryAnalysis),
+      analysisSchema?.fields.map(([field]) => field),
+    );
+    assert.deepEqual(
+      Object.keys(result.sizeAdmission.dryManifest),
+      manifestSchema?.fields.map(([field]) => field),
+    );
+    const manifestArtifacts = result.sizeAdmission.dryManifest['artifacts'] as readonly {
+      name: string;
+      contentRole: string;
+    }[];
+    assert.deepEqual(
+      manifestArtifacts.map(({ name, contentRole }) => [name, contentRole]),
+      [
+        ['inputs.ndjson', 'input'],
+        ['semantic-results.ndjson', 'semantic'],
+        ['call-timing-observations.ndjson', 'call-timing'],
+        ['incumbent-timeline-observations.ndjson', 'incumbent-timeline'],
+        ['deadline-observations.ndjson', 'deadline'],
+        ['analysis.json', 'analysis'],
+        ['README.md', 'readme'],
+      ],
+    );
+    assert.equal(manifestArtifacts.some(({ name }) => name === 'manifest.json'), false);
+    const dryDecision = result.sizeAdmission.dryAnalysis['decision'];
+    const rankedPolicyIds = fixture.config.policyMatrix.policyIds.slice(1);
+    const decisionShapes = [
+      {
+        status: 'selected-policy',
+        policyId: rankedPolicyIds[0],
+        fallbackDecisionId: null,
+        rankedQualifyingPolicyIds: rankedPolicyIds,
+        reason: 'highest-ranked-qualifying-policy',
+      },
+      {
+        status: 'strict-reference-fallback',
+        policyId: null,
+        fallbackDecisionId: 'strict-reference-fallback',
+        rankedQualifyingPolicyIds: [],
+        reason: 'trustworthy-complete-no-policy-qualified',
+      },
+      {
+        status: 'rejected-observation',
+        policyId: null,
+        fallbackDecisionId: null,
+        rankedQualifyingPolicyIds: [],
+        reason: 'incomplete-or-untrustworthy-observation',
+      },
+    ];
+    assert.ok(decisionShapes.every((decisionShape) =>
+      JSON.stringify(dryDecision).length >= JSON.stringify(decisionShape).length));
+    assert.equal(
+      decodeServiceFastSourceClosure(result.bytes, fixture.config).implementationInputRevision,
+      fixture.implementationRevision,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+void test('keeps durable blob verification separate from the exact one-child execution gate', async () => {
+  const fixture = await createSyntheticClosureRepository();
+  try {
+    const generated = await generateServiceFastSourceClosure(
+      fixture.root,
+      fixture.implementationRevision,
+    );
+    assert.throws(
+      () => verifyDurableServiceFastSourceClosure(fixture.root, generated.bytes),
+      /No direct child/u,
+    );
+    await assert.rejects(
+      verifyExecutableServiceFastSourceClosure(fixture.root, generated.bytes),
+      /direct child/u,
+    );
+    runSyntheticGit(fixture.root, ['add', fixture.config.artifacts.sourceClosure.path]);
+    runSyntheticGit(fixture.root, ['commit', '--quiet', '-m', 'RLT-087 Add synthetic closure']);
+    await assert.doesNotReject(
+      authenticateServiceFastDurableVerifierBeforeDispatch(fixture.root),
+    );
+    assert.equal(
+      (await verifyExecutableServiceFastSourceClosure(fixture.root, generated.bytes))
+        .closure.implementationInputRevision,
+      fixture.implementationRevision,
+    );
+    for (const retainedFile of SYNTHETIC_RETAINED_FILES) {
+      await writeSyntheticFile(
+        fixture.root,
+        `${SYNTHETIC_RETAINED_DIRECTORY}/${retainedFile}`,
+        `${retainedFile}\n`,
+      );
+    }
+    await assert.doesNotReject(
+      authenticateServiceFastDurableVerifierBeforeDispatch(fixture.root),
+    );
+    await assert.rejects(
+      verifyExecutableServiceFastSourceClosure(fixture.root, generated.bytes),
+      /clean index and worktree/u,
+    );
+    const ninthRetainedPath = `${SYNTHETIC_RETAINED_DIRECTORY}/ninth-file.txt`;
+    await writeSyntheticFile(fixture.root, ninthRetainedPath, 'ninth\n');
+    await assert.rejects(
+      authenticateServiceFastDurableVerifierBeforeDispatch(fixture.root),
+      (error: unknown) =>
+        error instanceof ServiceFastDurableBootstrapError &&
+        error.code === 'bootstrap-repository-state-mismatch',
+    );
+    await rm(path.join(fixture.root, ninthRetainedPath));
+
+    await writeSyntheticFile(fixture.root, SYNTHETIC_DURABLE_ENTRY, 'export const changed = true;\n');
+    await assert.rejects(
+      authenticateServiceFastDurableVerifierBeforeDispatch(fixture.root),
+      (error: unknown) =>
+        error instanceof ServiceFastDurableBootstrapError &&
+        error.code === 'bootstrap-repository-state-mismatch',
+    );
+    await writeSyntheticFile(fixture.root, SYNTHETIC_DURABLE_ENTRY, 'export {};\n');
+    await writeSyntheticFile(fixture.root, SYNTHETIC_DURABLE_ENTRY, 'export const staged = true;\n');
+    runSyntheticGit(fixture.root, ['add', SYNTHETIC_DURABLE_ENTRY]);
+    await assert.rejects(
+      authenticateServiceFastDurableVerifierBeforeDispatch(fixture.root),
+      (error: unknown) =>
+        error instanceof ServiceFastDurableBootstrapError &&
+        error.code === 'bootstrap-index-identity-mismatch',
+    );
+    await writeSyntheticFile(fixture.root, SYNTHETIC_DURABLE_ENTRY, 'export {};\n');
+    runSyntheticGit(fixture.root, ['add', SYNTHETIC_DURABLE_ENTRY]);
+    await writeSyntheticFile(fixture.root, 'later.txt', 'later\n');
+    runSyntheticGit(fixture.root, ['add', 'later.txt']);
+    runSyntheticGit(fixture.root, ['commit', '--quiet', '-m', 'RLT-087 Add later synthetic state']);
+    assert.equal(
+      verifyDurableServiceFastSourceClosure(fixture.root, generated.bytes)
+        .closure.implementationInputRevision,
+      fixture.implementationRevision,
+    );
+    await assert.rejects(
+      verifyExecutableServiceFastSourceClosure(fixture.root, generated.bytes),
+      /one-child source-closure commit/u,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+void test('rechecks selected execution bytes and symlinks after Git-only closure admission', async () => {
+  const fixture = await createSyntheticClosureRepository();
+  const external = await mkdtemp(path.join(tmpdir(), 'rlt087-execution-source-'));
+  const sourcePath = 'src/allocation/service-fast-path-shadow-price/synthetic.ts';
+  try {
+    const generated = await generateServiceFastSourceClosure(
+      fixture.root,
+      fixture.implementationRevision,
+    );
+    runSyntheticGit(fixture.root, ['add', fixture.config.artifacts.sourceClosure.path]);
+    runSyntheticGit(fixture.root, ['commit', '--quiet', '-m', 'RLT-087 Add synthetic closure']);
+    const sourceAbsolute = path.join(fixture.root, sourcePath);
+    const original = Uint8Array.from(await readFile(sourceAbsolute));
+    runSyntheticGit(fixture.root, ['update-index', '--assume-unchanged', sourcePath]);
+    const changed = Uint8Array.from(original);
+    changed[0] = changed[0] === 0x65 ? 0x66 : 0x65;
+    assert.equal(changed.byteLength, original.byteLength);
+    await writeFile(sourceAbsolute, changed);
+    assert.equal(
+      verifyDurableServiceFastSourceClosure(fixture.root, generated.bytes)
+        .closure.implementationInputRevision,
+      fixture.implementationRevision,
+    );
+    await assert.rejects(
+      verifyExecutableServiceFastSourceClosure(fixture.root, generated.bytes),
+      (error: unknown) =>
+        error instanceof ServiceFastSourceClosureError &&
+        error.code === 'execution-source-descriptor-mismatch',
+    );
+
+    const externalSource = path.join(external, 'source.ts');
+    await writeFile(externalSource, original);
+    await rm(sourceAbsolute);
+    await symlink(externalSource, sourceAbsolute);
+    await assert.rejects(
+      verifyExecutableServiceFastSourceClosure(fixture.root, generated.bytes),
+      (error: unknown) =>
+        error instanceof ServiceFastSourceClosureError &&
+        error.code === 'symlink-source-forbidden',
+    );
+    await rm(sourceAbsolute);
+    await writeFile(sourceAbsolute, original);
+    runSyntheticGit(fixture.root, ['update-index', '--no-assume-unchanged', sourcePath]);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+    await rm(external, { recursive: true, force: true });
+  }
+});
+
+void test('rejects absent, extra-diff, and ambiguous historical closure children', async () => {
+  const extraDiff = await createSyntheticClosureRepository();
+  try {
+    const prepared = await prepareServiceFastSourceClosure(
+      extraDiff.root,
+      extraDiff.implementationRevision,
+    );
+    await writeSyntheticFile(
+      extraDiff.root,
+      extraDiff.config.artifacts.sourceClosure.path,
+      prepared.bytes,
+    );
+    await writeSyntheticFile(extraDiff.root, 'extra.txt', 'extra\n');
+    runSyntheticGit(extraDiff.root, ['add', '--all']);
+    runSyntheticGit(extraDiff.root, ['commit', '--quiet', '-m', 'RLT-087 Add closure and extra diff']);
+    assert.throws(
+      () => verifyDurableServiceFastSourceClosure(extraDiff.root, prepared.bytes),
+      /only the exact added source-closure file/u,
+    );
+  } finally {
+    await rm(extraDiff.root, { recursive: true, force: true });
+  }
+
+  const ambiguous = await createSyntheticClosureRepository();
+  try {
+    const prepared = await prepareServiceFastSourceClosure(
+      ambiguous.root,
+      ambiguous.implementationRevision,
+    );
+    const closurePath = ambiguous.config.artifacts.sourceClosure.path;
+    await writeSyntheticFile(ambiguous.root, closurePath, prepared.bytes);
+    runSyntheticGit(ambiguous.root, ['add', closurePath]);
+    runSyntheticGit(ambiguous.root, ['commit', '--quiet', '-m', 'RLT-087 Add first closure child']);
+    const firstChild = runSyntheticGit(ambiguous.root, ['rev-parse', 'HEAD']).trim();
+    runSyntheticGit(ambiguous.root, ['switch', '--quiet', '--detach', ambiguous.implementationRevision]);
+    await writeSyntheticFile(ambiguous.root, closurePath, prepared.bytes);
+    runSyntheticGit(ambiguous.root, ['add', closurePath]);
+    runSyntheticGit(ambiguous.root, ['commit', '--quiet', '-m', 'RLT-087 Add second closure child']);
+    const secondChild = runSyntheticGit(ambiguous.root, ['rev-parse', 'HEAD']).trim();
+    runSyntheticGit(ambiguous.root, ['switch', '--quiet', '--detach', firstChild]);
+    runSyntheticGit(ambiguous.root, [
+      'merge',
+      '--quiet',
+      '--no-ff',
+      '-m',
+      'RLT-087 Merge ambiguous closure children',
+      secondChild,
+    ]);
+    assert.throws(
+      () => verifyDurableServiceFastSourceClosure(ambiguous.root, prepared.bytes),
+      /multiple direct children/u,
+    );
+  } finally {
+    await rm(ambiguous.root, { recursive: true, force: true });
+  }
+});
+
+void test('requires the historical closure child to add one regular blob', async () => {
+  const modified = await createSyntheticClosureRepository();
+  try {
+    const closurePath = modified.config.artifacts.sourceClosure.path;
+    await writeSyntheticFile(modified.root, closurePath, '{}\n');
+    runSyntheticGit(modified.root, ['add', closurePath]);
+    runSyntheticGit(modified.root, ['commit', '--quiet', '-m', 'RLT-087 Seed synthetic closure']);
+    const revision = runSyntheticGit(modified.root, ['rev-parse', 'HEAD']).trim();
+    const prepared = await prepareServiceFastSourceClosure(modified.root, revision);
+    await writeSyntheticFile(modified.root, closurePath, prepared.bytes);
+    runSyntheticGit(modified.root, ['add', closurePath]);
+    runSyntheticGit(modified.root, ['commit', '--quiet', '-m', 'RLT-087 Modify synthetic closure']);
+    assert.throws(
+      () => verifyDurableServiceFastSourceClosure(modified.root, prepared.bytes),
+      /exact added source-closure file/u,
+    );
+  } finally {
+    await rm(modified.root, { recursive: true, force: true });
+  }
+
+  const nonregular = await createSyntheticClosureRepository();
+  try {
+    const closurePath = nonregular.config.artifacts.sourceClosure.path;
+    const prepared = await prepareServiceFastSourceClosure(
+      nonregular.root,
+      nonregular.implementationRevision,
+    );
+    const blobId = runSyntheticGit(
+      nonregular.root,
+      ['hash-object', '-w', '--stdin'],
+      new TextDecoder().decode(prepared.bytes),
+    ).trim();
+    runSyntheticGit(nonregular.root, [
+      'update-index',
+      '--add',
+      '--cacheinfo',
+      `120000,${blobId},${closurePath}`,
+    ]);
+    runSyntheticGit(nonregular.root, ['commit', '--quiet', '-m', 'RLT-087 Add nonregular synthetic closure']);
+    assert.throws(
+      () => verifyDurableServiceFastSourceClosure(nonregular.root, prepared.bytes),
+      /one regular source-closure blob/u,
+    );
+  } finally {
+    await rm(nonregular.root, { recursive: true, force: true });
+  }
+});
+
+void test('rejects source-closure bytes above the frozen cap before JSON parsing', () => {
+  const oversized = new Uint8Array(1_048_577).fill('{'.charCodeAt(0));
+  assert.throws(
+    () => verifyDurableServiceFastSourceClosure('/repository-root-is-not-consulted', oversized),
+    /frozen 1 MiB cap/u,
+  );
+});
+
+void test('hardens Git reads against hostile environment and replacement objects', async () => {
+  const fixture = await createSyntheticClosureRepository();
+  const redirect = await createSyntheticClosureRepository();
+  const sourcePath = 'src/allocation/service-fast-path-shadow-price/synthetic.ts';
+  try {
+    const original = Uint8Array.from(await readFile(path.join(fixture.root, sourcePath)));
+    await writeSyntheticFile(fixture.root, sourcePath, 'export const candidate = 2;\n');
+    runSyntheticGit(fixture.root, ['add', sourcePath]);
+    runSyntheticGit(fixture.root, ['commit', '--quiet', '-m', 'RLT-087 Create replacement object']);
+    const replacement = runSyntheticGit(fixture.root, ['rev-parse', 'HEAD']).trim();
+    runSyntheticGit(fixture.root, ['switch', '--quiet', '--detach', fixture.implementationRevision]);
+    runSyntheticGit(fixture.root, ['replace', fixture.implementationRevision, replacement]);
+    assert.notDeepEqual(
+      new TextEncoder().encode(runSyntheticGit(
+        fixture.root,
+        ['show', `${fixture.implementationRevision}:${sourcePath}`],
+      )),
+      original,
+      'raw Git did not activate the replacement-object probe',
+    );
+    assert.deepEqual(
+      readGitBlob(fixture.root, fixture.implementationRevision, sourcePath, original.byteLength),
+      original,
+    );
+    assert.throws(
+      () => readGitBlob(
+        fixture.root,
+        fixture.implementationRevision,
+        sourcePath,
+        Number.MAX_SAFE_INTEGER,
+      ),
+      (error: unknown) =>
+        error instanceof SourceClosureGitError &&
+        error.code === 'invalid-git-blob-bound' &&
+        error.toolFailureFamily === 'repository',
+    );
+    assert.deepEqual([...readGitIgnoredPaths(fixture.root, [])], []);
+    await writeFile(path.join(fixture.root, '.git', 'info', 'exclude'), 'ignored-runtime.ts\n');
+    assert.deepEqual(
+      [...readGitIgnoredPaths(fixture.root, ['visible-runtime.ts', 'ignored-runtime.ts'])],
+      ['ignored-runtime.ts'],
+    );
+    assert.throws(
+      () => readGitIgnoredPaths(fixture.root, ['duplicate.ts', 'duplicate.ts']),
+      /unique paths/u,
+    );
+
+    const saved = Object.freeze({
+      GIT_DIR: process.env['GIT_DIR'],
+      GIT_WORK_TREE: process.env['GIT_WORK_TREE'],
+      GIT_INDEX_FILE: process.env['GIT_INDEX_FILE'],
+      GIT_OBJECT_DIRECTORY: process.env['GIT_OBJECT_DIRECTORY'],
+      GIT_ALTERNATE_OBJECT_DIRECTORIES: process.env['GIT_ALTERNATE_OBJECT_DIRECTORIES'],
+      GIT_CONFIG_COUNT: process.env['GIT_CONFIG_COUNT'],
+    });
+    try {
+      process.env['GIT_DIR'] = path.join(redirect.root, '.git');
+      process.env['GIT_WORK_TREE'] = redirect.root;
+      process.env['GIT_INDEX_FILE'] = path.join(redirect.root, '.git', 'index');
+      process.env['GIT_OBJECT_DIRECTORY'] = path.join(redirect.root, '.git', 'objects');
+      process.env['GIT_ALTERNATE_OBJECT_DIRECTORIES'] = path.join(redirect.root, '.git', 'objects');
+      process.env['GIT_CONFIG_COUNT'] = '1';
+      assert.equal(readGitHeadRevision(fixture.root), fixture.implementationRevision);
+    } finally {
+      for (const [key, value] of Object.entries(saved)) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
+
+    const monitorPath = path.join(fixture.root, 'hostile-fsmonitor.sh');
+    const monitorSentinel = path.join(fixture.root, '.hostile-fsmonitor-ran');
+    await writeFile(
+      monitorPath,
+      `#!/bin/sh\n: > ${JSON.stringify(monitorSentinel)}\nprintf 'token\\0'\n`,
+    );
+    await chmod(monitorPath, 0o700);
+    runSyntheticGit(fixture.root, ['config', 'core.fsmonitor', monitorPath]);
+    runSyntheticGit(fixture.root, ['config', 'core.untrackedCache', 'true']);
+    runSyntheticGit(fixture.root, ['status', '--porcelain=v1']);
+    assert.equal((await lstat(monitorSentinel)).isFile(), true);
+    await rm(monitorSentinel);
+    readGitStatusPorcelain(fixture.root);
+    await assert.rejects(lstat(monitorSentinel), { code: 'ENOENT' });
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+    await rm(redirect.root, { recursive: true, force: true });
+  }
+});
+
+void test('rejects non-UTF-8 Git path metadata', async () => {
+  const fixture = await createSyntheticClosureRepository();
+  try {
+    const invalidPath = Buffer.concat([
+      Buffer.from(`${fixture.root}/invalid-`, 'utf8'),
+      Buffer.from([0xff]),
+    ]);
+    await writeFile(invalidPath, 'invalid path bytes\n');
+    runSyntheticGit(fixture.root, ['add', '--all']);
+    runSyntheticGit(fixture.root, ['commit', '--quiet', '-m', 'RLT-087 Add invalid path bytes']);
+    assert.throws(
+      () => readGitIndexEntries(fixture.root),
+      (error: unknown) =>
+        error instanceof SourceClosureGitError &&
+        error.toolFailureFamily === 'repository' &&
+        error.code === 'invalid-git-utf8',
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+void test('rejects a same-width protected runtime source change at the primary binding gate', async () => {
+  const fixture = await createSyntheticClosureRepository();
+  try {
+    const descriptor = Object.values(fixture.config.protectedRuntimeSources)[0];
+    assert.ok(descriptor !== undefined);
+    const original = Uint8Array.from(await readFile(path.join(fixture.root, descriptor.path)));
+    const changed = Uint8Array.from(original);
+    changed[0] = changed[0] === 0x20 ? 0x21 : 0x20;
+    assert.equal(changed.byteLength, original.byteLength);
+    await writeSyntheticFile(fixture.root, descriptor.path, changed);
+    runSyntheticGit(fixture.root, ['add', descriptor.path]);
+    runSyntheticGit(fixture.root, ['commit', '--quiet', '-m', 'RLT-087 Change protected runtime bytes']);
+    const changedRevision = runSyntheticGit(fixture.root, ['rev-parse', 'HEAD']).trim();
+    await assert.rejects(
+      prepareServiceFastSourceClosure(fixture.root, changedRevision),
+      /Protected runtime source|does not match its descriptor/u,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+void test('rejects source-closure order, unknown, duplicate, traversal, descriptor, and revision faults', async () => {
+  const fixture = await createSyntheticClosureRepository();
+  try {
+    const prepared = await prepareServiceFastSourceClosure(
+      fixture.root,
+      fixture.implementationRevision,
+    );
+    const source = JSON.parse(new TextDecoder().decode(prepared.bytes)) as Record<string, unknown>;
+    const canonical = (value: unknown): Uint8Array =>
+      new TextEncoder().encode(`${JSON.stringify(value, null, 2)}\n`);
+
+    const unknown = structuredClone(source);
+    unknown['unknown'] = true;
+    assert.throws(
+      () => verifyDurableServiceFastSourceClosure(fixture.root, canonical(unknown)),
+      /frozen fields/u,
+    );
+
+    const reordered = structuredClone(source);
+    const reorderedSources = reordered['sources'] as Record<string, unknown>[];
+    [reorderedSources[0], reorderedSources[1]] = [reorderedSources[1]!, reorderedSources[0]!];
+    assert.throws(
+      () => verifyDurableServiceFastSourceClosure(fixture.root, canonical(reordered)),
+      /order|revision sources/u,
+    );
+
+    const duplicate = structuredClone(source);
+    const duplicateSources = duplicate['sources'] as Record<string, unknown>[];
+    duplicateSources[1] = structuredClone(duplicateSources[0]!);
+    assert.throws(
+      () => verifyDurableServiceFastSourceClosure(fixture.root, canonical(duplicate)),
+      /duplicate/u,
+    );
+
+    const traversal = structuredClone(source);
+    const traversalSources = traversal['sources'] as Record<string, unknown>[];
+    traversalSources[0]!['path'] = '../escape.ts';
+    assert.throws(
+      () => verifyDurableServiceFastSourceClosure(fixture.root, canonical(traversal)),
+      /path is not canonical/u,
+    );
+
+    const invalidRevision = structuredClone(source);
+    invalidRevision['implementationInputRevision'] = 'BAD-REVISION';
+    assert.throws(
+      () => verifyDurableServiceFastSourceClosure(fixture.root, canonical(invalidRevision)),
+      (error: unknown) =>
+        error instanceof ServiceFastSourceClosureError &&
+        error.toolFailureFamily === 'repository' &&
+        error.code === 'revision-mismatch',
+    );
+
+    const descriptorMismatch = structuredClone(source);
+    const mismatchedSources = descriptorMismatch['sources'] as Record<string, unknown>[];
+    mismatchedSources[0]!['sha256'] = `sha256:${'0'.repeat(64)}`;
+    assert.throws(
+      () => verifyDurableServiceFastSourceClosure(
+        fixture.root,
+        canonical(descriptorMismatch),
+      ),
+      /does not match its descriptor/u,
+    );
+
+    const forgedMaximumSafeDescriptor = structuredClone(source);
+    const forgedSources = forgedMaximumSafeDescriptor['sources'] as Record<string, unknown>[];
+    forgedSources[0]!['bytes'] = Number.MAX_SAFE_INTEGER;
+    assert.throws(
+      () => verifyDurableServiceFastSourceClosure(
+        fixture.root,
+        canonical(forgedMaximumSafeDescriptor),
+      ),
+      (error: unknown) =>
+        error instanceof SourceClosureCodecError &&
+        error.code === 'source-byte-cap-exceeded' &&
+        error.toolFailureFamily === 'repository',
+    );
+
+    const duplicateKey = new TextDecoder().decode(prepared.bytes).replace(
+      '  "experimentId":',
+      `  "experimentId": "m7c-core12-service-fast-numerical-v1",\n  "experimentId":`,
+    );
+    assert.throws(
+      () => verifyDurableServiceFastSourceClosure(
+        fixture.root,
+        new TextEncoder().encode(duplicateKey),
+      ),
+      /canonical/u,
+    );
+    await assert.rejects(
+      prepareServiceFastSourceClosure(fixture.root, '0'.repeat(40)),
+      /Expected repository HEAD/u,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+void test('rejects untracked, symlink-mode, and conflicted generation repositories', async () => {
+  const untracked = await createSyntheticClosureRepository();
+  try {
+    await writeSyntheticFile(
+      untracked.root,
+      'src/benchmark/service-fast-numerical-experiment/untracked.ts',
+      'export {};\n',
+    );
+    await assert.rejects(
+      prepareServiceFastSourceClosure(untracked.root, untracked.implementationRevision),
+      /clean index and worktree/u,
+    );
+  } finally {
+    await rm(untracked.root, { recursive: true, force: true });
+  }
+
+  const symlinkMode = await createSyntheticClosureRepository();
+  try {
+    const source = path.join(
+      symlinkMode.root,
+      'src/allocation/service-fast-path-shadow-price/synthetic.ts',
+    );
+    await rm(source);
+    await symlink('missing-target.ts', source);
+    runSyntheticGit(symlinkMode.root, ['add', '--all']);
+    runSyntheticGit(symlinkMode.root, ['commit', '--quiet', '-m', 'RLT-087 Add symlink mode']);
+    const revision = runSyntheticGit(symlinkMode.root, ['rev-parse', 'HEAD']).trim();
+    await assert.rejects(
+      prepareServiceFastSourceClosure(symlinkMode.root, revision),
+      /not a regular file/u,
+    );
+  } finally {
+    await rm(symlinkMode.root, { recursive: true, force: true });
+  }
+
+  const conflicted = await createSyntheticClosureRepository();
+  try {
+    const conflictPath = 'src/allocation/service-fast-path-shadow-price/synthetic.ts';
+    const objectId = runSyntheticGit(conflicted.root, ['rev-parse', `HEAD:${conflictPath}`]).trim();
+    runSyntheticGit(conflicted.root, ['update-index', '--force-remove', conflictPath]);
+    runSyntheticGit(
+      conflicted.root,
+      ['update-index', '--index-info'],
+      `100644 ${objectId} 1\t${conflictPath}\n100644 ${objectId} 2\t${conflictPath}\n`,
+    );
+    await assert.rejects(
+      prepareServiceFastSourceClosure(conflicted.root, conflicted.implementationRevision),
+      /clean index and worktree|stage-zero/u,
+    );
+  } finally {
+    await rm(conflicted.root, { recursive: true, force: true });
+  }
+});
+
+void test('types missing generator filesystem authorities as repository failures', async () => {
+  const fixture = await createSyntheticClosureRepository();
+  try {
+    runSyntheticGit(fixture.root, ['rm', '--quiet', SERVICE_FAST_CONFIG_PATH]);
+    runSyntheticGit(fixture.root, ['commit', '--quiet', '-m', 'RLT-087 Remove synthetic config']);
+    const revision = runSyntheticGit(fixture.root, ['rev-parse', 'HEAD']).trim();
+    await assert.rejects(
+      prepareServiceFastSourceClosure(fixture.root, revision),
+      (error: unknown) =>
+        error instanceof ServiceFastSourceClosureError &&
+        error.toolFailureFamily === 'repository' &&
+        error.code === 'filesystem-inspection-failure' &&
+        error.artifact === SERVICE_FAST_CONFIG_PATH,
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+void test('publishes closure bytes exclusively and preserves every preexisting destination', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'rlt087-closure-publication-'));
+  const destination = path.join(directory, 'source-closure.v1.json');
+  const bytes = new TextEncoder().encode('{"canonical":true}\n');
+  try {
+    const published = await publishCanonicalSourceClosure(destination, bytes, 1024);
+    assert.equal(published.bytes, bytes.byteLength);
+    assert.deepEqual(Uint8Array.from(await readFile(destination)), bytes);
+    assert.deepEqual(await readdir(directory), ['source-closure.v1.json']);
+
+    await assert.rejects(
+      publishCanonicalSourceClosure(destination, bytes, 1024),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'initial-destination-conflict',
+    );
+    assert.deepEqual(Uint8Array.from(await readFile(destination)), bytes);
+    await rm(destination);
+    await writeFile(path.join(directory, 'target'), 'target\n');
+    await symlink('target', destination);
+    await assert.rejects(
+      publishCanonicalSourceClosure(destination, bytes, 1024),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'initial-destination-conflict',
+    );
+    assert.equal((await lstat(destination)).isSymbolicLink(), true);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+void test('cleans only its owned closure temp on precommit and final-race failures', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'rlt087-closure-cleanup-'));
+  const destination = path.join(directory, 'source-closure.v1.json');
+  const bytes = new TextEncoder().encode('{"canonical":true}\n');
+  const defaults = defaultClosurePublicationDependencies();
+  try {
+    await assert.rejects(
+      publishCanonicalSourceClosure(
+        destination,
+        bytes,
+        1024,
+        {
+          ...defaults,
+          uniqueSuffix: () => 'write-failure',
+          openExclusive: async (filePath) => {
+            const handle = await defaults.openExclusive(filePath);
+            return {
+              ...handle,
+              write: () => Promise.reject(new Error('forced write failure')),
+            };
+          },
+        },
+      ),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'temp-write-failure',
+    );
+    assert.deepEqual(await readdir(directory), []);
+
+    await assert.rejects(
+      publishCanonicalSourceClosure(
+        destination,
+        bytes,
+        1024,
+        {
+          ...defaults,
+          uniqueSuffix: () => 'final-race',
+          link: async (sourcePath, destinationPath) => {
+            await writeFile(destinationPath, 'racer\n', { flag: 'wx' });
+            await defaults.link(sourcePath, destinationPath);
+          },
+        },
+      ),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'final-destination-conflict',
+    );
+    assert.equal(await readFile(destination, 'utf8'), 'racer\n');
+    assert.deepEqual(await readdir(directory), ['source-closure.v1.json']);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+void test('rebinds publication inodes and projects otherwise-silent close failures', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'rlt087-closure-rebind-'));
+  const bytes = new TextEncoder().encode('{"canonical":true}\n');
+  const defaults = defaultClosurePublicationDependencies();
+  try {
+    const prelinkHandleDestination = path.join(directory, 'prelink-handle-stat.json');
+    await assert.rejects(
+      publishCanonicalSourceClosure(prelinkHandleDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'prelink-handle-stat',
+        openExclusive: async (filePath) => {
+          const handle = await defaults.openExclusive(filePath);
+          let statCalls = 0;
+          return {
+            ...handle,
+            stat: async () => {
+              statCalls += 1;
+              if (statCalls === 2) throw new Error('forced prelink handle stat failure');
+              return handle.stat();
+            },
+          };
+        },
+      }),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'temp-identity-mismatch' &&
+        !error.committed,
+    );
+    assert.deepEqual(await readdir(directory), []);
+
+    const prelinkPathDestination = path.join(directory, 'prelink-path-stat.json');
+    let prelinkTempStats = 0;
+    await assert.rejects(
+      publishCanonicalSourceClosure(prelinkPathDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'prelink-path-stat',
+        lstat: async (filePath) => {
+          if (filePath.includes('.prelink-path-stat.json.tmp-')) {
+            prelinkTempStats += 1;
+            if (prelinkTempStats === 2) {
+              throw new Error('forced prelink path stat failure');
+            }
+          }
+          return defaults.lstat(filePath);
+        },
+      }),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'temp-identity-mismatch' &&
+        !error.committed,
+    );
+    assert.deepEqual(await readdir(directory), []);
+
+    const postlinkStatDestination = path.join(directory, 'postlink-stat.json');
+    await assert.rejects(
+      publishCanonicalSourceClosure(postlinkStatDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'postlink-stat',
+        openExclusive: async (filePath) => {
+          const handle = await defaults.openExclusive(filePath);
+          let statCalls = 0;
+          return {
+            ...handle,
+            stat: async () => {
+              statCalls += 1;
+              if (statCalls === 3) throw new Error('forced postlink handle stat failure');
+              return handle.stat();
+            },
+          };
+        },
+      }),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'postlink-identity-mismatch' &&
+        !error.committed &&
+        error.secondaryCleanupCode === null,
+    );
+    assert.deepEqual(await readdir(directory), []);
+
+    const closeFailureDestination = path.join(directory, 'precommit-close.json');
+    await assert.rejects(
+      publishCanonicalSourceClosure(closeFailureDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'precommit-close',
+        openExclusive: async (filePath) => {
+          const handle = await defaults.openExclusive(filePath);
+          return {
+            ...handle,
+            write: () => Promise.reject(new Error('forced precommit write failure')),
+            close: async () => {
+              await handle.close();
+              throw new Error('forced precommit close failure');
+            },
+          };
+        },
+      }),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'temp-write-failure' &&
+        !error.committed &&
+        error.secondaryCleanupCode === 'precommit-owned-temp-cleanup-failure',
+    );
+    assert.deepEqual(await readdir(directory), []);
+
+    const identityFailureDestination = path.join(directory, 'identity-establishment.json');
+    await assert.rejects(
+      publishCanonicalSourceClosure(identityFailureDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'identity-establishment',
+        openExclusive: async (filePath) => {
+          const handle = await defaults.openExclusive(filePath);
+          return { ...handle, stat: () => Promise.reject(new Error('forced initial handle stat failure')) };
+        },
+      }),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'temp-identity-mismatch' &&
+        !error.committed &&
+        error.secondaryCleanupCode === 'precommit-owned-temp-cleanup-failure',
+    );
+    const uncertainTemp = (await readdir(directory)).find((name) =>
+      name.includes('identity-establishment'));
+    assert.ok(uncertainTemp !== undefined);
+    await rm(path.join(directory, uncertainTemp));
+
+    const corruptDestination = path.join(directory, 'corrupt-readback.json');
+    await assert.rejects(
+      publishCanonicalSourceClosure(corruptDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'corrupt-readback',
+        openExclusive: async (filePath) => {
+          const handle = await defaults.openExclusive(filePath);
+          return {
+            ...handle,
+            write: async (written) => {
+              const changed = Uint8Array.from(written);
+              changed[0] = changed[0] === 0x7b ? 0x5b : 0x7b;
+              await handle.write(changed);
+            },
+          };
+        },
+      }),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'temp-readback-mismatch',
+    );
+    assert.deepEqual(await readdir(directory), []);
+
+    const swappedDestination = path.join(directory, 'swapped.json');
+    await assert.rejects(
+      publishCanonicalSourceClosure(swappedDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'swapped-source',
+        link: async (sourcePath, destinationPath) => {
+          await defaults.unlink(sourcePath);
+          await writeFile(sourcePath, 'attacker\n', { flag: 'wx' });
+          await defaults.link(sourcePath, destinationPath);
+        },
+      }),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'postlink-identity-mismatch' &&
+        error.committed &&
+        error.secondaryCleanupCode === 'provisional-destination-cleanup-failure',
+    );
+    assert.equal(await readFile(swappedDestination, 'utf8'), 'attacker\n');
+    const swappedTemp = (await readdir(directory)).find((name) => name.includes('swapped-source'));
+    assert.ok(swappedTemp !== undefined);
+    assert.equal(await readFile(path.join(directory, swappedTemp), 'utf8'), 'attacker\n');
+    await rm(path.join(directory, swappedTemp));
+    await rm(swappedDestination);
+
+    const replacedDestination = path.join(directory, 'replaced.json');
+    let destinationInspections = 0;
+    await assert.rejects(
+      publishCanonicalSourceClosure(replacedDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'replaced-destination',
+        lstat: async (filePath) => {
+          if (filePath === replacedDestination) {
+            destinationInspections += 1;
+            if (destinationInspections === 3) {
+              await defaults.unlink(filePath);
+              await writeFile(filePath, 'replacement-actor\n', { flag: 'wx' });
+            }
+          }
+          return defaults.lstat(filePath);
+        },
+      }),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'postlink-identity-mismatch' &&
+        error.committed &&
+        error.secondaryCleanupCode === 'provisional-destination-cleanup-failure',
+    );
+    assert.equal(await readFile(replacedDestination, 'utf8'), 'replacement-actor\n');
+    assert.deepEqual(await readdir(directory), ['replaced.json']);
+    await rm(replacedDestination);
+
+    const rolledBackDestination = path.join(directory, 'rolled-back.json');
+    let rollbackInspections = 0;
+    await assert.rejects(
+      publishCanonicalSourceClosure(rolledBackDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'rolled-back',
+        lstat: async (filePath) => {
+          const stats = await defaults.lstat(filePath);
+          if (filePath === rolledBackDestination) {
+            rollbackInspections += 1;
+            if (rollbackInspections === 1) return { ...stats, size: stats.size + 1n };
+          }
+          return stats;
+        },
+      }),
+      (error: unknown) => {
+        if (!(error instanceof SourceClosurePublicationError)) return false;
+        assert.deepEqual(projectServiceFastToolFailure(error, 'verification'), {
+          ok: false,
+          cause: 'artifact-write-failure',
+          phase: 'publication-precommit',
+          detailCode: 'artifact-write-failure',
+          committed: false,
+          secondaryCleanup: null,
+        });
+        return error.code === 'postlink-identity-mismatch';
+      },
+    );
+    await assert.rejects(lstat(rolledBackDestination), { code: 'ENOENT' });
+    assert.deepEqual(await readdir(directory), []);
+
+    const uncertainSyncDestination = path.join(directory, 'uncertain-sync.json');
+    let uncertainSyncInspections = 0;
+    await assert.rejects(
+      publishCanonicalSourceClosure(uncertainSyncDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'uncertain-sync',
+        lstat: async (filePath) => {
+          const stats = await defaults.lstat(filePath);
+          if (filePath === uncertainSyncDestination) {
+            uncertainSyncInspections += 1;
+            if (uncertainSyncInspections === 1) return { ...stats, size: stats.size + 1n };
+          }
+          return stats;
+        },
+        openDirectory: async (directoryPath) => {
+          const handle = await defaults.openDirectory(directoryPath);
+          return { ...handle, sync: () => Promise.reject(new Error('forced rollback sync failure')) };
+        },
+      }),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'postlink-identity-mismatch' &&
+        error.committed &&
+        error.secondaryCleanupCode === 'provisional-destination-cleanup-failure',
+    );
+    await assert.rejects(lstat(uncertainSyncDestination), { code: 'ENOENT' });
+    assert.deepEqual(await readdir(directory), []);
+
+    const reappearedDestination = path.join(directory, 'reappeared.json');
+    let reappearedInspections = 0;
+    await assert.rejects(
+      publishCanonicalSourceClosure(reappearedDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'reappeared',
+        lstat: async (filePath) => {
+          if (filePath === reappearedDestination) {
+            reappearedInspections += 1;
+            if (reappearedInspections === 5) {
+              await writeFile(filePath, 'replacement-after-sync\n', { flag: 'wx' });
+            }
+          }
+          const stats = await defaults.lstat(filePath);
+          if (filePath === reappearedDestination && reappearedInspections === 3) {
+            return { ...stats, size: stats.size + 1n };
+          }
+          return stats;
+        },
+      }),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'postlink-identity-mismatch' &&
+        error.committed &&
+        error.secondaryCleanupCode === 'provisional-destination-cleanup-failure',
+    );
+    assert.equal(await readFile(reappearedDestination, 'utf8'), 'replacement-after-sync\n');
+    await rm(reappearedDestination);
+
+    const fileCloseDestination = path.join(directory, 'file-close.json');
+    await assert.rejects(
+      publishCanonicalSourceClosure(fileCloseDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'file-close',
+        openExclusive: async (filePath) => {
+          const handle = await defaults.openExclusive(filePath);
+          return {
+            ...handle,
+            close: async () => {
+              await handle.close();
+              throw new Error('forced file close failure');
+            },
+          };
+        },
+      }),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'postcommit-file-close-failure' &&
+        error.committed,
+    );
+    assert.deepEqual(Uint8Array.from(await readFile(fileCloseDestination)), bytes);
+    await rm(fileCloseDestination);
+
+    const secondParentOpenDestination = path.join(directory, 'second-parent-open.json');
+    let parentOpenCalls = 0;
+    let firstParentCloseCalls = 0;
+    await assert.rejects(
+      publishCanonicalSourceClosure(secondParentOpenDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'second-parent-open',
+        openDirectory: async (directoryPath) => {
+          parentOpenCalls += 1;
+          if (parentOpenCalls === 2) {
+            throw new Error('forced second parent open failure');
+          }
+          const handle = await defaults.openDirectory(directoryPath);
+          return {
+            ...handle,
+            close: async () => {
+              firstParentCloseCalls += 1;
+              await handle.close();
+            },
+          };
+        },
+      }),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'postcommit-temp-unlink-sync-failure' &&
+        error.committed,
+    );
+    assert.equal(firstParentCloseCalls, 1);
+    assert.deepEqual(Uint8Array.from(await readFile(secondParentOpenDestination)), bytes);
+    await rm(secondParentOpenDestination);
+
+    const directoryCloseDestination = path.join(directory, 'directory-close.json');
+    await assert.rejects(
+      publishCanonicalSourceClosure(directoryCloseDestination, bytes, 1024, {
+        ...defaults,
+        uniqueSuffix: () => 'directory-close',
+        openDirectory: async (directoryPath) => {
+          const handle = await defaults.openDirectory(directoryPath);
+          return {
+            ...handle,
+            close: async () => {
+              await handle.close();
+              throw new Error('forced directory close failure');
+            },
+          };
+        },
+      }),
+      (error: unknown) =>
+        error instanceof SourceClosurePublicationError &&
+        error.code === 'postcommit-parent-close-failure' &&
+        error.committed,
+    );
+    assert.deepEqual(Uint8Array.from(await readFile(directoryCloseDestination)), bytes);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+async function runtimeAuditProbe(
+  source: string | Uint8Array,
+  overrides: {
+    readonly tracked?: boolean;
+    readonly ignored?: boolean;
+    readonly builtins?: readonly string[];
+    readonly nodeBuiltins?: readonly string[];
+    readonly pathBuiltins?: readonly string[];
+    readonly entryRoots?: readonly string[];
+    readonly duplicatePathCapability?: boolean;
+    readonly missingBeforeAudit?: boolean;
+    readonly relativePath?: string;
+    readonly capabilities?: RuntimeImportAuditProfile['pathCapabilities'][number]['capabilities'];
+  } = {},
+): Promise<void> {
+  const root = await mkdtemp(path.join(tmpdir(), 'rlt087-runtime-audit-'));
+  try {
+    const relativePath = overrides.relativePath ?? 'src/main.ts';
+    await writeSyntheticFile(root, relativePath, source);
+    const bytes = Uint8Array.from(await readFile(path.join(root, relativePath)));
+    const descriptor = Object.freeze({
+      path: relativePath,
+      bytes: bytes.byteLength,
+      sha256: `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
+    });
+    const pathCapability = Object.freeze({
+      path: relativePath,
+      builtins: Object.freeze([...(overrides.pathBuiltins ?? overrides.builtins ?? [])]),
+      capabilities: Object.freeze([...(overrides.capabilities ?? [])]),
+    });
+    const profile: RuntimeImportAuditProfile = Object.freeze({
+      profileId: 'synthetic-runtime-audit-v1',
+      entryRoots: Object.freeze([...(overrides.entryRoots ?? [relativePath])]),
+      projectSources: Object.freeze([descriptor]),
+      nodeBuiltins: Object.freeze([...(overrides.nodeBuiltins ?? overrides.builtins ?? [])]),
+      pathCapabilities: Object.freeze(overrides.duplicatePathCapability
+        ? [pathCapability, pathCapability]
+        : [pathCapability]),
+    });
+    if (overrides.missingBeforeAudit === true) {
+      await rm(path.join(root, relativePath));
+    }
+    await auditServiceFastRuntimeImports({
+      repositoryRoot: root,
+      profile,
+      trackedPaths: overrides.tracked === false ? new Set() : new Set([relativePath]),
+      ignoredPaths: overrides.ignored === true ? new Set([relativePath]) : new Set(),
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+void test('audits disjoint exact parent and generation-child runtime closures and rejects hostile capabilities', async () => {
+  const runtimePaths = [...new Set([
+    ...SERVICE_FAST_NO_ARGUMENT_PARENT_RUNTIME_PATHS,
+    ...SERVICE_FAST_GENERATION_CHILD_RUNTIME_PATHS,
+  ])];
+  const descriptors = [];
+  for (const relativePath of runtimePaths) {
+    const bytes = Uint8Array.from(await readFile(relativePath));
+    descriptors.push(Object.freeze({
+      path: relativePath,
+      bytes: bytes.byteLength,
+      sha256: sha256Bytes(bytes),
+    }));
+  }
+  const tracked = new Set(runtimePaths);
+  const parentAudit = await auditServiceFastRuntimeImports({
+    repositoryRoot: process.cwd(),
+    profile: noArgumentParentRuntimeAuditProfile(descriptors),
+    trackedPaths: tracked,
+  });
+  const childAudit = await auditServiceFastRuntimeImports({
+    repositoryRoot: process.cwd(),
+    profile: generationChildRuntimeAuditProfile(descriptors),
+    trackedPaths: tracked,
+  });
+  assert.deepEqual(
+    parentAudit.projectSources,
+    [...SERVICE_FAST_NO_ARGUMENT_PARENT_RUNTIME_PATHS].sort(),
+  );
+  assert.deepEqual(
+    childAudit.projectSources,
+    [...SERVICE_FAST_GENERATION_CHILD_RUNTIME_PATHS].sort(),
+  );
+  assert.equal(
+    childAudit.projectSources.some((relativePath) =>
+      /service-fast-path-shadow-price|bounded-exact-split-repair|evaluator-kernel|proposal-adapters|accepted-run|analysis|selection|profiler/u.test(relativePath)),
+    false,
+  );
+  assert.equal(
+    parentAudit.projectSources.some((relativePath) =>
+      /\/generate(?:-entry)?\.ts$|\/publication\.ts$|size-admission|readme-template/u.test(relativePath)),
+    false,
+  );
+  assert.equal(
+    childAudit.projectSources.some((relativePath) =>
+      relativePath === 'cli/verify-service-fast-numerical-experiment.ts' ||
+      /\/dispatcher\.ts$|durable-verifier-bootstrap|durable-runtime-profile|\/verification\.ts$/u.test(relativePath)),
+    false,
+  );
+
+  const probes: readonly {
+    source: string;
+    overrides?: Parameters<typeof runtimeAuditProbe>[1];
+    code: string;
+  }[] = [
+    { source: "void import('./other.ts');\n", code: 'dynamic-loader-forbidden' },
+    { source: "const value = `${import('./other.ts')}`;\nvoid value;\n", code: 'dynamic-loader-forbidden' },
+    { source: "import value from 'bare-package';\n", code: 'bare-import-forbidden' },
+    { source: "import value from '/tmp/escape.ts';\n", code: 'absolute-import-forbidden' },
+    { source: "import value from './extensionless';\n", code: 'extensionless-import-forbidden' },
+    { source: "globalThis['ev' + 'al'];\n", code: 'computed-capability-forbidden' },
+    { source: "const clock = process['hr' + 'time'];\nvoid clock;\n", code: 'computed-capability-forbidden' },
+    { source: "const p = process;\nvoid p['hr' + 'time'];\n", code: 'process-capability-mismatch' },
+    { source: "const root = globalThis;\nconst network = root['fetch'];\nvoid network;\n", code: 'computed-capability-forbidden' },
+    {
+      source: 'const root = glo\\u0062alThis;\nvoid root;\n',
+      code: 'escaped-capability-forbidden',
+    },
+    {
+      source: 'const root = glo\\u{62}alThis;\nvoid root;\n',
+      code: 'escaped-capability-forbidden',
+    },
+    { source: 'void global;\n', code: 'computed-capability-forbidden' },
+    { source: 'void Reflect.ownKeys({});\n', code: 'computed-capability-forbidden' },
+    {
+      source: "const p=Reflect.get(global,['pro','cess'].join('')); const load=Reflect.get(p,['getBuiltin','Module'].join('')); void load.call(p,'node:fs');\n",
+      code: 'computed-capability-forbidden',
+    },
+    { source: 'const compile = eval;\nvoid compile;\n', code: 'codegen-forbidden' },
+    { source: "new Function('return 1');\n", code: 'codegen-forbidden' },
+    { source: 'void (() => 1).constructor;\n', code: 'codegen-forbidden' },
+    { source: "void ([])[\"con\" + \"structor\"];\n", code: 'codegen-forbidden' },
+    {
+      source: "const k='constructor'; const F=(()=>1)[k]; void F('return 1')();\n",
+      code: 'codegen-forbidden',
+    },
+    {
+      source: "const k='constr\\u0075ctor'; const F=(()=>1)[k]; void F('return 1')();\n",
+      code: 'codegen-forbidden',
+    },
+    {
+      source: "const k='" + String.fromCodePoint(92) +
+        "constructor'; const F=(()=>1)[k]; void F('return 1')();\n",
+      code: 'codegen-forbidden',
+    },
+    {
+      source: 'const k="constructor"; const F=(()=>1)[k]; void F;\n',
+      code: 'codegen-forbidden',
+    },
+    {
+      source: 'const k=`constructor`; const F=(()=>1)[k]; void F;\n',
+      code: 'codegen-forbidden',
+    },
+    ...['\n', '\r\n', '\u2028', '\u2029'].map((lineBreak) => ({
+      source: "const k='con" + String.fromCodePoint(92) + lineBreak +
+        "structor'; const F=(()=>1)[k]; void F('return 1')();\n",
+      code: 'codegen-forbidden',
+    })),
+    {
+      source: "const k=\"con\" + 'str\\u0075ctor'; const F=(()=>1)[k]; void F;\n",
+      code: 'codegen-forbidden',
+    },
+    {
+      source: "Reflect.get(()=>1,['con','structor'].join(''))('return 1')();\n",
+      code: 'codegen-forbidden',
+    },
+    {
+      source: "void ([])[['con','structor'].join('')];\n",
+      code: 'codegen-forbidden',
+    },
+    {
+      source: "void ([])[['con','str\\u0075ctor'].join('')];\n",
+      code: 'codegen-forbidden',
+    },
+    { source: 'void fetch("https://example.invalid");\n', code: 'network-capability-forbidden' },
+    { source: 'void new WebSocket("wss://example.invalid");\n', code: 'network-capability-forbidden' },
+    { source: 'void process.binding("fs");\n', code: 'native-loader-forbidden' },
+    { source: 'void process.hrtime.bigint();\n', code: 'operational-clock-forbidden' },
+    { source: 'void Date.now();\n', code: 'operational-clock-forbidden' },
+    { source: 'void performance.now();\n', code: 'operational-clock-forbidden' },
+    { source: 'void process.uptime();\n', code: 'operational-clock-forbidden' },
+    {
+      source: "import { Worker } from 'node:worker_threads';\nvoid Worker;\n",
+      overrides: { builtins: ['node:worker_threads'] },
+      code: 'worker-forbidden',
+    },
+    {
+      source: "import { spawnSync } from 'node:child_process';\nspawnSync('sh');\n",
+      overrides: { builtins: ['node:child_process'] },
+      code: 'arbitrary-child-process-forbidden',
+    },
+    {
+      source: "import * as fs from 'node:fs/promises';\nvoid fs['write' + 'File'];\n",
+      overrides: {
+        builtins: ['node:fs/promises'],
+        capabilities: ['read-only-filesystem'],
+      },
+      code: 'read-only-filesystem-mutation-forbidden',
+    },
+    {
+      source: "import { writeFile } from 'node:fs/promises';\nvoid writeFile;\n",
+      overrides: {
+        builtins: ['node:fs/promises'],
+        capabilities: ['read-only-filesystem'],
+      },
+      code: 'read-only-filesystem-mutation-forbidden',
+    },
+    {
+      source: 'export unsupported token;\n',
+      code: 'unparsed-export',
+    },
+    { source: 'export {};\n', overrides: { tracked: false }, code: 'untracked-runtime-target' },
+    { source: 'export {};\n', overrides: { ignored: true }, code: 'ignored-runtime-target' },
+    {
+      source: 'export {};\n',
+      overrides: { missingBeforeAudit: true },
+      code: 'runtime-source-admission-failure',
+    },
+    {
+      source: "import { createHash as digest } from 'node:crypto';\ndigest('sha256');\n",
+      overrides: { builtins: ['node:crypto'], capabilities: ['hash'] },
+      code: 'crypto-capability-mismatch',
+    },
+  ];
+  for (const probe of probes) {
+    await assert.rejects(
+      runtimeAuditProbe(probe.source, probe.overrides),
+      (error: unknown) =>
+        error instanceof ServiceFastRuntimeImportAuditError &&
+        error.code === probe.code,
+      `${probe.code}: ${JSON.stringify(probe.source)}`,
+    );
+  }
+
+  await assert.rejects(
+    runtimeAuditProbe(Uint8Array.from([0xff])),
+    (error: unknown) =>
+      error instanceof ServiceFastRuntimeImportAuditError &&
+      error.code === 'invalid-runtime-source-utf8',
+  );
+
+  for (const source of [
+    "const before = 1; import path from 'node:path'; void before; void path;\n",
+    "const before = 1; export { sep } from 'node:path'; void before;\n",
+    "import {\n  sep,\n  join,\n} from 'node:path';\nvoid sep; void join;\n",
+    "export * as pathNamespace from 'node:path';\n",
+  ]) {
+    await runtimeAuditProbe(source, { builtins: ['node:path'] });
+  }
+
+  const boundedFilePath =
+    'src/benchmark/service-fast-numerical-experiment/artifact-verifier/io/bounded-file.ts';
+  const boundedFileSource = [
+    "import { constants } from 'node:fs';",
+    "import { open } from 'node:fs/promises';",
+    "const absolutePath = '/tmp/read-only';",
+    'const handle = await open(absolutePath, constants.O_RDONLY | constants.O_NOFOLLOW);',
+    'await handle.stat();',
+    'await handle.close();',
+    '',
+  ].join('\n');
+  await runtimeAuditProbe(boundedFileSource, {
+    relativePath: boundedFilePath,
+    builtins: ['node:fs', 'node:fs/promises'],
+    capabilities: ['read-only-filesystem'],
+  });
+  for (const hostileBoundedFile of [
+    boundedFileSource.replace('constants.O_RDONLY', 'constants.O_RDWR'),
+    boundedFileSource.replace('await handle.stat();', "void handle['write'];"),
+    boundedFileSource.replace('await handle.stat();', 'void [handle];'),
+    boundedFileSource.replace('await handle.stat();', 'void { handle };'),
+    boundedFileSource.replace('await handle.stat();', 'await handle?.stat();'),
+    boundedFileSource.replace('await handle.stat();', 'const alias = handle;\nvoid alias;'),
+    boundedFileSource.replace(
+      "const absolutePath = '/tmp/read-only';",
+      "const absolutePath = '/tmp/read-only';\nconst alias = open;\nvoid alias;",
+    ),
+  ]) {
+    await assert.rejects(
+      runtimeAuditProbe(hostileBoundedFile, {
+        relativePath: boundedFilePath,
+        builtins: ['node:fs', 'node:fs/promises'],
+        capabilities: ['read-only-filesystem'],
+      }),
+      (error: unknown) =>
+        error instanceof ServiceFastRuntimeImportAuditError &&
+        error.code === 'read-only-filesystem-mutation-forbidden',
+    );
+  }
+
+  const dispatcherPath =
+    'src/benchmark/service-fast-numerical-experiment/tooling/dispatcher.ts';
+  const dispatcherSource = await readFile(dispatcherPath, 'utf8');
+  await assert.rejects(
+    runtimeAuditProbe(
+      dispatcherSource.replace(
+        "import path from 'node:path';",
+        "import path from 'node:path';\nconst escapedSpawn = spawnSync;\nescapedSpawn('/bin/sh', [], { shell: false });",
+      ),
+      {
+        relativePath: dispatcherPath,
+        builtins: ['node:child_process', 'node:path'],
+        capabilities: ['fixed-child-dispatch'],
+      },
+    ),
+    (error: unknown) =>
+      error instanceof ServiceFastRuntimeImportAuditError &&
+      error.code === 'fixed-dispatch-capability-mismatch',
+  );
+  const gitPath =
+    'src/benchmark/service-fast-numerical-experiment/source-closure/git.ts';
+  const gitSource = await readFile(gitPath, 'utf8');
+  await assert.rejects(
+    runtimeAuditProbe(
+      gitSource.replace(
+        "import path from 'node:path';",
+        "import path from 'node:path';\nconst escapedGitSpawn = spawnSync;\nescapedGitSpawn('/bin/sh', [], { shell: false });",
+      ),
+      {
+        relativePath: gitPath,
+        builtins: ['node:child_process', 'node:path'],
+        capabilities: ['bounded-git-metadata'],
+      },
+    ),
+    (error: unknown) =>
+      error instanceof ServiceFastRuntimeImportAuditError &&
+      error.code === 'bounded-git-capability-mismatch',
+  );
+  const commentBaitDispatcher = [
+    "import { spawnSync, type SpawnSyncOptions } from 'node:child_process';",
+    "import path from 'node:path';",
+    'void path; void (undefined as unknown as SpawnSyncOptions);',
+    'const bait = `export const SERVICE_FAST_ARTIFACT_VERIFIER_HELPER =',
+    `  '${SERVICE_FAST_ARTIFACT_VERIFIER_HELPER}';`,
+    'dependencies.spawn(dependencies.execPath, [], { stdio: "inherit", shell: false });`;',
+    'void bait;',
+    "spawnSync('/bin/sh', [], { shell: false });",
+    '/* execPath: process.execPath; dependencies.execPath !== process.execPath; */',
+    '',
+  ].join('\n');
+  await assert.rejects(
+    runtimeAuditProbe(commentBaitDispatcher, {
+      relativePath: dispatcherPath,
+      builtins: ['node:child_process', 'node:path'],
+      capabilities: ['fixed-child-dispatch'],
+    }),
+    (error: unknown) =>
+      error instanceof ServiceFastRuntimeImportAuditError &&
+      error.code === 'fixed-dispatch-capability-mismatch',
+  );
+
+  const durableHostPath = SYNTHETIC_DURABLE_HOST_ADMISSION;
+  const durableHostSource = syntheticDurableHostAdmissionSource();
+  await runtimeAuditProbe(durableHostSource, {
+    relativePath: durableHostPath,
+    builtins: ['node:os', 'node:process'],
+  });
+  for (const functionName of [
+    'availableParallelism',
+    'cpus',
+    'endianness',
+    'release',
+    'type',
+  ]) {
+    const bindingOnly = durableHostSource.replace(
+      `${functionName}();`,
+      functionName,
+    );
+    assert.notEqual(bindingOnly, durableHostSource);
+    await assert.rejects(
+      runtimeAuditProbe(bindingOnly, {
+        relativePath: durableHostPath,
+        builtins: ['node:os', 'node:process'],
+      }),
+      (error: unknown) =>
+        error instanceof ServiceFastRuntimeImportAuditError &&
+        error.code === 'host-admission-capability-mismatch',
+      `${functionName} binding without call`,
+    );
+  }
+  const durableHostCapture =
+    'void [parallelism, processors, byteOrder, osRelease, osType, arch, execArgv, platform, version, runtimeVersions, nodeOptions];';
+  for (const processName of ['arch', 'execArgv', 'platform', 'version']) {
+    const bindingOnly = durableHostSource.replace(
+      durableHostCapture,
+      durableHostCapture.replace(`${processName}, `, ''),
+    );
+    assert.notEqual(bindingOnly, durableHostSource);
+    await assert.rejects(
+      runtimeAuditProbe(bindingOnly, {
+        relativePath: durableHostPath,
+        builtins: ['node:os', 'node:process'],
+      }),
+      (error: unknown) =>
+        error instanceof ServiceFastRuntimeImportAuditError &&
+        error.code === 'host-admission-capability-mismatch',
+      `${processName} import without captured value`,
+    );
+  }
+  const uncapturedVersions = durableHostSource.replace(
+    'const runtimeVersions = versions;',
+    'const runtimeVersions = {};',
+  );
+  assert.notEqual(uncapturedVersions, durableHostSource);
+  await assert.rejects(
+    runtimeAuditProbe(uncapturedVersions, {
+      relativePath: durableHostPath,
+      builtins: ['node:os', 'node:process'],
+    }),
+    (error: unknown) =>
+      error instanceof ServiceFastRuntimeImportAuditError &&
+      error.code === 'host-admission-capability-mismatch',
+    'versions import without one captured value',
+  );
+
+  const acceptedClockPath =
+    'src/benchmark/service-fast-numerical-experiment/accepted-run/clock.ts';
+  await runtimeAuditProbe(
+    'const sample = process.hrtime.bigint();\nvoid sample;\n',
+    {
+      relativePath: acceptedClockPath,
+      capabilities: ['operational-clock'],
+    },
+  );
+
+  const acceptedEnvironmentPath =
+    'src/benchmark/service-fast-numerical-experiment/accepted-run/environment.ts';
+  const acceptedEnvironmentSource = [
+    "import { availableParallelism, cpus, endianness, release, totalmem, type } from 'node:os';",
+    "import { isMainThread } from 'node:worker_threads';",
+    'const captured = [',
+    '  process.version, process.versions.v8, process.versions.uv,',
+    '  process.platform, process.arch, process.execArgv,',
+    "  process.env['NODE_OPTIONS'],",
+    '  availableParallelism(), cpus(), endianness(), release(), totalmem(), type(),',
+    '  isMainThread,',
+    '  new Intl.DateTimeFormat().resolvedOptions().timeZone,',
+    '];',
+    'void captured;',
+    '',
+  ].join('\n');
+  await runtimeAuditProbe(acceptedEnvironmentSource, {
+    relativePath: acceptedEnvironmentPath,
+    builtins: ['node:os', 'node:worker_threads'],
+    capabilities: ['runtime-environment'],
+  });
+  for (const [hostileEnvironment, code] of [
+    [
+      `${acceptedEnvironmentSource}const extra = cpus;\nvoid extra();\n`,
+      'host-admission-capability-mismatch',
+    ],
+    [
+      `${acceptedEnvironmentSource}const extraIntl = Intl;\nvoid new extraIntl.DateTimeFormat().resolvedOptions().timeZone;\n`,
+      'host-admission-capability-mismatch',
+    ],
+    [
+      acceptedEnvironmentSource.replace(
+        'import { isMainThread }',
+        'import { Worker }',
+      ),
+      'worker-forbidden',
+    ],
+    [
+      acceptedEnvironmentSource.replace(
+        'import { isMainThread }',
+        'import { MessagePort }',
+      ),
+      'worker-forbidden',
+    ],
+    [
+      acceptedEnvironmentSource.replace(
+        'import { isMainThread }',
+        'import workerThreads',
+      ),
+      'host-admission-capability-mismatch',
+    ],
+    [
+      acceptedEnvironmentSource.replace(
+        'import { isMainThread }',
+        'import * as workerThreads',
+      ),
+      'host-admission-capability-mismatch',
+    ],
+  ] as const) {
+    await assert.rejects(
+      runtimeAuditProbe(hostileEnvironment, {
+        relativePath: acceptedEnvironmentPath,
+        builtins: ['node:os', 'node:worker_threads'],
+        capabilities: ['runtime-environment'],
+      }),
+      (error: unknown) =>
+        error instanceof ServiceFastRuntimeImportAuditError &&
+        error.code === code,
+    );
+  }
+
+  const acceptedPublicationPath =
+    'src/benchmark/service-fast-numerical-experiment/accepted-run/publication.ts';
+  const acceptedPublicationSource = [
+    "import { randomBytes } from 'node:crypto';",
+    "import { constants } from 'node:fs';",
+    "import { lstat, mkdir, open, readdir, rename, rm, statfs, unlink } from 'node:fs/promises';",
+    "import path from 'node:path';",
+    'void [constants, lstat, mkdir, open, readdir, rename, rm, statfs, unlink, path];',
+    'void randomBytes(12);',
+    '',
+  ].join('\n');
+  await runtimeAuditProbe(acceptedPublicationSource, {
+    relativePath: acceptedPublicationPath,
+    builtins: ['node:crypto', 'node:fs', 'node:fs/promises', 'node:path'],
+    capabilities: ['accepted-publication'],
+  });
+
+  const duplicateProfiles: readonly {
+    overrides: Parameters<typeof runtimeAuditProbe>[1];
+    code: string;
+  }[] = [
+    {
+      overrides: { entryRoots: ['src/main.ts', 'src/main.ts'] },
+      code: 'duplicate-entry-root',
+    },
+    {
+      overrides: { nodeBuiltins: ['node:path', 'node:path'] },
+      code: 'duplicate-runtime-builtin',
+    },
+    {
+      overrides: { pathBuiltins: ['node:path', 'node:path'] },
+      code: 'duplicate-path-builtin',
+    },
+    {
+      overrides: { capabilities: ['hash', 'hash'] },
+      code: 'duplicate-path-capability-name',
+    },
+    {
+      overrides: { duplicatePathCapability: true },
+      code: 'duplicate-path-capability',
+    },
+  ];
+  for (const duplicate of duplicateProfiles) {
+    await assert.rejects(
+      runtimeAuditProbe('export {};\n', duplicate.overrides),
+      (error: unknown) =>
+        error instanceof ServiceFastRuntimeImportAuditError &&
+        error.code === duplicate.code,
+      duplicate.code,
+    );
+  }
+});
+
+void test('requires exact builtin reachability independently for every runtime path', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'rlt087-runtime-path-builtins-'));
+  try {
+    const sources = Object.freeze({
+      'src/main.ts': "import './leaf.ts';\nexport {};\n",
+      'src/leaf.ts': "import { createHash } from 'node:crypto';\nvoid createHash('sha256');\n",
+    });
+    const descriptors = [];
+    for (const [relativePath, source] of Object.entries(sources)) {
+      await writeSyntheticFile(root, relativePath, source);
+      const bytes = new TextEncoder().encode(source);
+      descriptors.push(Object.freeze({
+        path: relativePath,
+        bytes: bytes.byteLength,
+        sha256: sha256Bytes(bytes),
+      }));
+    }
+    const profile: RuntimeImportAuditProfile = Object.freeze({
+      profileId: 'synthetic-path-builtin-audit-v1',
+      entryRoots: Object.freeze(['src/main.ts']),
+      projectSources: Object.freeze(descriptors),
+      nodeBuiltins: Object.freeze(['node:crypto']),
+      pathCapabilities: Object.freeze([
+        Object.freeze({
+          path: 'src/main.ts',
+          builtins: Object.freeze(['node:crypto']),
+          capabilities: Object.freeze(['hash'] as const),
+        }),
+        Object.freeze({
+          path: 'src/leaf.ts',
+          builtins: Object.freeze(['node:crypto']),
+          capabilities: Object.freeze(['hash'] as const),
+        }),
+      ]),
+    });
+    await assert.rejects(
+      auditServiceFastRuntimeImports({
+        repositoryRoot: root,
+        profile,
+        trackedPaths: new Set(Object.keys(sources)),
+      }),
+      (error: unknown) =>
+        error instanceof ServiceFastRuntimeImportAuditError &&
+        error.code === 'crypto-capability-mismatch' &&
+        error.artifact === 'src/main.ts',
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+void test('dry size admission rejects noncanonical committed input without candidate execution', async () => {
+  const config = parseFrozenServiceFastConfiguration(
+    Uint8Array.from(await readFile(SERVICE_FAST_CONFIG_PATH)),
+  );
+  const bytes = await syntheticInputBytes(config);
+  const admitted = admitPreSourceClosureArtifactSizes(bytes, config);
+  assert.ok(admitted.maximumDirectoryBytes <= admitted.directoryCapBytes);
+  assert.equal(admitted.inputWidths.maximumRequestAndAllocationDecimalDigits, 83);
+  assert.ok(admitted.inputWidths.maximumReserveOutputAndDeltaDecimalDigits <= 86);
+  const firstPolicy = (admitted.dryAnalysis['policyResults'] as readonly Record<string, unknown>[])[0]!;
+  const semantic = firstPolicy['semantic'] as Record<string, unknown>;
+  assert.equal(semantic['finalObjectivesNeverWorse'], false);
+  const firstQualifier = (admitted.dryAnalysis['qualifiers'] as readonly Record<string, unknown>[])[0]!;
+  assert.equal(firstQualifier['qualifies'], false);
+  assert.equal(
+    ((firstQualifier['clauseResults'] as readonly Record<string, unknown>[])[0])?.['passed'],
+    false,
+  );
+  const withoutLineFeed = bytes.slice(0, -1);
+  assert.throws(
+    () => admitPreSourceClosureArtifactSizes(withoutLineFeed, config),
+    /LF-terminated canonical NDJSON/u,
+  );
+  const unsafe = new TextEncoder().encode(
+    new TextDecoder().decode(bytes).replace('"sourceIndex":0', '"sourceIndex":9007199254740992'),
+  );
+  assert.throws(
+    () => admitPreSourceClosureArtifactSizes(unsafe, config),
+    /not canonical|minified JSON|wrong source index|safe nonnegative integer/u,
+  );
+});
+
+void test('strictly decodes nested input fields, relations, cohorts, and exact widths', async () => {
+  const config = parseFrozenServiceFastConfiguration(
+    Uint8Array.from(await readFile(SERVICE_FAST_CONFIG_PATH)),
+  );
+  const bytes = await syntheticInputBytes(config);
+  const nested = (value: unknown): Record<string, unknown> => value as Record<string, unknown>;
+  const successReceipt = (record: Record<string, unknown>): Record<string, unknown> =>
+    nested(nested(nested(record['entryBaseline'])['incumbent'])['receipt']);
+  const transition = (
+    poolId: string,
+    assetIn: unknown,
+    assetOut: unknown,
+    amountIn: string,
+    amountOut: string,
+  ): Record<string, unknown> => {
+    const reserveInBefore = `1${'0'.repeat(85)}`;
+    const reserveOutBefore = `1${'0'.repeat(85)}`;
+    return {
+      poolId,
+      assetIn,
+      assetOut,
+      amountIn,
+      amountOut,
+      reserveInBefore,
+      reserveOutBefore,
+      reserveInAfter: (BigInt(reserveInBefore) + BigInt(amountIn)).toString(10),
+      reserveOutAfter: (BigInt(reserveOutBefore) - BigInt(amountOut)).toString(10),
+    };
+  };
+  const receiptLeg = (
+    record: Record<string, unknown>,
+    poolId: string,
+    allocation: string,
+  ): Record<string, unknown> => {
+    const request = nested(record['request']);
+    const snapshot = nested(record['snapshot']);
+    return {
+      allocation,
+      receipt: {
+        snapshotId: snapshot['snapshotId'],
+        snapshotChecksum: snapshot['snapshotChecksum'],
+        assetIn: request['assetIn'],
+        assetOut: request['assetOut'],
+        amountIn: allocation,
+        amountOut: '1',
+        hops: [transition(poolId, request['assetIn'], request['assetOut'], allocation, '1')],
+      },
+    };
+  };
+  const mutations: readonly {
+    name: string;
+    mutate: (record: Record<string, unknown>) => void;
+    sourceIndex?: number;
+    code?: string;
+  }[] = [
+    {
+      name: 'nested-shape',
+      mutate: (record) => { delete nested(record['request'])['topology']; },
+    },
+    {
+      name: 'nested-type',
+      mutate: (record) => { nested(record['request'])['maxHops'] = '2'; },
+    },
+    {
+      name: 'enum',
+      mutate: (record) => { nested(record['priorEligibility'])['status'] = 'hostile'; },
+    },
+    {
+      name: 'canonical-decimal',
+      mutate: (record) => { nested(record['request'])['amountIn'] = '01'; },
+    },
+    {
+      name: 'request-width',
+      mutate: (record) => { nested(record['request'])['amountIn'] = '9'.repeat(84); },
+    },
+    {
+      name: 'hash',
+      mutate: (record) => { nested(record['snapshot'])['snapshotChecksum'] = `sha256:${'A'.repeat(64)}`; },
+    },
+    {
+      name: 'route-key',
+      mutate: (record) => {
+        const discovery = nested(record['candidateDiscovery']);
+        const candidateSet = nested((discovery['candidateSets'] as unknown[])[0]);
+        const route = nested((candidateSet['routes'] as unknown[])[0]);
+        route['routeKey'] = `${String(route['routeKey'])} `;
+      },
+    },
+    {
+      name: 'singleton-candidate-set',
+      code: 'invalid-input-routes',
+      mutate: (record) => {
+        const set = nested((nested(record['candidateDiscovery'])['candidateSets'] as unknown[])[0]);
+        const routes = set['routes'] as unknown[];
+        set['routes'] = [routes[0]];
+        set['candidateSetKey'] = JSON.stringify([
+          JSON.parse(String(nested(routes[0])['routeKey'])),
+        ]);
+      },
+    },
+    {
+      name: 'nested-field-order',
+      mutate: (record) => {
+        const request = nested(record['request']);
+        record['request'] = {
+          assetOut: request['assetOut'],
+          assetIn: request['assetIn'],
+          amountBucket: request['amountBucket'],
+          amountIn: request['amountIn'],
+          topology: request['topology'],
+          maxHops: request['maxHops'],
+          maxRoutes: request['maxRoutes'],
+          greedyParts: request['greedyParts'],
+        };
+      },
+    },
+    {
+      name: 'cohort-identity',
+      mutate: (record) => { record['requestId'] = `${String(record['requestId'])}-changed`; },
+    },
+    {
+      name: 'timing-index',
+      mutate: (record) => { record['timingCohortIndex'] = 1; },
+    },
+    {
+      name: 'resolution-coupling',
+      mutate: (record) => {
+        const set = nested((nested(record['candidateDiscovery'])['candidateSets'] as unknown[])[0]);
+        set['resolutionStatus'] = 'resolved';
+        set['failureCode'] = null;
+      },
+    },
+    {
+      name: 'failed-resolution-nonnull-route',
+      code: 'candidate-resolution-coupling-mismatch',
+      mutate: (record) => {
+        const set = nested((nested(record['candidateDiscovery'])['candidateSets'] as unknown[])[0]);
+        const route = nested((set['routes'] as unknown[])[0]);
+        const hop = nested((route['hops'] as unknown[])[0]);
+        route['resolvedHops'] = [{
+          ...hop,
+          reserveIn: '100',
+          reserveOut: '100',
+          feeChargedNumerator: '3',
+          feeDenominator: '1000',
+        }];
+      },
+    },
+    {
+      name: 'failed-resolution-wrong-failure',
+      code: 'candidate-resolution-coupling-mismatch',
+      mutate: (record) => {
+        const set = nested((nested(record['candidateDiscovery'])['candidateSets'] as unknown[])[0]);
+        set['failureCode'] = 'non-finite-proposal';
+      },
+    },
+    {
+      name: 'resolved-resolution-null-route',
+      sourceIndex: 1,
+      code: 'candidate-resolution-coupling-mismatch',
+      mutate: (record) => {
+        const set = nested((nested(record['candidateDiscovery'])['candidateSets'] as unknown[])[0]);
+        nested((set['routes'] as unknown[])[0])['resolvedHops'] = null;
+      },
+    },
+    {
+      name: 'incomplete-candidate-discovery',
+      code: 'candidate-discovery-incomplete',
+      mutate: (record) => {
+        nested(record['candidateDiscovery'])['termination'] = 'work-limit';
+      },
+    },
+    {
+      name: 'candidate-discovery-cap',
+      code: 'candidate-discovery-counter-mismatch',
+      mutate: (record) => {
+        nested(nested(record['candidateDiscovery'])['counters'])['pathExpansions'] = 122;
+      },
+    },
+    {
+      name: 'candidate-discovery-counter-relation',
+      code: 'candidate-discovery-counter-mismatch',
+      mutate: (record) => {
+        nested(nested(record['candidateDiscovery'])['counters'])['enumeratedPaths'] = 1;
+      },
+    },
+    {
+      name: 'candidate-retained-count',
+      code: 'invalid-input-candidate-sets',
+      mutate: (record) => {
+        nested(nested(record['candidateDiscovery'])['counters'])['enumeratedCandidateSets'] = 0;
+      },
+    },
+    {
+      name: 'resolved-hop-identity',
+      sourceIndex: 1,
+      mutate: (record) => {
+        const set = nested((nested(record['candidateDiscovery'])['candidateSets'] as unknown[])[0]);
+        const route = nested((set['routes'] as unknown[])[0]);
+        nested((route['resolvedHops'] as unknown[])[0])['poolId'] = 'different-pool';
+      },
+    },
+    {
+      name: 'resolved-hop-length',
+      sourceIndex: 1,
+      mutate: (record) => {
+        const set = nested((nested(record['candidateDiscovery'])['candidateSets'] as unknown[])[0]);
+        nested((set['routes'] as unknown[])[0])['resolvedHops'] = [];
+      },
+    },
+    {
+      name: 'receipt-allocation-sum',
+      mutate: (record) => {
+        const incumbent = nested(nested(record['entryBaseline'])['incumbent']);
+        const receipt = nested(incumbent['receipt']);
+        nested((receipt['legs'] as unknown[])[0])['allocation'] = '1';
+      },
+    },
+    {
+      name: 'zero-transition-output',
+      code: 'invalid-input-decimal',
+      mutate: (record) => {
+        const receipt = successReceipt(record);
+        const routeReceipt = nested(nested((receipt['legs'] as unknown[])[0])['receipt']);
+        nested((routeReceipt['hops'] as unknown[])[0])['amountOut'] = '0';
+      },
+    },
+    {
+      name: 'zero-route-output',
+      code: 'invalid-input-decimal',
+      mutate: (record) => {
+        const receipt = successReceipt(record);
+        nested(nested((receipt['legs'] as unknown[])[0])['receipt'])['amountOut'] = '0';
+      },
+    },
+    {
+      name: 'zero-split-output',
+      code: 'invalid-input-decimal',
+      mutate: (record) => {
+        successReceipt(record)['amountOut'] = '0';
+      },
+    },
+    {
+      name: 'zero-objective-output',
+      code: 'invalid-input-decimal',
+      mutate: (record) => {
+        nested(nested(nested(record['entryBaseline'])['incumbent'])['objective'])['amountOut'] = '0';
+      },
+    },
+    {
+      name: 'objective-coupling',
+      mutate: (record) => {
+        const incumbent = nested(nested(record['entryBaseline'])['incumbent']);
+        nested(incumbent['objective'])['amountOut'] = '2';
+      },
+    },
+    {
+      name: 'receipt-hash',
+      mutate: (record) => {
+        nested(nested(record['entryBaseline'])['incumbent'])['receiptHash'] = `sha256:${'0'.repeat(64)}`;
+      },
+    },
+    {
+      name: 'reserve-width',
+      mutate: (record) => {
+        const incumbent = nested(nested(record['entryBaseline'])['incumbent']);
+        const receipt = nested(incumbent['receipt']);
+        const leg = nested((receipt['legs'] as unknown[])[0]);
+        const routeReceipt = nested(leg['receipt']);
+        nested((routeReceipt['hops'] as unknown[])[0])['reserveInBefore'] = '9'.repeat(87);
+      },
+    },
+    {
+      name: 'repeated-pool-route',
+      mutate: (record) => {
+        const set = nested((nested(record['candidateDiscovery'])['candidateSets'] as unknown[])[0]);
+        const route = nested((set['routes'] as unknown[])[0]);
+        const first = nested((route['hops'] as unknown[])[0]);
+        const middle = 'middle-asset';
+        const hops = [
+          { poolId: first['poolId'], assetIn: first['assetIn'], assetOut: middle },
+          { poolId: first['poolId'], assetIn: middle, assetOut: first['assetOut'] },
+        ];
+        route['hops'] = hops;
+        route['routeKey'] = JSON.stringify(hops.map((hop) => [hop.assetIn, hop.poolId, hop.assetOut]));
+        set['candidateSetKey'] = JSON.stringify([hops.map((hop) => [hop.assetIn, hop.poolId, hop.assetOut])]);
+      },
+    },
+    {
+      name: 'candidate-set-pool-overlap',
+      mutate: (record) => {
+        const set = nested((nested(record['candidateDiscovery'])['candidateSets'] as unknown[])[0]);
+        const firstRoute = structuredClone(nested((set['routes'] as unknown[])[0]));
+        const secondRoute = structuredClone(firstRoute);
+        set['routes'] = [firstRoute, secondRoute];
+        set['candidateSetKey'] = JSON.stringify([
+          JSON.parse(String(firstRoute['routeKey'])),
+          JSON.parse(String(secondRoute['routeKey'])),
+        ]);
+      },
+    },
+    {
+      name: 'candidate-set-duplicate-across-sets',
+      code: 'candidate-set-order-mismatch',
+      mutate: (record) => {
+        const discovery = nested(record['candidateDiscovery']);
+        const first = structuredClone(nested((discovery['candidateSets'] as unknown[])[0]));
+        const duplicate = structuredClone(first);
+        duplicate['setIndex'] = 1;
+        discovery['candidateSets'] = [first, duplicate];
+        const counters = nested(discovery['counters']);
+        counters['candidateSetExpansions'] = 2;
+        counters['enumeratedCandidateSets'] = 2;
+      },
+    },
+    {
+      name: 'candidate-set-decoded-order-across-sets',
+      code: 'candidate-set-order-mismatch',
+      mutate: (record) => {
+        const discovery = nested(record['candidateDiscovery']);
+        const first = structuredClone(nested((discovery['candidateSets'] as unknown[])[0]));
+        const second = structuredClone(first);
+        second['setIndex'] = 1;
+        const route = nested((second['routes'] as unknown[])[0]);
+        const hop = nested((route['hops'] as unknown[])[0]);
+        hop['poolId'] = '0';
+        route['routeKey'] = JSON.stringify([[hop['assetIn'], hop['poolId'], hop['assetOut']]]);
+        second['candidateSetKey'] = JSON.stringify(
+          (second['routes'] as Record<string, unknown>[]).map((candidateRoute) =>
+            JSON.parse(String(candidateRoute['routeKey'])) as unknown),
+        );
+        discovery['candidateSets'] = [first, second];
+        const counters = nested(discovery['counters']);
+        counters['candidateSetExpansions'] = 2;
+        counters['enumeratedCandidateSets'] = 2;
+      },
+    },
+    {
+      name: 'receipt-repeated-pool',
+      code: 'non-simple-input-route',
+      mutate: (record) => {
+        const request = nested(record['request']);
+        const receipt = successReceipt(record);
+        const routeReceipt = nested(nested((receipt['legs'] as unknown[])[0])['receipt']);
+        routeReceipt['hops'] = [
+          transition('repeated-receipt-pool', request['assetIn'], 'middle-asset', String(routeReceipt['amountIn']), '1'),
+          transition('repeated-receipt-pool', 'middle-asset', request['assetOut'], '1', '1'),
+        ];
+      },
+    },
+    {
+      name: 'receipt-repeated-asset',
+      code: 'non-simple-input-route',
+      mutate: (record) => {
+        const request = nested(record['request']);
+        const receipt = successReceipt(record);
+        const routeReceipt = nested(nested((receipt['legs'] as unknown[])[0])['receipt']);
+        routeReceipt['hops'] = [
+          transition('receipt-pool-a', request['assetIn'], request['assetIn'], String(routeReceipt['amountIn']), '1'),
+          transition('receipt-pool-b', request['assetIn'], request['assetOut'], '1', '1'),
+        ];
+      },
+    },
+    {
+      name: 'receipt-leg-pool-overlap',
+      code: 'receipt-pool-overlap',
+      mutate: (record) => {
+        const receipt = successReceipt(record);
+        const firstLeg = structuredClone(nested((receipt['legs'] as unknown[])[0]));
+        receipt['legs'] = [firstLeg, structuredClone(firstLeg)];
+      },
+    },
+    {
+      name: 'receipt-decoded-leg-order',
+      code: 'receipt-route-order-mismatch',
+      mutate: (record) => {
+        const receipt = successReceipt(record);
+        const amountIn = String(receipt['amountIn']);
+        receipt['amountOut'] = '2';
+        receipt['legs'] = [
+          receiptLeg(record, '0', '1'),
+          receiptLeg(record, '"', (BigInt(amountIn) - 1n).toString(10)),
+        ];
+      },
+    },
+    {
+      name: 'receipt-transition-reserve-coupling',
+      code: 'transition-reserve-coupling-mismatch',
+      mutate: (record) => {
+        const receipt = successReceipt(record);
+        const routeReceipt = nested(nested((receipt['legs'] as unknown[])[0])['receipt']);
+        const hop = nested((routeReceipt['hops'] as unknown[])[0]);
+        hop['reserveInAfter'] = hop['reserveInBefore'];
+      },
+    },
+    {
+      name: 'receipt-hop-amount-continuity',
+      code: 'receipt-hop-amount-mismatch',
+      mutate: (record) => {
+        const request = nested(record['request']);
+        const receipt = successReceipt(record);
+        const routeReceipt = nested(nested((receipt['legs'] as unknown[])[0])['receipt']);
+        routeReceipt['hops'] = [
+          transition('receipt-amount-pool-a', request['assetIn'], 'middle-asset', String(routeReceipt['amountIn']), '2'),
+          transition('receipt-amount-pool-b', 'middle-asset', request['assetOut'], '1', String(routeReceipt['amountOut'])),
+        ];
+      },
+    },
+    {
+      name: 'objective-route-mismatch',
+      code: 'objective-receipt-mismatch',
+      mutate: (record) => {
+        const objective = nested(nested(nested(record['entryBaseline'])['incumbent'])['objective']);
+        objective['routeKeys'] = [JSON.stringify([['wrong', 'route', 'key']])];
+      },
+    },
+    {
+      name: 'objective-allocation-mismatch',
+      code: 'objective-receipt-mismatch',
+      mutate: (record) => {
+        const objective = nested(nested(nested(record['entryBaseline'])['incumbent'])['objective']);
+        objective['allocations'] = ['1'];
+      },
+    },
+    {
+      name: 'success-fields-with-no-route-status',
+      code: 'no-plan-incumbent-coupling-mismatch',
+      mutate: (record) => {
+        const incumbent = nested(nested(record['entryBaseline'])['incumbent']);
+        incumbent['status'] = 'no-route';
+        incumbent['reason'] = 'no-route';
+      },
+    },
+    {
+      name: 'success-receipt-with-no-plan-objective',
+      code: 'no-plan-objective-mismatch',
+      mutate: (record) => {
+        const objective = nested(nested(nested(record['entryBaseline'])['incumbent'])['objective']);
+        objective['hasPlan'] = false;
+        objective['amountOut'] = null;
+        objective['legCount'] = null;
+        objective['totalHops'] = null;
+        objective['routeKeys'] = [];
+        objective['allocations'] = [];
+      },
+    },
+  ];
+  for (const mutation of mutations) {
+    assert.throws(
+      () => admitPreSourceClosureArtifactSizes(
+        mutateSyntheticInput(bytes, mutation.mutate, mutation.sourceIndex ?? 0),
+        config,
+      ),
+      (error: unknown) =>
+        error instanceof Error &&
+        (mutation.code === undefined ||
+          (error instanceof ServiceFastSizeAdmissionError && error.code === mutation.code)),
+      mutation.name,
+    );
+  }
+
+  const decodedOrdering = mutateSyntheticInput(bytes, (record) => {
+    const set = nested((nested(record['candidateDiscovery'])['candidateSets'] as unknown[])[0]);
+    const request = nested(record['request']);
+    const routes = ['"', '0'].map((poolId) => {
+      const hops = [{
+        poolId,
+        assetIn: request['assetIn'],
+        assetOut: request['assetOut'],
+      }];
+      return {
+        routeKey: JSON.stringify(hops.map((hop) => [hop.assetIn, hop.poolId, hop.assetOut])),
+        hops,
+        resolvedHops: null,
+      };
+    });
+    set['routes'] = routes;
+    set['candidateSetKey'] = JSON.stringify(routes.map((route) =>
+      route.hops.map((hop) => [hop.assetIn, hop.poolId, hop.assetOut])));
+  });
+  assert.doesNotThrow(() => admitPreSourceClosureArtifactSizes(decodedOrdering, config));
+});
+
+void test('renders only the three closure-bound README decisions within the maximal witness', () => {
+  const hash = `sha256:${'a'.repeat(64)}`;
+  const selectedPolicyId =
+    'fixed-newton-sqrt-o64-n8--final-finite-replay--bounded-exact-neighborhood-v1';
+  const base = Object.freeze({
+    experimentId: SERVICE_FAST_EXPERIMENT_ID,
+    implementationRevision: 'b'.repeat(40),
+    inputArtifact: Object.freeze({ path: 'inputs.ndjson', bytes: 1, sha256: hash }),
+    sourceClosure: Object.freeze({ path: 'source-closure.v1.json', bytes: 1, sha256: hash }),
+    environment: Object.freeze({ timezone: 'Pacific/Fiji' }),
+  });
+  const decisions: readonly ServiceFastReadmeDecision[] = Object.freeze([
+    Object.freeze({
+      status: 'selected-policy' as const,
+      policyId: selectedPolicyId,
+      fallbackDecisionId: null,
+    }),
+    Object.freeze({
+      status: 'strict-reference-fallback' as const,
+      policyId: null,
+      fallbackDecisionId: 'strict-reference-fallback' as const,
+    }),
+    Object.freeze({
+      status: 'rejected-observation' as const,
+      policyId: null,
+      fallbackDecisionId: null,
+    }),
+  ]);
+  const rendered = decisions.map((decision) =>
+    renderServiceFastExperimentReadme(Object.freeze({ ...base, decision })));
+  assert.equal(rendered[0], [
+    '# Service-fast numerical experiment',
+    '',
+    `Experiment: \`${SERVICE_FAST_EXPERIMENT_ID}\``,
+    `Implementation/input revision: \`${'b'.repeat(40)}\``,
+    `Input artifact: \`${hash}\``,
+    `Source closure: \`${hash}\``,
+    `Decision: \`selected-policy\` / \`${selectedPolicyId}\``,
+    'Recorded timezone: `Pacific/Fiji`',
+    '',
+    'This retained evidence covers only the frozen numerical candidate stage. It does not make the selected policy supported, establish full-service latency, load or concurrency behavior, representative demand, production financial execution, or unrestricted optimality.',
+    '',
+  ].join('\n'));
+  assert.match(rendered[1] ?? '', /Decision: `strict-reference-fallback` \/ `strict-reference-fallback`/u);
+  assert.match(rendered[2] ?? '', /Decision: `rejected-observation` \/ `none`/u);
+  assert.equal(rendered.some((value) => value.includes('manifest')), false);
+
+  const maximal = renderMaximalServiceFastExperimentReadme();
+  assert.deepEqual(
+    maximal.witnesses.map(({ decisionStatus, decisionIdentity }) =>
+      [decisionStatus, decisionIdentity]),
+    [
+      ['selected-policy', selectedPolicyId],
+      ['strict-reference-fallback', 'strict-reference-fallback'],
+      ['rejected-observation', 'none'],
+    ],
+  );
+  const encoder = new TextEncoder();
+  assert.equal(maximal.bytes, encoder.encode(maximal.readme).byteLength);
+  assert.ok(maximal.bytes <= 1_048_576);
+  const maximalTimezone = 'T'.repeat(128);
+  assert.equal(encoder.encode(maximalTimezone).byteLength, 128);
+  assert.ok(maximal.witnesses.every((witness) =>
+    witness.readme.includes(`Recorded timezone: \`${maximalTimezone}\``)));
+  assert.ok(rendered.every((value) => encoder.encode(value).byteLength <= maximal.bytes));
+  assert.throws(
+    () => renderServiceFastExperimentReadme({
+      ...base,
+      decision: {
+        status: 'selected-policy',
+        policyId: 'bisection-o64-i64--strict-reject--current',
+        fallbackDecisionId: null,
+      },
+    }),
+    (error: unknown) =>
+      error instanceof ServiceFastReadmeRenderingError &&
+      error.code === 'invalid-readme-decision',
+  );
+  assert.throws(
+    () => renderServiceFastExperimentReadme({
+      ...base,
+      decision: {
+        status: 'selected-policy',
+        policyId: 'x'.repeat(1_100_000),
+        fallbackDecisionId: null,
+      },
+    }),
+    (error: unknown) =>
+      error instanceof ServiceFastReadmeRenderingError &&
+      error.code === 'invalid-readme-decision',
+  );
+  for (const timezone of [
+    ' Pacific/Fiji ',
+    'not a timezone',
+    'line one\n`line two`\t',
+    '😀'.repeat(32),
+  ]) {
+    const unusual = renderServiceFastExperimentReadme({
+      ...base,
+      environment: { timezone },
+      decision: decisions[0]!,
+    });
+    assert.ok(
+      unusual.includes(`Recorded timezone: \`${timezone}\``),
+      'README changed the captured timezone string',
+    );
+  }
+  for (const timezone of ['', 'x'.repeat(129), 'é'.repeat(65)]) {
+    assert.throws(
+      () => renderServiceFastExperimentReadme({
+        ...base,
+        environment: { timezone },
+        decision: decisions[0]!,
+      }),
+      (error: unknown) =>
+        error instanceof ServiceFastReadmeRenderingError &&
+        error.code === 'invalid-readme-environment',
+    );
+  }
 });

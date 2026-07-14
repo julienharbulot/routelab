@@ -2,16 +2,22 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  advanceServiceFastPathShadowPriceReconstructionStep,
   advanceServiceFastPathShadowPriceShareAction,
   appendServiceFastPathShadowPriceModelRoute,
   createServiceFastPathShadowPriceState,
   serviceFastPathShadowPriceFailure,
   serviceFastPathShadowPriceProgress,
   serviceFastPathShadowPriceProposalMetadata,
+  serviceFastPathShadowPriceReconstruction,
+  serviceFastPathShadowPriceResidualOption,
+  serviceFastPathShadowPriceScoreAllocations,
+  settleServiceFastPathShadowPriceResidualOption,
   startServiceFastPathShadowPriceProposal,
   type ServiceFastPathShadowPriceFailure,
   type ServiceFastPathShadowPriceProgress,
   type ServiceFastPathShadowPriceProposalMetadata,
+  type ServiceFastPathShadowPriceState,
   type ServiceFastPathShadowPriceStepResult,
 } from '../../src/allocation/service-fast-path-shadow-price/index.ts';
 import {
@@ -717,6 +723,7 @@ function finalDisposition(
 }
 
 interface ActualProposalObservation {
+  readonly state: ServiceFastPathShadowPriceState;
   readonly steps: readonly ServiceFastPathShadowPriceStepResult[];
   readonly progress: ServiceFastPathShadowPriceProgress;
   readonly metadata: ServiceFastPathShadowPriceProposalMetadata | undefined;
@@ -753,11 +760,122 @@ function runActualProposal(
     if (!step.ok) break;
   }
   return {
+    state,
     steps: Object.freeze(steps),
     progress: serviceFastPathShadowPriceProgress(state),
     metadata: serviceFastPathShadowPriceProposalMetadata(state),
     failure: serviceFastPathShadowPriceFailure(state),
   };
+}
+
+function bigintSum(values: readonly bigint[]): bigint {
+  return values.reduce((total, value) => total + value, 0n);
+}
+
+function finishActualReconstruction(
+  state: ServiceFastPathShadowPriceState,
+  expected: OracleReconstruction,
+): void {
+  assert.equal(serviceFastPathShadowPriceProgress(state).phase, 'reconstruction-step');
+  const expectedSteps = 3 * expected.integerWeights.length;
+  for (let stepIndex = 1; stepIndex <= expectedSteps; stepIndex += 1) {
+    const step = advanceServiceFastPathShadowPriceReconstructionStep(state);
+    assert.equal(step.ok, true);
+    assert.equal(step.actionKind, null);
+    assert.equal(step.outerUpdateStarted, false);
+    assert.equal(step.outerUpdateCompleted, false);
+    assert.equal(
+      serviceFastPathShadowPriceProgress(state).reconstructionSteps,
+      stepIndex,
+    );
+  }
+  assert.equal(serviceFastPathShadowPriceProgress(state).phase, 'residual-option');
+  assert.deepEqual(serviceFastPathShadowPriceReconstruction(state), expected);
+}
+
+interface OracleResidualOption {
+  readonly allocations: readonly bigint[];
+  readonly routeIndex: number | null;
+  readonly residualUnitsRemaining: bigint;
+}
+
+function independentResidualOptions(
+  currentAllocations: readonly bigint[],
+  residualUnitsRemaining: bigint,
+): readonly OracleResidualOption[] {
+  assert.ok(residualUnitsRemaining >= 0n);
+  if (residualUnitsRemaining === 0n) {
+    return Object.freeze([
+      Object.freeze({
+        allocations: Object.freeze([...currentAllocations]),
+        routeIndex: null,
+        residualUnitsRemaining,
+      }),
+    ]);
+  }
+  return Object.freeze(currentAllocations.map((_, routeIndex) => {
+    const allocations = [...currentAllocations];
+    allocations[routeIndex] = allocations[routeIndex]! + 1n;
+    return Object.freeze({
+      allocations: Object.freeze(allocations),
+      routeIndex,
+      residualUnitsRemaining,
+    });
+  }));
+}
+
+function finishActualResidualScoring(
+  state: ServiceFastPathShadowPriceState,
+  reconstruction: OracleReconstruction,
+  selectWinner: (residualUnitsRemaining: bigint, routeCount: number) => number =
+    (_residualUnitsRemaining, routeCount) => routeCount - 1,
+): readonly bigint[] {
+  let currentAllocations = Object.freeze([...reconstruction.baseAllocations]);
+  let residualUnitsRemaining = reconstruction.residualUnits;
+
+  if (residualUnitsRemaining === 0n) {
+    const expected = independentResidualOptions(
+      currentAllocations,
+      residualUnitsRemaining,
+    )[0]!;
+    assert.deepEqual(serviceFastPathShadowPriceResidualOption(state), expected);
+    assert.equal(
+      settleServiceFastPathShadowPriceResidualOption(state, 'valid-best').ok,
+      true,
+    );
+  } else {
+    while (residualUnitsRemaining > 0n) {
+      const expectedOptions = independentResidualOptions(
+        currentAllocations,
+        residualUnitsRemaining,
+      );
+      const winnerIndex = selectWinner(
+        residualUnitsRemaining,
+        currentAllocations.length,
+      );
+      assert.ok(winnerIndex >= 0 && winnerIndex < currentAllocations.length);
+      for (const expected of expectedOptions) {
+        assert.deepEqual(serviceFastPathShadowPriceResidualOption(state), expected);
+        assert.equal(
+          settleServiceFastPathShadowPriceResidualOption(
+            state,
+            expected.routeIndex === winnerIndex ? 'valid-best' : 'valid-not-best',
+          ).ok,
+          true,
+        );
+      }
+      currentAllocations = expectedOptions[winnerIndex]!.allocations;
+      residualUnitsRemaining -= 1n;
+    }
+  }
+
+  assert.equal(serviceFastPathShadowPriceProgress(state).phase, 'score-ready');
+  assert.deepEqual(serviceFastPathShadowPriceScoreAllocations(state), currentAllocations);
+  assert.equal(
+    bigintSum(currentAllocations),
+    bigintSum(reconstruction.baseAllocations) + reconstruction.residualUnits,
+  );
+  return Object.freeze([...currentAllocations]);
 }
 
 function isEndpointAction(actionKind: ShareActionKind): boolean {
@@ -1082,7 +1200,189 @@ void test('matches all six opaque production drivers to independent action and p
           weightBits: expected.finalSample.weights.map(float64Hex),
         },
       );
+      finishActualReconstruction(actual.state, disposition.reconstruction);
+      finishActualResidualScoring(actual.state, disposition.reconstruction);
     }
+  }
+});
+
+void test('matches independent zero, multi-unit, and zero-weight residual schedules', () => {
+  const fixtures = [
+    {
+      amountIn: 100n,
+      routes: [
+        route(hop(100n, 100n)),
+        route(hop(100n, 100n)),
+        route(hop(100n, 100n)),
+        route(hop(100n, 100n)),
+      ],
+      expectedResidualUnits: 0n,
+      expectedZeroWeightIndex: null,
+    },
+    {
+      amountIn: 8n,
+      routes: [
+        route(hop(100n, 100n)),
+        route(hop(100n, 100n)),
+        route(hop(100n, 100n)),
+      ],
+      expectedResidualUnits: 2n,
+      expectedZeroWeightIndex: null,
+    },
+    {
+      amountIn: 1n,
+      routes: [
+        route(hop(100n, 100n)),
+        route(hop(100n, 100n)),
+        route(hop(100n, 1n)),
+      ],
+      expectedResidualUnits: 1n,
+      expectedZeroWeightIndex: 2,
+    },
+  ] as const;
+
+  for (const fixture of fixtures) {
+    const independentProposal = oracleProposal(
+      fixture.amountIn,
+      fixture.routes,
+      DRIVERS[0]!,
+    );
+    const independentDisposition = finalDisposition(
+      independentProposal,
+      'final-finite-replay',
+    );
+    assert.equal(independentDisposition.status, 'accepted');
+    if (independentDisposition.status !== 'accepted') {
+      throw new Error('Expected accepted residual fixture.');
+    }
+    assert.equal(
+      independentDisposition.reconstruction.residualUnits,
+      fixture.expectedResidualUnits,
+    );
+    if (fixture.expectedZeroWeightIndex !== null) {
+      assert.equal(
+        independentDisposition.reconstruction.integerWeights[
+          fixture.expectedZeroWeightIndex
+        ],
+        0n,
+      );
+    }
+
+    const actual = runActualProposal(
+      fixture.amountIn,
+      fixture.routes,
+      DRIVERS[0]!.driverId,
+      'final-finite-replay',
+    );
+    assert.equal(actual.progress.phase, 'reconstruction-step');
+    assert.deepEqual(
+      actual.metadata?.weights.map(float64Hex),
+      independentProposal.finalSample.weights.map(float64Hex),
+    );
+    finishActualReconstruction(
+      actual.state,
+      independentDisposition.reconstruction,
+    );
+    const score = finishActualResidualScoring(
+      actual.state,
+      independentDisposition.reconstruction,
+    );
+    if (fixture.expectedZeroWeightIndex !== null) {
+      assert.equal(score[fixture.expectedZeroWeightIndex], 1n);
+    }
+  }
+});
+
+void test('fails current residual scoring on the final independently expected rejection', () => {
+  const amountIn = 5n;
+  const routes = [route(hop(1n, 3n)), route(hop(3n, 4n))];
+  const independentProposal = oracleProposal(amountIn, routes, DRIVERS[0]!);
+  const independentDisposition = finalDisposition(
+    independentProposal,
+    'final-finite-replay',
+  );
+  assert.equal(independentDisposition.status, 'accepted');
+  if (independentDisposition.status !== 'accepted') {
+    throw new Error('Expected accepted residual-rejection fixture.');
+  }
+  assert.ok(independentDisposition.reconstruction.residualUnits > 0n);
+  const actual = runActualProposal(
+    amountIn,
+    routes,
+    DRIVERS[0]!.driverId,
+    'final-finite-replay',
+  );
+  finishActualReconstruction(actual.state, independentDisposition.reconstruction);
+  const expectedOptions = independentResidualOptions(
+    independentDisposition.reconstruction.baseAllocations,
+    independentDisposition.reconstruction.residualUnits,
+  );
+  let terminal: ServiceFastPathShadowPriceStepResult | undefined;
+  for (const expected of expectedOptions) {
+    assert.deepEqual(serviceFastPathShadowPriceResidualOption(actual.state), expected);
+    terminal = settleServiceFastPathShadowPriceResidualOption(
+      actual.state,
+      'rejected',
+    );
+  }
+  assert.deepEqual(terminal, {
+    ok: false,
+    error: {
+      code: 'residual-options-exhausted',
+      converged: independentProposal.converged,
+      completedOuterUpdates: independentProposal.completedOuterUpdates,
+    },
+    actionKind: null,
+    outerUpdateStarted: false,
+    outerUpdateCompleted: false,
+  });
+  assert.equal(serviceFastPathShadowPriceProgress(actual.state).phase, 'failed');
+  assert.deepEqual(serviceFastPathShadowPriceFailure(actual.state), terminal?.ok === false
+    ? terminal.error
+    : undefined);
+  assert.equal(serviceFastPathShadowPriceScoreAllocations(actual.state), undefined);
+  assert.throws(
+    () => serviceFastPathShadowPriceResidualOption(actual.state),
+    /No new service-fast shadow-price residual option/u,
+  );
+});
+
+void test('matches independent reconstruction and residual scoring for 255-bit inputs', () => {
+  const amountIn = (1n << 255n) - 19n;
+  const routes = [route(hop(amountIn, amountIn)), route(hop(amountIn, amountIn))];
+  for (const driver of DRIVERS) {
+    const independentProposal = oracleProposal(amountIn, routes, driver);
+    const independentDisposition = finalDisposition(
+      independentProposal,
+      'final-finite-replay',
+    );
+    assert.equal(independentDisposition.status, 'accepted');
+    if (independentDisposition.status !== 'accepted') {
+      throw new Error(`Expected accepted ${driver.driverId} 255-bit fixture.`);
+    }
+    assert.equal(
+      bigintSum(independentDisposition.reconstruction.baseAllocations) +
+        independentDisposition.reconstruction.residualUnits,
+      amountIn,
+    );
+    const actual = runActualProposal(
+      amountIn,
+      routes,
+      driver.driverId,
+      'final-finite-replay',
+    );
+    assert.deepEqual(
+      actual.metadata?.weights.map(float64Hex),
+      independentProposal.finalSample.weights.map(float64Hex),
+    );
+    finishActualReconstruction(actual.state, independentDisposition.reconstruction);
+    assert.equal(
+      bigintSum(finishActualResidualScoring(
+        actual.state,
+        independentDisposition.reconstruction,
+      )),
+      amountIn,
+    );
   }
 });
 
@@ -1653,8 +1953,3 @@ void test('returns typed Newton ratio and finalization domain rejections', () =>
     share: 0,
   });
 });
-
-// The black-box proposal assertions above compare production observations to these
-// independent goldens. Reconstruction and residual actuals remain deferred until
-// that production increment integrates; no production helper constructs expected
-// values here.

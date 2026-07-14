@@ -231,6 +231,18 @@ A returned plan is valid only when it:
 
 Disconnected requests and requests for which every candidate is rejected return a typed `no-route` outcome. Invalid requests return a distinct typed validation error. Neither is an exception used as ordinary control flow.
 
+The additive service runtime narrows `no-route` further: it is permitted only after
+natural exhaustion of every frontier in the accepted server-bounded search domain.
+A direct, structural, replay, proposal, repair, semantic-diagnostic, or aggregate
+safety cap reached before natural exhaustion is incomplete work, not evidence of
+no route. With no
+exact incumbent it returns typed `no-plan`; with an incumbent it returns success
+with a non-complete termination. Deadline, cancellation, invalid context/control,
+runtime dependency failures, and internal state failures remain distinct. Optional
+debug/response truncation does not change search completeness.
+[ADR 0005](adr/accepted/0005-service-routing-runtime.md)
+fixes that additive result taxonomy without changing either reference runtime.
+
 ### Alternatives and rationale
 
 - Combining validation layers was rejected because quote arithmetic, executable state change, route feasibility, and returned-plan eligibility have different zero/tiny-input behavior.
@@ -310,6 +322,33 @@ Repeated runs with identical deterministic inputs must select the same plan, exa
 
 Canonical split evidence is additive under `routelab.split-router-run.v1` and `routelab.split-router-case.v1`. It canonicalizes only deterministic `complete` or `work-limit` executions fixed by typed caps, and its semantic hash includes deterministic request, configuration, caps, counters, termination, and exact result. Interruption- or deadline-driven outcomes and their termination labels remain operational and receive no split-v1 determinism hash; omitting timing, clock samples, or stop observations does not make them semantic. Existing canonical single-path v1 JSON, bytes, hashes, fixtures, and zero-expansion behavior are unchanged.
 
+The additive `service-v2` policy does not reinterpret those reference rules. It
+runs over the same internal request session only after reference parity is proven,
+but it owns a separate prepared capability, server resource policy, action
+boundaries, schedule, counters, results, and future evidence version. A strict
+boundary first mints an opaque owned intent from bounded primitive values. Its
+first trusted monotonic clock sample then occurs at routing entry before captured-
+intent or route work. An already-expired absolute deadline performs zero direct,
+structural, replay, proposal, repair, or authorization actions. Every later
+service action has a server-bounded maximum and a cooperative pre-action stop boundary; direct
+candidates and numerical route-share iterations are therefore incremental service
+units rather than the coarser reference units.
+
+Service preparation preflights raw pool counts, identifier lengths, and exact-
+decimal lengths before unbounded iteration or `bigint` construction, then performs
+the accepted parse, checksum verification, capture, and immutable canonical index
+construction outside the per-request deadline. The initial policy ceilings and
+their units are part of ADR 0005. An ordinarily prepared context
+that lacks that publication proof cannot be upgraded to a service capability. The
+future wire caller cannot select the checksum, hop/route limits, work caps,
+iteration counts, proposal driver, or diagnostic volume. These remain captured
+server policy. This is an
+operational synchronous router deadline only: it does not include transport,
+queueing, event-loop dispatch, serialization, or prove same-thread HTTP
+cancellation. Deadline-, cancellation-, dependency-, and load-driven outcomes are
+excluded from determinism hashes. ADR 0005 fixes the precise service precedence,
+action catalogue, non-starving schedule, and evidence boundary.
+
 ### Alternatives and rationale
 
 - Treating a wall-clock timeout as reproducible termination was rejected because scheduling changes the completed work.
@@ -328,6 +367,16 @@ A `number` can propose work but cannot determine an exact quote, reserve, alloca
 Deadline nanoseconds use `bigint`. Exact decimal parsing constructs `bigint` directly after grammar validation. Code must not call `Number(exactValue)`, use mixed numeric arithmetic, or use an approximate equality test for exact state.
 
 Path-level numerical allocation first reduces every exact route-curve coefficient triple to the mandatory primitive `gcd(A,B,C) = 1` form and each exact rational presented to normalization to its mandatory gcd-reduced numerator/denominator pair, as fixed by ADR 0004. It may then inspect leading binary digits and structural bit lengths only through that ADR's normalized conversion. The conversion accumulates at most 53 leading bits into a dimensionless proposal significand, truncates all lower bits, and combines significands with an explicit power-of-two exponent. The source exact value is never converted to `number`; a zero, subnormal, overflowed, or non-finite normalized result rejects the proposal. Approximate solver weights never become exact allocations by rounding: their exact IEEE-754 bit patterns are decoded into `bigint` weights before all allocation multiplication, division, summation, residual selection, replay, and objective comparison.
+
+A service-only experiment may pass a finite non-converged approximate sample to
+the same exact reconstruction and replay boundary, but it must retain a typed
+`converged: false` diagnostic. Non-finite or out-of-domain state remains
+unreplayable. Activation-aware or bounded-neighborhood repair uses only metered
+exact option replays, exact-sum `bigint` allocations, and distinct fresh
+authorization. Neither a finite sample nor an exact proposal score authorizes an
+incumbent, and the ADR 0004 reference driver and retained evidence remain
+unchanged. ADR 0005 requires a pre-observation identical-input selection rule for
+any such service variant.
 
 ### Alternatives and rationale
 

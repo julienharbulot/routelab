@@ -1,13 +1,79 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { lstatSync, readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const EXPECTED_CONFIG_BYTES = 69_930;
+const EXPECTED_CONFIG_BYTES = 76_816;
 const EXPECTED_CONFIG_SHA256 =
-  'sha256:c0b86e26106177f7fee5e8f4ae740e0b1f5a889c8e8b1246a65323d842a30f20';
+  'sha256:28e20d4d7feedabb8d0c4331345f76891c47dcc39a1147728c3901e757413fac';
 const CONFIG_PATH = 'fixtures/m7c/service-fast-numerical/experiment-config.v1.json';
+
+const INPUT_RUNTIME_SCHEMA =
+  'routelab.service-fast-numerical-input-runtime-closure.v1';
+const INPUT_RUNTIME_PROFILE = 'candidate-free-input-runtime-v1';
+const INPUT_RUNTIME_ROOTS = Object.freeze([
+  'cli/build-service-fast-numerical-experiment-inputs.ts',
+]);
+const INPUT_RUNTIME_PROJECT_SOURCES = Object.freeze([
+  'cli/build-service-fast-numerical-experiment-inputs.ts',
+  'src/allocation/path-shadow-price/index.ts',
+  'src/allocation/service-path-shadow-price/index.ts',
+  'src/benchmark/service-fast-numerical-experiment/input/build.ts',
+  'src/benchmark/service-fast-numerical-experiment/input/closure-audit.ts',
+  'src/benchmark/service-fast-numerical-experiment/input/codec.ts',
+  'src/benchmark/service-fast-numerical-experiment/input/frozen-bindings.ts',
+  'src/benchmark/service-fast-numerical-experiment/input/publication.ts',
+  'src/domain/index.ts',
+  'src/domain/liquidity-snapshot.ts',
+  'src/pools/constant-product/index.ts',
+  'src/replay/exact-input-kernel/index.ts',
+  'src/replay/exact-input-split/index.ts',
+  'src/router/anytime-exact-input-split/index.ts',
+  'src/router/exact-input-split-session/index.ts',
+  'src/router/numerical-exact-input-split/index.ts',
+  'src/router/split-exact-input/objective.ts',
+  'src/runtime/prepared-routing-context/index.ts',
+  'src/runtime/prepared-service-routing-context/bounded-snapshot-json.ts',
+  'src/runtime/prepared-service-routing-context/index.ts',
+  'src/search/pool-disjoint-route-sets/index.ts',
+  'src/search/service-route-discovery/index.ts',
+  'src/search/shared-route-discovery/index.ts',
+  'src/search/simple-paths/index.ts',
+  'src/search/simple-paths/traversal.ts',
+  'src/serialization/canonical-snapshot/index.ts',
+]);
+const INPUT_RUNTIME_BUILTINS = Object.freeze([
+  'node:crypto',
+  'node:fs/promises',
+  'node:path',
+  'node:util',
+]);
+const INPUT_REQUIRED_SCRIPTS = Object.freeze({
+  'experiment:service-fast:inputs':
+    'node cli/verify-service-fast-numerical-experiment-config.ts --input-admission && node cli/build-service-fast-numerical-experiment-inputs.ts',
+  'experiment:service-fast': 'node cli/run-service-fast-numerical-experiment.ts',
+  'verify:service-fast-experiment':
+    'node cli/verify-service-fast-numerical-experiment.ts',
+});
+const RUNTIME_CLOSURE_KEYS = Object.freeze([
+  'schemaVersion',
+  'profileId',
+  'entryRoots',
+  'projectSources',
+  'nodeBuiltins',
+  'commandManifest',
+  'repositoryAdmission',
+  'byteBinding',
+  'lexicalAudit',
+]);
+const DESCRIPTOR_KEYS = Object.freeze(['path', 'bytes', 'sha256']);
+const COMMAND_MANIFEST_KEYS = Object.freeze([
+  'path',
+  'bytes',
+  'sha256',
+  'requiredScripts',
+]);
 
 type KnownJsonKey =
   | 'acceptedBaseRevision'
@@ -149,6 +215,253 @@ function verifyDescriptor(root: string, value: unknown, label: string): void {
   const bytes = readFileSync(path.join(root, relativePath));
   if (bytes.length !== expectedBytes) fail(`${label} byte count mismatch.`);
   if (sha256(bytes) !== expectedSha256) fail(`${label} hash mismatch.`);
+}
+
+function exactKeys(
+  value: JsonObject,
+  expected: readonly string[],
+  label: string,
+): void {
+  same(Object.keys(value), expected, `${label} keys`);
+}
+
+function canonicalRepositoryRelativePath(value: unknown, label: string): string {
+  const relativePath = string(value, label);
+  if (
+    relativePath.length === 0 ||
+    path.isAbsolute(relativePath) ||
+    relativePath.includes('\\') ||
+    relativePath.includes(':') ||
+    relativePath.split('/').some((segment) =>
+      segment.length === 0 || segment === '.' || segment === '..')
+  ) {
+    fail(`${label} must be a canonical repository-relative path.`);
+  }
+  return relativePath;
+}
+
+function assertRegularNonsymlinkFile(
+  root: string,
+  relativePath: string,
+  label: string,
+): string {
+  const canonicalRoot = realpathSync(root);
+  let cursor = canonicalRoot;
+  const segments = relativePath.split('/');
+  for (const [index, segment] of segments.entries()) {
+    cursor = path.join(cursor, segment);
+    const metadata = lstatSync(cursor);
+    if (metadata.isSymbolicLink()) fail(`${label} must not traverse a symlink.`);
+    if (index < segments.length - 1 && !metadata.isDirectory()) {
+      fail(`${label} parent components must be directories.`);
+    }
+    if (index === segments.length - 1 && !metadata.isFile()) {
+      fail(`${label} must name a regular file.`);
+    }
+  }
+  if (path.relative(canonicalRoot, cursor).split(path.sep).join('/') !== relativePath) {
+    fail(`${label} does not resolve canonically beneath the repository root.`);
+  }
+  return cursor;
+}
+
+interface VerifiedRuntimeDescriptor {
+  readonly path: string;
+  readonly bytes: number;
+  readonly sha256: string;
+}
+
+function verifyRuntimeDescriptor(
+  root: string,
+  value: unknown,
+  label: string,
+  expectedKeys: readonly string[] = DESCRIPTOR_KEYS,
+): VerifiedRuntimeDescriptor {
+  const descriptor = object(value, label);
+  exactKeys(descriptor, expectedKeys, label);
+  const relativePath = canonicalRepositoryRelativePath(
+    descriptor.path,
+    `${label}.path`,
+  );
+  const expectedBytes = integer(descriptor.bytes, `${label}.bytes`);
+  if (expectedBytes === 0) fail(`${label}.bytes must be positive.`);
+  const expectedSha256 = string(descriptor.sha256, `${label}.sha256`);
+  if (!/^sha256:[0-9a-f]{64}$/u.test(expectedSha256)) {
+    fail(`${label}.sha256 must be a lowercase SHA-256 descriptor.`);
+  }
+  const absolutePath = assertRegularNonsymlinkFile(
+    root,
+    relativePath,
+    `${label}.path`,
+  );
+  const bytes = readFileSync(absolutePath);
+  if (bytes.length !== expectedBytes) fail(`${label} byte count mismatch.`);
+  if (sha256(bytes) !== expectedSha256) fail(`${label} hash mismatch.`);
+  return Object.freeze({
+    path: relativePath,
+    bytes: expectedBytes,
+    sha256: expectedSha256,
+  });
+}
+
+interface InputAdmissionRepositorySnapshot {
+  readonly head: string;
+  readonly status: string;
+  readonly index: string;
+  readonly submodules: string;
+  readonly trackedTargets: string;
+}
+
+function gitText(root: string, args: readonly string[]): string {
+  return execFileSync('git', args, { cwd: root, encoding: 'utf8' });
+}
+
+function inputAdmissionRepositorySnapshot(
+  root: string,
+  targets: readonly string[],
+): InputAdmissionRepositorySnapshot {
+  const head = gitText(root, ['rev-parse', '--verify', 'HEAD']).trim();
+  if (!/^[0-9a-f]{40}$/u.test(head)) fail('input admission HEAD is invalid.');
+  const status = gitText(root, [
+    'status',
+    '--porcelain=v1',
+    '-z',
+    '--untracked-files=all',
+  ]);
+  if (status.length !== 0) fail('input admission requires a clean index and worktree.');
+  const submodules = gitText(root, ['submodule', 'status', '--recursive']);
+  if (submodules.length !== 0) fail('input admission forbids submodules.');
+  const index = gitText(root, ['ls-files', '--stage', '-z']);
+  for (const entry of index.split('\0').filter((value) => value.length > 0)) {
+    const match = /^([0-9]{6}) ([0-9a-f]{40,64}) ([0-3])\t(.+)$/u.exec(entry);
+    if (match === null || match[3] !== '0' || match[1] === '160000') {
+      fail('input admission index contains a conflict or submodule entry.');
+    }
+  }
+  const trackedTargets = gitText(root, [
+    'ls-files',
+    '--stage',
+    '-z',
+    '--',
+    ...targets,
+  ]);
+  const entries = trackedTargets.split('\0').filter((entry) => entry.length > 0);
+  const trackedPaths: string[] = [];
+  for (const entry of entries) {
+    const match = /^([0-9]{6}) ([0-9a-f]{40,64}) ([0-3])\t(.+)$/u.exec(entry);
+    if (match === null || match[3] !== '0' || match[1] !== '100644') {
+      fail('input admission found an invalid, conflicted, or submodule index entry.');
+    }
+    const trackedPath = match[4];
+    if (trackedPath === undefined) fail('input admission index path is missing.');
+    trackedPaths.push(trackedPath);
+  }
+  const expectedTargets = [...new Set(targets)].sort();
+  same(trackedPaths, expectedTargets, 'input admission tracked targets');
+  return Object.freeze({ head, status, index, submodules, trackedTargets });
+}
+
+function verifyInputRuntimeClosure(
+  root: string,
+  config: JsonObject,
+  inputAdmission: boolean,
+): void {
+  const inputConstruction = object(
+    config['inputConstruction'],
+    'inputConstruction',
+  );
+  const runtimeClosure = object(
+    inputConstruction['runtimeClosure'],
+    'inputConstruction.runtimeClosure',
+  );
+  exactKeys(runtimeClosure, RUNTIME_CLOSURE_KEYS, 'inputConstruction.runtimeClosure');
+  if (runtimeClosure['schemaVersion'] !== INPUT_RUNTIME_SCHEMA) {
+    fail('input runtime closure schema changed.');
+  }
+  if (runtimeClosure['profileId'] !== INPUT_RUNTIME_PROFILE) {
+    fail('input runtime closure profile changed.');
+  }
+  same(runtimeClosure['entryRoots'], INPUT_RUNTIME_ROOTS, 'input runtime entry roots');
+  same(runtimeClosure['nodeBuiltins'], INPUT_RUNTIME_BUILTINS, 'input runtime built-ins');
+  if (
+    runtimeClosure['repositoryAdmission'] !==
+      'stable-reviewed-head-clean-index-and-worktree-no-untracked-nonignored-files-no-submodules-no-concurrent-mutation' ||
+    runtimeClosure['byteBinding'] !== 'primary-before-construction' ||
+    runtimeClosure['lexicalAudit'] !== 'defense-in-depth'
+  ) {
+    fail('input runtime admission policy changed.');
+  }
+
+  const projectSources = array(
+    runtimeClosure['projectSources'],
+    'inputConstruction.runtimeClosure.projectSources',
+  );
+  if (projectSources.length !== INPUT_RUNTIME_PROJECT_SOURCES.length) {
+    fail('input runtime project source count changed.');
+  }
+  const commandManifestValue = runtimeClosure['commandManifest'];
+  const commandManifestObject = object(
+    commandManifestValue,
+    'inputConstruction.runtimeClosure.commandManifest',
+  );
+  const commandManifestPath = canonicalRepositoryRelativePath(
+    commandManifestObject.path,
+    'inputConstruction.runtimeClosure.commandManifest.path',
+  );
+  const repositoryTargets = [
+    CONFIG_PATH,
+    commandManifestPath,
+    ...INPUT_RUNTIME_PROJECT_SOURCES,
+  ];
+  const before = inputAdmission
+    ? inputAdmissionRepositorySnapshot(root, repositoryTargets)
+    : undefined;
+
+  for (const [index, value] of projectSources.entries()) {
+    const descriptor = verifyRuntimeDescriptor(
+      root,
+      value,
+      `inputConstruction.runtimeClosure.projectSources[${index}]`,
+    );
+    if (descriptor.path !== INPUT_RUNTIME_PROJECT_SOURCES[index]) {
+      fail(`input runtime project source path changed at index ${index}.`);
+    }
+  }
+
+  const commandManifest = verifyRuntimeDescriptor(
+    root,
+    commandManifestValue,
+    'inputConstruction.runtimeClosure.commandManifest',
+    COMMAND_MANIFEST_KEYS,
+  );
+  if (commandManifest.path !== 'package.json') {
+    fail('input command manifest must bind package.json.');
+  }
+  const requiredScripts = object(
+    commandManifestObject['requiredScripts'],
+    'inputConstruction.runtimeClosure.commandManifest.requiredScripts',
+  );
+  exactKeys(
+    requiredScripts,
+    Object.keys(INPUT_REQUIRED_SCRIPTS),
+    'inputConstruction.runtimeClosure.commandManifest.requiredScripts',
+  );
+  same(requiredScripts, INPUT_REQUIRED_SCRIPTS, 'input required package scripts');
+  const packageJson = object(
+    JSON.parse(readFileSync(path.join(root, commandManifest.path), 'utf8')) as unknown,
+    'package.json',
+  );
+  const packageScripts = object(packageJson['scripts'], 'package.json.scripts');
+  for (const [name, expected] of Object.entries(INPUT_REQUIRED_SCRIPTS)) {
+    if (packageScripts[name] !== expected) {
+      fail(`package.json script ${name} differs from the frozen input command manifest.`);
+    }
+  }
+
+  if (inputAdmission) {
+    const after = inputAdmissionRepositorySnapshot(root, repositoryTargets);
+    same(after, before, 'input admission repository snapshot');
+  }
 }
 
 function requestIdentities(requestsValue: unknown): {
@@ -1227,8 +1540,12 @@ function verifyBindings(root: string, config: JsonObject): void {
 }
 
 function main(): void {
-  if (process.argv.length !== 2) fail('unexpected command arguments.');
+  const args = process.argv.slice(2);
+  const inputAdmission =
+    args.length === 1 && args[0] === '--input-admission';
+  if (args.length !== 0 && !inputAdmission) fail('unexpected command arguments.');
   const root = repositoryRoot();
+  assertRegularNonsymlinkFile(root, CONFIG_PATH, 'config path');
   const configBytes = readFileSync(path.join(root, CONFIG_PATH));
   if (configBytes.length !== EXPECTED_CONFIG_BYTES) fail('config byte count mismatch.');
   if (sha256(configBytes) !== EXPECTED_CONFIG_SHA256) fail('config hash mismatch.');
@@ -1253,8 +1570,9 @@ function main(): void {
   verifyCohorts(root, config);
   verifyPolicyMatrix(config);
   verifyActionAndArtifactArithmetic(config);
+  verifyInputRuntimeClosure(root, config, inputAdmission);
   process.stdout.write(
-    `Verified output-free service-fast experiment config: ${EXPECTED_CONFIG_BYTES} bytes, ${EXPECTED_CONFIG_SHA256}.\n`,
+    `Verified output-free service-fast experiment config: ${EXPECTED_CONFIG_BYTES} bytes, ${EXPECTED_CONFIG_SHA256}${inputAdmission ? ' with clean input admission' : ''}.\n`,
   );
 }
 

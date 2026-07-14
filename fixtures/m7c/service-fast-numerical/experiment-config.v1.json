@@ -319,6 +319,164 @@
         "maxNumericalAuthorizationReplays": 55
       }
     },
+    "runtimeClosure": {
+      "schemaVersion": "routelab.service-fast-numerical-input-runtime-closure.v1",
+      "profileId": "candidate-free-input-runtime-v1",
+      "entryRoots": [
+        "cli/build-service-fast-numerical-experiment-inputs.ts"
+      ],
+      "projectSources": [
+        {
+          "path": "cli/build-service-fast-numerical-experiment-inputs.ts",
+          "bytes": 1950,
+          "sha256": "sha256:b38e1f409c88c5219d3e02ff16eeacea12250b6f146ad1c5ce67e833e18e403d"
+        },
+        {
+          "path": "src/allocation/path-shadow-price/index.ts",
+          "bytes": 31345,
+          "sha256": "sha256:5034a82f41f7f51b02a69cd8754f860f7268c8b93b6d867ec749267ad8cce693"
+        },
+        {
+          "path": "src/allocation/service-path-shadow-price/index.ts",
+          "bytes": 31025,
+          "sha256": "sha256:5b9bc5013baa1286403c6867fba6e32826763d31f7c323576596fa8644b5a1db"
+        },
+        {
+          "path": "src/benchmark/service-fast-numerical-experiment/input/build.ts",
+          "bytes": 49808,
+          "sha256": "sha256:be86e625bb380f89e4f886354d790a7946d67054a58a34e9c506489c2576de8b"
+        },
+        {
+          "path": "src/benchmark/service-fast-numerical-experiment/input/closure-audit.ts",
+          "bytes": 35956,
+          "sha256": "sha256:a9edcbae67ce58a4d45c252b3729eea90b2e409ae4f565656f5abfae733c7120"
+        },
+        {
+          "path": "src/benchmark/service-fast-numerical-experiment/input/codec.ts",
+          "bytes": 9532,
+          "sha256": "sha256:08f065e1638d91d9caa5560fafd99f699a274c2da564d0d55147dc96e974bc6f"
+        },
+        {
+          "path": "src/benchmark/service-fast-numerical-experiment/input/frozen-bindings.ts",
+          "bytes": 257,
+          "sha256": "sha256:ce8f4195939504b08e2ae99e043c82df3b689f45dd28594678be97c4dce9f371"
+        },
+        {
+          "path": "src/benchmark/service-fast-numerical-experiment/input/publication.ts",
+          "bytes": 10358,
+          "sha256": "sha256:3a34fb9716d411aef7f94cbf68ee10bd90d58b32dab65c1117c7946eda20e13a"
+        },
+        {
+          "path": "src/domain/index.ts",
+          "bytes": 224,
+          "sha256": "sha256:a04671f7d826ad0907ed7549c5efa270127a04b6411923bbfde999c042a12bf5"
+        },
+        {
+          "path": "src/domain/liquidity-snapshot.ts",
+          "bytes": 8728,
+          "sha256": "sha256:42f326a19efab1085fe4aea0bbf6ac9387ceadf5b64e10f835da3fd43fbf3357"
+        },
+        {
+          "path": "src/pools/constant-product/index.ts",
+          "bytes": 4760,
+          "sha256": "sha256:20953626b5d5bb533e419da6ccd089389a4a3cc852b5973c3355e6b54c7304fe"
+        },
+        {
+          "path": "src/replay/exact-input-kernel/index.ts",
+          "bytes": 12790,
+          "sha256": "sha256:5e789f55f7fc89e3f7be1496f8d84805e15e4a540b17e46b45819d455e496e36"
+        },
+        {
+          "path": "src/replay/exact-input-split/index.ts",
+          "bytes": 4150,
+          "sha256": "sha256:0efc6f584f898c15c3853fab4e99bc6fc8a6fc2c944cf40215674ca94699e74a"
+        },
+        {
+          "path": "src/router/anytime-exact-input-split/index.ts",
+          "bytes": 18065,
+          "sha256": "sha256:67bfa1b51e6cd58adcc7f7931bbfc2d747305290d96986812a6789eeb3075667"
+        },
+        {
+          "path": "src/router/exact-input-split-session/index.ts",
+          "bytes": 118350,
+          "sha256": "sha256:b882f034ab4871dde9cb6edd3d9d2ba93691766855aa8ed5c158688f6cdede6a"
+        },
+        {
+          "path": "src/router/numerical-exact-input-split/index.ts",
+          "bytes": 38230,
+          "sha256": "sha256:280e1b6f74901c97a2ca0df307803654d8ef27149d5f12fe6383ce401fa1bf75"
+        },
+        {
+          "path": "src/router/split-exact-input/objective.ts",
+          "bytes": 3328,
+          "sha256": "sha256:6061ae07bd4035fa866c3a17d2b2540044295dc119252d21ca8d1bc70e0d5f65"
+        },
+        {
+          "path": "src/runtime/prepared-routing-context/index.ts",
+          "bytes": 25220,
+          "sha256": "sha256:1b0804c535a4800a10891e49d4553b335132ad81d04a54bfad30d0dc3274ab59"
+        },
+        {
+          "path": "src/runtime/prepared-service-routing-context/bounded-snapshot-json.ts",
+          "bytes": 18297,
+          "sha256": "sha256:c5d74710d3c70c8159d2639b8ac5e28cecf41dd429357e78cb10132cfbd5e070"
+        },
+        {
+          "path": "src/runtime/prepared-service-routing-context/index.ts",
+          "bytes": 18793,
+          "sha256": "sha256:fed5e062ffbdedddc9a477de99b9e18ce3ffbafad2755213325734dc1b99fed7"
+        },
+        {
+          "path": "src/search/pool-disjoint-route-sets/index.ts",
+          "bytes": 10863,
+          "sha256": "sha256:28e56a2202e336ee159ccbdc494c9164166aa98b617eda3ebdfc7eb6eb8defdb"
+        },
+        {
+          "path": "src/search/service-route-discovery/index.ts",
+          "bytes": 9864,
+          "sha256": "sha256:20fbfc0bb2efc2ab1e489c69ec41fa2ecd35df00d5152678452658a63e73492f"
+        },
+        {
+          "path": "src/search/shared-route-discovery/index.ts",
+          "bytes": 12128,
+          "sha256": "sha256:5cc57b8fc8d15775d4c385a56c37094c2f5db2ba73c18dc7f0a90cfb69bf1f67"
+        },
+        {
+          "path": "src/search/simple-paths/index.ts",
+          "bytes": 7277,
+          "sha256": "sha256:e869b188090c1a70cfae1e9520927e1d98ffc50eb00c45e7a08c02783ea0aba4"
+        },
+        {
+          "path": "src/search/simple-paths/traversal.ts",
+          "bytes": 6214,
+          "sha256": "sha256:fd58816a7af8e52b2b9e04c4cd27aa322ee4a129d5bde0a2963eee711a3d9ac2"
+        },
+        {
+          "path": "src/serialization/canonical-snapshot/index.ts",
+          "bytes": 2045,
+          "sha256": "sha256:96751da439ef425886b249f2fe6bd6103077e4f8f3ea4420d30e28ca3db6ae80"
+        }
+      ],
+      "nodeBuiltins": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path",
+        "node:util"
+      ],
+      "commandManifest": {
+        "path": "package.json",
+        "bytes": 2376,
+        "sha256": "sha256:46652ad6f692618933f7d156e605b1f0946810f09ad0352fdd5a5aa59f6812d2",
+        "requiredScripts": {
+          "experiment:service-fast:inputs": "node cli/verify-service-fast-numerical-experiment-config.ts --input-admission && node cli/build-service-fast-numerical-experiment-inputs.ts",
+          "experiment:service-fast": "node cli/run-service-fast-numerical-experiment.ts",
+          "verify:service-fast-experiment": "node cli/verify-service-fast-numerical-experiment.ts"
+        }
+      },
+      "repositoryAdmission": "stable-reviewed-head-clean-index-and-worktree-no-untracked-nonignored-files-no-submodules-no-concurrent-mutation",
+      "byteBinding": "primary-before-construction",
+      "lexicalAudit": "defense-in-depth"
+    },
     "preparedContext": "one-checksum-verified-ordinary-context-per-snapshot-never-cross-snapshot",
     "baseline": "reproduce-complete-exact-retained-baseline-before-accepting-input-cell",
     "candidateSets": {
@@ -1306,6 +1464,9 @@
           "tests/service-fast-numerical-experiment-config.test.ts": [
             "production-test"
           ],
+          "tests/service-fast-numerical-experiment-input.test.ts": [
+            "production-test"
+          ],
           "tests/service-fast-numerical-experiment.test.ts": [
             "production-test"
           ],
@@ -1372,6 +1533,7 @@
         "tests/service-fast-path-shadow-price.test.ts",
         "tests/bounded-exact-split-repair.test.ts",
         "tests/service-fast-numerical-experiment-config.test.ts",
+        "tests/service-fast-numerical-experiment-input.test.ts",
         "tests/service-fast-numerical-experiment.test.ts",
         "tests/oracle/service-fast-path-shadow-price-oracle.test.ts",
         "tests/oracle/bounded-exact-split-repair-oracle.test.ts",

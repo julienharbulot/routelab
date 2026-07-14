@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { lstatSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
@@ -16,12 +16,53 @@ const ARTIFACT_SCHEMA = path.join(
   'fixtures/m7c/service-fast-numerical/experiment-artifact-schema.v1.json',
 );
 const VERIFIER = path.join(ROOT, 'cli/verify-service-fast-numerical-experiment-config.ts');
-const EXPECTED_CONFIG_BYTES = 69_930;
+const EXPECTED_CONFIG_BYTES = 76_816;
 const EXPECTED_CONFIG_SHA256 =
-  'c0b86e26106177f7fee5e8f4ae740e0b1f5a889c8e8b1246a65323d842a30f20';
+  '28e20d4d7feedabb8d0c4331345f76891c47dcc39a1147728c3901e757413fac';
 const EXPECTED_ARTIFACT_SCHEMA_BYTES = 67_824;
 const EXPECTED_ARTIFACT_SCHEMA_SHA256 =
   'a1639d3b0156f0135f1df25eff0f9e7693e95c85674cb02c04145a94a9d4a07a';
+const INPUT_RUNTIME_PROJECT_SOURCES = Object.freeze([
+  'cli/build-service-fast-numerical-experiment-inputs.ts',
+  'src/allocation/path-shadow-price/index.ts',
+  'src/allocation/service-path-shadow-price/index.ts',
+  'src/benchmark/service-fast-numerical-experiment/input/build.ts',
+  'src/benchmark/service-fast-numerical-experiment/input/closure-audit.ts',
+  'src/benchmark/service-fast-numerical-experiment/input/codec.ts',
+  'src/benchmark/service-fast-numerical-experiment/input/frozen-bindings.ts',
+  'src/benchmark/service-fast-numerical-experiment/input/publication.ts',
+  'src/domain/index.ts',
+  'src/domain/liquidity-snapshot.ts',
+  'src/pools/constant-product/index.ts',
+  'src/replay/exact-input-kernel/index.ts',
+  'src/replay/exact-input-split/index.ts',
+  'src/router/anytime-exact-input-split/index.ts',
+  'src/router/exact-input-split-session/index.ts',
+  'src/router/numerical-exact-input-split/index.ts',
+  'src/router/split-exact-input/objective.ts',
+  'src/runtime/prepared-routing-context/index.ts',
+  'src/runtime/prepared-service-routing-context/bounded-snapshot-json.ts',
+  'src/runtime/prepared-service-routing-context/index.ts',
+  'src/search/pool-disjoint-route-sets/index.ts',
+  'src/search/service-route-discovery/index.ts',
+  'src/search/shared-route-discovery/index.ts',
+  'src/search/simple-paths/index.ts',
+  'src/search/simple-paths/traversal.ts',
+  'src/serialization/canonical-snapshot/index.ts',
+]);
+const INPUT_RUNTIME_BUILTINS = Object.freeze([
+  'node:crypto',
+  'node:fs/promises',
+  'node:path',
+  'node:util',
+]);
+const INPUT_REQUIRED_SCRIPTS = Object.freeze({
+  'experiment:service-fast:inputs':
+    'node cli/verify-service-fast-numerical-experiment-config.ts --input-admission && node cli/build-service-fast-numerical-experiment-inputs.ts',
+  'experiment:service-fast': 'node cli/run-service-fast-numerical-experiment.ts',
+  'verify:service-fast-experiment':
+    'node cli/verify-service-fast-numerical-experiment.ts',
+});
 
 function assertBytesAndHash(
   filePath: string,
@@ -47,7 +88,13 @@ void test('the output-free service-fast experiment config verifies without candi
   ]);
   assert.doesNotMatch(verifierSource, /service-fast-path-shadow-price/u);
   assert.doesNotMatch(verifierSource, /bounded-exact-split-repair/u);
-  assert.doesNotMatch(verifierSource, /service-fast-numerical-experiment(?!-config)/u);
+  assert.doesNotMatch(verifierSource, /\bimport\s*\(/u);
+  assert.doesNotMatch(verifierSource, /\brequire\s*\(/u);
+  assert.doesNotMatch(
+    verifierSource,
+    /\b(?:createRequire|getBuiltinModule|dlopen|WebAssembly|Worker)\b/u,
+  );
+  assert.doesNotMatch(verifierSource, /\b(?:eval|Function)\s*\(/u);
 
   assertBytesAndHash(CONFIG, EXPECTED_CONFIG_BYTES, EXPECTED_CONFIG_SHA256);
   assertBytesAndHash(
@@ -81,6 +128,122 @@ void test('the output-free service-fast experiment config verifies without candi
   });
   assert.notEqual(unexpectedArgument.status, 0);
   assert.match(unexpectedArgument.stderr, /unexpected command arguments/u);
+});
+
+void test('the candidate-free input runtime is bound by exact bytes before construction', () => {
+  const config = JSON.parse(readFileSync(CONFIG, 'utf8')) as {
+    readonly inputConstruction: {
+      readonly runtimeClosure: {
+        readonly schemaVersion: string;
+        readonly profileId: string;
+        readonly entryRoots: readonly string[];
+        readonly projectSources: readonly {
+          readonly path: string;
+          readonly bytes: number;
+          readonly sha256: string;
+        }[];
+        readonly nodeBuiltins: readonly string[];
+        readonly commandManifest: {
+          readonly path: string;
+          readonly bytes: number;
+          readonly sha256: string;
+          readonly requiredScripts: Readonly<Record<string, string>>;
+        };
+        readonly repositoryAdmission: string;
+        readonly byteBinding: string;
+        readonly lexicalAudit: string;
+      };
+    };
+    readonly artifacts: {
+      readonly sourceClosure: {
+        readonly sourceRoleAssignments: {
+          readonly requiredFiles: Readonly<Record<string, readonly string[]>>;
+        };
+        readonly requiredFiles: readonly string[];
+      };
+    };
+  };
+  const runtime = config.inputConstruction.runtimeClosure;
+  assert.deepEqual(Object.keys(runtime), [
+    'schemaVersion',
+    'profileId',
+    'entryRoots',
+    'projectSources',
+    'nodeBuiltins',
+    'commandManifest',
+    'repositoryAdmission',
+    'byteBinding',
+    'lexicalAudit',
+  ]);
+  assert.equal(
+    runtime.schemaVersion,
+    'routelab.service-fast-numerical-input-runtime-closure.v1',
+  );
+  assert.equal(runtime.profileId, 'candidate-free-input-runtime-v1');
+  assert.deepEqual(runtime.entryRoots, [INPUT_RUNTIME_PROJECT_SOURCES[0]]);
+  assert.deepEqual(
+    runtime.projectSources.map(({ path: sourcePath }) => sourcePath),
+    INPUT_RUNTIME_PROJECT_SOURCES,
+  );
+  assert.deepEqual(runtime.nodeBuiltins, INPUT_RUNTIME_BUILTINS);
+  assert.equal(runtime.byteBinding, 'primary-before-construction');
+  assert.equal(runtime.lexicalAudit, 'defense-in-depth');
+  assert.equal(
+    runtime.repositoryAdmission,
+    'stable-reviewed-head-clean-index-and-worktree-no-untracked-nonignored-files-no-submodules-no-concurrent-mutation',
+  );
+  for (const descriptor of runtime.projectSources) {
+    assert.deepEqual(Object.keys(descriptor), ['path', 'bytes', 'sha256']);
+    const absolutePath = path.join(ROOT, descriptor.path);
+    const metadata = lstatSync(absolutePath);
+    assert.equal(metadata.isSymbolicLink(), false);
+    assert.equal(metadata.isFile(), true);
+    const bytes = readFileSync(absolutePath);
+    assert.equal(bytes.byteLength, descriptor.bytes);
+    assert.equal(
+      `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
+      descriptor.sha256,
+    );
+  }
+  assert.deepEqual(Object.keys(runtime.commandManifest), [
+    'path',
+    'bytes',
+    'sha256',
+    'requiredScripts',
+  ]);
+  assert.equal(runtime.commandManifest.path, 'package.json');
+  assert.deepEqual(runtime.commandManifest.requiredScripts, INPUT_REQUIRED_SCRIPTS);
+  const packageBytes = readFileSync(path.join(ROOT, runtime.commandManifest.path));
+  assert.equal(packageBytes.byteLength, runtime.commandManifest.bytes);
+  assert.equal(
+    `sha256:${createHash('sha256').update(packageBytes).digest('hex')}`,
+    runtime.commandManifest.sha256,
+  );
+  const packageJson = JSON.parse(packageBytes.toString('utf8')) as {
+    readonly scripts: Readonly<Record<string, string>>;
+  };
+  for (const [name, expected] of Object.entries(INPUT_REQUIRED_SCRIPTS)) {
+    assert.equal(packageJson.scripts[name], expected);
+  }
+
+  const requiredFiles = config.artifacts.sourceClosure.requiredFiles;
+  const configTestIndex = requiredFiles.indexOf(
+    'tests/service-fast-numerical-experiment-config.test.ts',
+  );
+  assert.equal(
+    requiredFiles[configTestIndex + 1],
+    'tests/service-fast-numerical-experiment-input.test.ts',
+  );
+  assert.equal(
+    requiredFiles[configTestIndex + 2],
+    'tests/service-fast-numerical-experiment.test.ts',
+  );
+  assert.deepEqual(
+    config.artifacts.sourceClosure.sourceRoleAssignments.requiredFiles[
+      'tests/service-fast-numerical-experiment-input.test.ts'
+    ],
+    ['production-test'],
+  );
 });
 
 void test('the publication and operational-width admission is closed before observation', () => {

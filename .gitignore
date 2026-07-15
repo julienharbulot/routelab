@@ -3,25 +3,21 @@ coverage/
 dist/
 *.tsbuildinfo
 *.swp
+*.cpuprofile
+*.heapprofile
 
-# Local/private agent control plane
+# Local benchmark and load-test output
+reports/raw/
+reports/tmp/
+.benchmarks/
+
+# Local agent/tool state
 .routelab-private/
-AGENTS.override.md
-
-# Local coding-agent/tool state
 .serena/
-
-# Private prompts and raw traces
-.codex/prompts/
-agent-reports/
-reviews/raw/
-private/
+AGENTS.override.md
 
 # Local secrets and environment
 .env
 .env.*
 !.env.example
 secrets/
-
-# Research source cache; public repo stores links/notes only
-docs/research-papers/*.pdf

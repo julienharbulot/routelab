@@ -1,113 +1,139 @@
-# RouteLab TS project contract
+# RouteLab TS working agreement
 
-## Mission and current boundary
+## Mission
 
-RouteLab is a small, correct, measurable TypeScript liquidity router. The first supported intent is exact-input routing over immutable snapshots of two-asset constant-product pools. RouteLab grows through verified vertical slices. See `STATUS.md` for currently integrated capabilities and the current release gate.
+Finish a small, useful, defensible TypeScript liquidity-routing portfolio project.
 
-Do not claim transaction submission, custody, production financial execution, unrestricted global optimality, or equivalence with cited research. Historical data, numerical allocation, acceleration, services, protocol adapters, and learned ordering follow only after their stated prerequisites.
+The release must make the existing exact routing and numerical-allocation work easy to call, benchmark, inspect, and explain. Product value takes priority over process completeness.
 
-## Sources of truth
+## Current base
 
-Use authority in this order:
+The restart begins at:
 
-1. `docs/invariants.md` for accepted financial and deterministic semantics;
-2. accepted ADRs for reviewed technical decisions;
-3. the active task packet for scope, frozen contracts, and acceptance criteria;
-4. an active ExecPlan for cross-cutting design and progress;
-5. `IMPLEMENTATION_PLAN.md` for milestone order and release gates;
-6. `STATUS.md` for stable public project state;
-7. code, tests, fixtures, and integrated evidence for implemented behavior.
-
-When authorities conflict, stop the affected work and identify the conflict. Tests are evidence, not permission to contradict accepted semantics. Historical examples and private drafts are not accepted contracts.
-
-## Exact and approximate arithmetic
-
-- Exact asset amounts, reserves, fees, allocations, receipts, and outputs use `bigint`.
-- Exact values never pass through JavaScript `number`, JSON numbers, or implicit mixed coercion.
-- Integer rounding direction and fee order are explicit and tested.
-- Exact allocations are nonnegative and sum to the exact requested input.
-- `number` is limited to explicitly approximate optimization, bounds, features, ranking, reporting, or validated structural counters.
-- Approximate values may propose work; they never authorize an execution result.
-
-## Snapshots, replay, determinism, and incumbents
-
-- Snapshots are immutable and identified by both ID and checksum.
-- Snapshot-specific indexes and caches are never reused across snapshots without a validity proof.
-- No candidate becomes an incumbent until fresh exact replay succeeds against the requested snapshot.
-- Later hops observe prior transitions; stale pool state is never reused.
-- Invalid candidates preserve the incumbent. Objective values are monotonic under deterministic tie-breaking.
-- Deterministic modes use canonical iteration, explicit budgets, seeds, configuration, and checkpoints—not wall-clock scheduling.
-- Timing fields are excluded from determinism hashes. Primary replay and benchmark fixtures remain offline and versioned.
-- Learned or heuristic ordering is advisory and cannot bypass hard constraints or exact replay.
-
-## Release-gate discipline
-
-Build the smallest verified vertical slice and do not skip prerequisites. Exact execution precedes search; a deterministic bounded baseline precedes acceleration; replay precedes benchmark claims; measured bottlenecks precede performance architecture; model-disabled correctness precedes learned ordering. A later milestone cannot disguise a failed current gate. Milestone completion remains scoped to its accepted component gate. If a later review shows that independently correct components are not yet composed into the product path that the next milestone would measure or expose, add an explicit integration gate without rewriting archived completion evidence; benchmark, service, and portfolio claims remain blocked until that gate closes.
-
-Before the first task from a later milestone becomes ready or active, the lead must commission a read-only milestone completion review of the cumulative integrated state—not only the final task diff. The reviewer maps every outcome and gate clause in `IMPLEMENTATION_PLAN.md` to code and independent evidence, reconciles `STATUS.md` limitations, and reports the milestone as complete or incomplete. The lead records that result in the closing task. Any missing scope keeps the current milestone open, requires a same-milestone follow-up packet, and blocks later-milestone selection; already-integrated later work cannot waive or satisfy the missing gate.
-
-## Bounded roles
-
-The lead owns contracts, task selection, integration, public claims, and final gates. A builder implements one bounded production change. An oracle/test engineer derives independent expected behavior without circular use of the production helper. A read-only reviewer works in named scout or review mode and returns evidence and risks.
-
-Use at most four concurrent threads including the lead, one delegation level, and at most two writers. Concurrent writers require isolated worktrees, frozen contracts, non-overlapping write sets, and a declared integration order. High-risk financial, replay, search, allocation, interruption, hashing, or release work requires independent evidence. Agents do not merge, push, rewrite history, or approve their own work.
-
-## Commit titles
-
-Title every commit as `<task code> <Title>`, for example `RLT-060 Enforce raw snapshot validation`. The title after the task code must begin with a capital letter.
-
-## Canonical commands
-
-Use the pinned Node.js and pnpm versions without modifying the host environment:
-
-```bash
-pnpm trace:check:index
-pnpm trace:check:head
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm demo
-pnpm replay:cases
-pnpm replay:split-cases
-pnpm check
+```text
+cdc5a83b47ca35e9173a41e95f7e32e81e4f9d85
+RLT-073 Add numerical allocation runtime
 ```
 
-Use narrower tests during development and the full applicable gate before integration. Missing or incompatible tools are reported with the exact failed command; do not install machine-wide replacements.
+`STATUS.md` names the one active task. Execute the task files under `tasks/` in numeric order.
 
-## Task packets and ExecPlans
+## Non-negotiable semantics
 
-Nontrivial work needs one task packet based on `tasks/TASK_TEMPLATE.md`. It states the outcome, why it is next, prerequisites, frozen contracts, role assignments, allowed writes, non-goals, invariants, acceptance criteria, commands, stop conditions, report format, and decisions reserved for the lead or human.
+- Exact amounts, reserves, fees, allocations, and outputs use `bigint`.
+- Wire and persisted exact amounts use canonical decimal strings.
+- Approximate numbers may propose allocations but never authorize a returned quote.
+- Every returned plan must pass fresh exact replay against the requested immutable snapshot.
+- Snapshot identity includes both ID and checksum.
+- Later route hops observe earlier reserve transitions.
+- Split allocations are nonnegative and sum exactly to the input.
+- Invalid candidates preserve the incumbent.
+- Incumbent exact output never decreases.
+- Deterministic tests use explicit work budgets; timing does not enter semantic hashes.
+- Deadline or work exhaustion returns only a fully validated incumbent.
+- No transaction submission, signing, custody, settlement, bridge execution, or unrestricted-optimality claim is introduced.
 
-Create and maintain an ExecPlan under the contract in `.agent/PLANS.md` when work crosses core modules, changes a public or financial contract, introduces numerical methods, changes replay/deadline/benchmark semantics, requires migration, or has material staged unknowns. Active packets and plans are operational records; concise integrated outcomes may be promoted to the public engineering log.
+## Product boundaries
 
-## Public and private trace
+v0.1 includes:
 
-The public repository contains accepted contracts, decisions, reproducible evidence, curated examples, and integrated outcomes. Raw prompts, active or draft packets, operational status, reports, reviews, working ExecPlans, unpublished evidence, local tool state, and research caches stay private. `config/public-surface.json` and `pnpm trace:check` enforce the tracked boundary.
+- one root library API;
+- one readable quote CLI and demo;
+- one compact benchmark;
+- one local HTTP quote service;
+- one load-test command;
+- one fixture-only NEAR Intents quote adapter;
+- one buildable package.
 
-If `.routelab-private/CONTROL.md` exists, read it after this file and before selecting work. It may narrow active task scope and private recordkeeping, but it may not weaken public project invariants, safety boundaries, verification requirements, or promotion rules. Read `.routelab-private/state.json`, its generated `ACTIVE_STATUS.md`, and the active private task they name. Never edit generated status directly or commit files beneath `.routelab-private/`.
+v0.1 excludes:
 
-Private work moves through `draft -> ready -> active -> review -> integrated -> archived`, with blocked and abandoned exits. A public engineering-log entry is allowed only after integration, known commits, recorded checks, review resolution, limitation review, and lead approval of a strict promotion manifest. Published manifests leave `pending/`; integrated packets, reports, reviews, and ExecPlans move into the task archive. Before closing or selecting work, regenerate private status and run the private doctor; resolve drift rather than editing around it. Never publish raw transcripts, private paths, credentials, unpublished results, or worktree coordination. Credentials belong in neither repository.
+- PRIME/core-graph work;
+- learned ordering;
+- gas-aware optimization;
+- concentrated liquidity;
+- live data acquisition;
+- live Message Bus or 1Click connectivity;
+- signing or settlement;
+- worker threads unless the service benchmark justifies them;
+- a monorepo or plugin framework.
+
+## Human-value rules
+
+- One active task at a time.
+- One implementation writer at a time.
+- Use a read-only reviewer only at a task or release boundary.
+- Do not create new task states, evidence registries, source closures, publication protocols, or agent-control tools.
+- Do not preserve a private internal API merely because an old test names it.
+- Prefer deleting obsolete code to adapting it indefinitely.
+- Prefer one readable golden test to hundreds of near-duplicate generated assertions.
+- No production source file above 800 lines without a written reason.
+- No test file above 800 lines after `PORT-002`.
+- No committed generated file above 1 MB.
+- Do not add a dependency unless it removes substantial code or materially improves safety.
+- Keep public documentation concise and user-oriented.
+
+## Execution loop
+
+For each task:
+
+1. Read the task, relevant code, and affected tests.
+2. Confirm the current repository behavior from code, not old status prose.
+3. Implement the smallest coherent vertical slice.
+4. Add or retain focused behavioral evidence.
+5. Run narrow checks during development.
+6. Run the task’s complete acceptance commands.
+7. Inspect `git diff --check`, changed-file sizes, and public claims.
+8. Commit one coherent result.
+9. Update `STATUS.md` in fewer than 15 lines.
+10. Move to the next task only when the current acceptance criteria pass.
+
+Do not turn an implementation uncertainty into a new governance milestone. Make a bounded engineering decision, document it briefly, and proceed.
 
 ## Verification by risk
 
 | Change | Minimum evidence |
 |---|---|
-| Documentation or metadata | link/command checks and claim review |
-| Public/domain type | typecheck, affected tests, call-site review |
-| Exact financial math | golden cases, large integers, independent property or differential path |
-| Exact replay | multi-hop goldens, state/mutation checks, deterministic receipts |
-| Graph search | tiny exhaustive oracle, cycle/reuse cases, deterministic ties |
-| Serialization/hash | round trips and repeated identical hashes |
-| Deadline/anytime | forced deterministic interruption; validated incumbents only |
-| Runtime composition | one verified request context; shared discovery; non-recharged request caps; forced stops across every eligible stage; monotonic exact incumbent |
-| Allocation | exact-sum reconstruction, fallbacks, tiny exhaustive comparison |
-| Performance | identical base/head inputs, raw results, environment, quality tradeoff |
-| Data or learning | provenance and offline replay; model-disabled baseline and downstream metrics |
+| Exact pool math or replay | goldens, large integers, independent differential/property case |
+| Search or candidate sets | tiny exhaustive comparison, cycles/reuse, deterministic ties |
+| Allocation | exact-sum reconstruction, fallback, tiny exhaustive comparison |
+| Public facade | direct, multi-hop, split, no-route, invalid input, work/deadline fallback |
+| Serialization | decimal strings, round trip, deterministic semantic fingerprint |
+| Benchmark | fixed inputs, warmups, sufficient samples, raw output excluded from Git |
+| HTTP boundary | body limits, invalid JSON, field bounds, typed errors, smoke quote |
+| Load evidence | concurrency 1/4/16, p50/p95/p99, throughput, event-loop delay, memory |
+| Intent adapter | fixture request/response, asset mapping, exact-input rejection rules |
+
+## Git discipline
+
+- Work on a branch created from the selected restart commit.
+- Do not merge later RLT commits wholesale.
+- Do not rewrite or force-push the source repository.
+- Keep generated raw benchmark output ignored.
+- Use one clear commit per task, with an optional second commit only for a separate mechanical deletion/refactor.
+- Commit titles use `PORT-00N: imperative summary`.
 
 ## Stop conditions
 
-Stop and return to the lead when accepted contracts conflict; rounding or financial semantics are unspecified; public types must change outside scope; write ownership overlaps; a trustworthy oracle disagrees with production; required evidence cannot run or be trusted; benchmark inputs change mid-comparison; credentials or unexpected live/private dependencies are required; a claim exceeds evidence; or a material security or financial-safety issue appears.
+Stop the affected change and report the exact issue when:
 
-## Delegated final report
+- exact financial semantics are ambiguous;
+- a trusted differential test disagrees with production;
+- the requested public API would require weakening exact replay;
+- a benchmark mixes different semantic inputs or configurations;
+- a live credential or funded account would be required;
+- a proposed feature would become a new project rather than complete v0.1.
 
-Every delegated report states role and task ID, outcome/findings, files changed or inspected, exact commands and results, assumptions, unresolved risks, semantic/API/dataset/benchmark effects, and recommended lead action. Writers add a concise diff summary. Reviewers lead with severity-ranked findings and name unverified areas. Skipped or failed required checks preclude a completion claim.
+A failed performance hypothesis is not a stop condition. Retain the measurement, choose the simpler design, and continue.
+
+## Task report
+
+At the end of each task report only:
+
+- outcome;
+- files changed and deleted;
+- user-visible behavior;
+- exact commands and results;
+- line/byte change;
+- remaining limitation;
+- next task.
+
+Do not include raw chain-of-thought, large logs, hashes of every file, or a transcript of the implementation process.

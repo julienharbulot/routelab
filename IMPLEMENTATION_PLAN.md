@@ -1,136 +1,380 @@
-# RouteLab technical roadmap
+# RouteLab TS v0.1 implementation plan
 
-## Product promise and non-goals
+## Outcome
 
-RouteLab will grow from an exact offline execution kernel into a deterministic, measurable exact-input liquidity router. The first pool model is a two-asset constant-product pool. Exact financial results use `bigint`, plans bind to immutable snapshot identity, and every accepted candidate passes sequential exact replay.
+Turn the exact routing core at `cdc5a83` into a usable, measurable, human-sized portfolio release.
 
-The project does not submit transactions, hold funds, promise production execution, or claim unrestricted global optimality. A bounded baseline comes before search acceleration. Before credible evaluation, the direct, single-path, and split stages must run through one request-scoped verified snapshot context, one shared discovery result, and non-recharged request controls. Historical data, numerical allocation, acceleration, services, protocol adapters, and learned ordering remain separate later milestones with explicit gates.
-
-## Architectural growth path
+The release flow is:
 
 ```text
-validated snapshot
-  -> exact pool quote and immutable transition
-  -> exact multi-hop replay with receipts
-  -> deterministic bounded single-path baseline
-  -> versioned replay-case verification
-  -> interruption, checkpoint, resume, and deadline mechanics
-  -> immediate validated incumbent and measured quality progression
-  -> exact split allocation with fallback
-  -> composed request-scoped split runtime and canonical split evidence
-  -> historical data and credible evaluation
-  -> path-level numerical allocation experiment
-  -> measured acceleration experiments
-  -> thin service/protocol boundaries
-  -> optional advisory learned ordering
+raw snapshot
+    -> parse and prepare once
+    -> small quote request
+    -> bounded strategy
+    -> exact authorization
+    -> library result / CLI / HTTP response
+    -> compact benchmark and intent adapter
 ```
 
-Each layer depends only on accepted lower layers. Approximation may order or bound proposals, but exact replay remains the authorization boundary.
+## Target public surface
 
-## Milestone 0 — Semantic contract and offline evidence
+```ts
+prepareSnapshot(input: unknown): PrepareSnapshotResult;
 
-Freeze amount encoding, fee meaning, final-floor rounding, reserve transitions, snapshot identity, route validity, deterministic ties, and the exact/approximate boundary. Maintain tiny hand-auditable fixtures independent of future production helpers.
+quote(
+  context: RoutingContext,
+  request: QuoteRequest,
+  options?: QuoteOptions,
+): QuoteResult;
 
-Gate: accepted invariants are internally coherent; fixtures reproduce exact expected values; repository lint, typecheck, tests, demo, and trace checks pass. No financial implementation is claimed.
+serializeQuote(quote: ValidatedQuote): SerializedQuote;
+formatQuote(quote: ValidatedQuote): string;
+```
 
-## Milestone 1 — Exact execution kernel
+The root package exports only the facade, public types, and snapshot parser. Existing detailed runtime types remain internal unless an actual consumer needs them.
 
-Introduce minimal domain and snapshot validation, then exact constant-product quote/transition, exact route replay, and independent property/differential evidence. Keep public types narrow and errors typed. Preserve input immutability and validate transitions atomically.
+### Public request
 
-Gate: golden and very-large-integer cases pass; both pool directions and fee boundaries are covered; replay observes prior pool transitions; receipts are deterministic; an independent oracle agrees on bounded cases.
+```ts
+type QuoteRequest = {
+  snapshotId: string;
+  assetIn: string;
+  assetOut: string;
+  amountIn: bigint;
+  maxHops?: number;
+  maxRoutes?: number;
+};
 
-## Milestone 2 — Deliberately bounded router
+type QuoteOptions = {
+  strategy?: 'best-single' | 'greedy-split' | 'numerical-split';
+  effort?: 'fast' | 'balanced' | 'thorough';
+  deadlineMs?: number;
+  includeDiagnostics?: boolean;
+};
+```
 
-Build deterministic adjacency and simple-path enumeration, then select the best single exact-replayed path under explicit hop and work limits. Compare tiny graphs against a slow exhaustive oracle, including disconnected requests, cycles, pool reuse, and tie-breaking.
+The facade maps the small options to internal work caps. Detailed numerical iterations and replay caps are not public request fields.
 
-Gate: every returned plan replays exactly against the requested snapshot; exhaustive bounded comparisons agree; invalid candidates never replace a valid incumbent. Claims are bounded to the configured search space.
+The v0.1 default is `greedy-split` with `balanced` effort. `numerical-split` remains an explicit, first-class option demonstrated by the benchmark. Do not silently change the default based on one machine's timing result.
 
-## Milestone 3 — Replay-case verification backbone
+### Public result
 
-Define a canonical replay schema and checksum, determinism hash, replay-case verification CLI, and versioned offline cases. Separate semantic fields from observational timing. Preserve raw inputs and outputs behind summaries.
+The success result contains:
 
-Gate: round trips are canonical; identical inputs produce identical semantic hashes and counters; replay verification requires no credentials or live service; environment metadata and limitations accompany observations without creating a benchmark claim.
+- snapshot ID and checksum;
+- input/output assets;
+- exact input/output;
+- allocated routes and hops;
+- requested strategy and selected plan shape (`single` or `split`);
+- fallback and termination information when derivable from runtime diagnostics;
+- deterministic work counters;
+- optional wall-clock timing;
+- a semantic fingerprint that excludes timing;
+- optional detailed diagnostics.
 
-## Milestone 4a — Interruption, checkpoint, resume, and deadline mechanics
+Errors are a small discriminated union:
 
-Add deterministic pre-expansion interruption, reusable and branchable process-local checkpoints with cumulative work caps, and optional cooperative deadlines over an injected monotonic clock. Return only fresh exact-replayed incumbents, and treat wall-clock deadlines as service behavior rather than reproducible termination.
+```text
+invalid-request
+snapshot-mismatch
+no-route
+deadline-before-plan
+dependency-failure
+internal-invariant-failure
+```
 
-Gate: forced interruption and deadline tests cover every eligible boundary; paused outcomes contain only fully exact-replayed incumbents or typed no-plan results; cumulative deterministic work caps reproduce termination and resume from isolated reusable checkpoints; timing does not enter deterministic state or hashes.
+## Target source layout
 
-## Milestone 4b — Immediate incumbent and quality progression
+Keep one package. Do not move every existing module.
 
-Define and implement a deterministic incumbent-establishment phase before the first user-controlled interruption or deadline stop. The task must freeze baseline eligibility and ordering, exact-replay authorization, and explicit accounting for establishment work before production changes. At minimum, an eligible exact-replayable one-hop route must not be lost merely because the search budget is zero or the first deadline sample is already expired.
+```text
+src/
+├── index.ts
+├── public/
+│   ├── types.ts
+│   ├── quote.ts
+│   ├── serialize.ts
+│   └── format.ts
+├── domain/
+├── pools/
+├── replay/
+├── search/
+├── allocation/
+├── runtime/
+├── router/
+│   ├── anytime-exact-input-split/
+│   ├── numerical/
+│   └── shared/
+├── benchmark/
+│   └── portfolio/
+├── service/
+│   ├── http-server.ts
+│   ├── request-parser.ts
+│   └── snapshot-registry.ts
+└── adapters/
+    └── near-intents/
+```
 
-Gate: zero-work and already-expired forced cases return the established exact-replayed baseline when one is eligible; cases without an eligible baseline retain typed no-plan behavior; incumbent quality is monotonic under increasing deterministic work; establishment work is visible in deterministic accounting; quality-versus-work evidence and statistically meaningful latency observations are reported separately with versioned inputs, warmup, sample counts, comparisons, environment metadata, and persisted raw results.
+Large existing files may be split after facade parity is established. Do not rewrite exact logic merely to match the diagram.
 
-## Milestone 5 — Split allocation
+## Milestone sequence
 
-Start with deterministic pool-disjoint candidates and no-split/equal-split/greedy baselines. Add a tiny exhaustive allocation oracle before approximate models or numerical allocation. Reconstruct exact integer allocations whose nonnegative sum is the requested input, then exact-replay every plan. Preserve a safe baseline fallback.
+### PORT-001 — Clean restart and remove obvious deadweight
 
-The independently integrated structural candidate-set slice did not itself satisfy or bypass Milestone 4b. Further split-routing claims require the now-integrated immediate-incumbent and measured-progression prerequisites and must still satisfy this milestone's allocation/replay gate.
+Purpose: make the repository describe the product rather than the former workflow.
 
-Gate: exact-sum reconstruction, fallback, large integer, and exhaustive tiny comparisons pass. Approximate failures cannot corrupt the incumbent. No global-optimality claim exceeds the implemented candidate and allocation space.
+Deliverables:
 
-## Pre-Milestone 6 integration gate — Composed split runtime
+- planning overlay integrated;
+- generated historical evaluation removed;
+- trace/private-public machinery removed;
+- long process documents removed or replaced;
+- package scripts no longer reference removed files;
+- retained snapshot and request corpus still verify;
+- baseline core tests pass under the pinned runtime;
+- repository working tree drops by at least 7 MB.
 
-Status: complete under cumulative review. The integrated gate provides the verified prepared context, composed anytime split runtime, additive canonical split evidence, fixed fallback/improvement cases, and executable demo required before Milestone 6. The separate Milestone 6 cumulative review concluded complete for the historical source decision, canonical one-snapshot import, separately versioned synthetic input corpus, frozen comparison config, and retained composed-runtime evaluation; its completion record is integrated and its exact commit passed CI, so Milestone 7a is active.
+No routing semantics change.
 
-Milestone 5 remains complete for its accepted component scope: exact split replay and bounded no-split, equal-split, and greedy baselines. Before those components become the subject of historical evaluation or a service boundary, RouteLab must compose them with the Milestone 4 runtime guarantees rather than benchmarking a chain of independently invoked APIs. This gate is additive and does not rewrite the archived Milestone 5 completion result.
+Gate:
 
-The composed path must:
+```bash
+pnpm install --frozen-lockfile
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm verify:historical-data
+pnpm verify:synthetic-requests
+pnpm demo
+git diff --check
+```
 
-- accept a canonically checksum-verified prepared snapshot context;
-- capture the snapshot and build deterministic adjacency once per prepared context;
-- discover paths once per request branch and reuse them for the single-path incumbent and pool-disjoint set generation;
-- avoid enumerating singleton candidate sets for split-only allocation work;
-- maintain one request-scoped control object and one non-recharged ledger for establishment, path discovery, best-single exact candidate replays, candidate-set work, equal proposals, greedy option replays, and final authorization;
-- establish an eligible direct exact-replayed incumbent before the first user-controlled stop;
-- preserve the full deterministic split objective while equal and greedy stages can only improve the incumbent;
-- check cooperative interruption and the absolute deadline throughout discovery and allocation, returning only a fully exact-replayed incumbent or a typed no-plan result; and
-- produce canonical split run/case evidence plus an executable offline demo where splitting improves output and a restricted budget preserves the fallback.
+### PORT-002 — Public facade and core consolidation
 
-Legacy Milestone 2–5 APIs and canonical single-path v1 records may remain as compatibility and component-test surfaces. They are not the main path for Milestone 6 measurements. Serializable or cross-process split checkpoints remain deferred unless the composed-runtime design proves they are necessary for this gate.
+Purpose: establish one supported API and delete redundant runtime surfaces.
 
-Gate: independent tiny-graph and forced-stop evidence proves shared discovery, no budget recharge, exact fallback preservation, monotonic incumbent quality, checksum rejection, deterministic counters, and exact replay at every authorization boundary. At least one canonical split case reproduces the hand-audited `50 -> 66` improvement and one forced-stop case returns the exact `50` fallback. The demo executes one of those cases. No latency or throughput claim is created by this gate.
+Deliverables:
 
-## Milestone 6 — Historical data and credible evaluation
+- `src/index.ts` root export;
+- `prepareSnapshot`, `quote`, `serializeQuote`, and `formatQuote`;
+- three explicit strategies;
+- named internal effort profiles;
+- exact decimal-string serialization;
+- facade golden tests;
+- one semantic fingerprint format;
+- legacy routers/replay families removed after parity;
+- numerical runtime split into understandable modules if necessary;
+- no production or test file above 800 lines.
 
-Status: complete under cumulative review. The completion record is integrated and its exact commit passed CI. The review mapped every outcome and gate clause to the source contract, canonical snapshot/corpus/config identities, direct composed-runtime path, retained exact results and raw environment observations, independent evidence, exact prerequisite integration commits and CI, and reconciled public limitations. Milestone 7a is active. Its exact-replay consolidation prerequisite is integrated and passed exact-commit CI; the accepted numerical-allocation contract now precedes production numerical code.
+The `numerical-split` strategy must preserve the exact baseline when numerical work fails, stops, or does not improve.
 
-Choose a source through a documented decision, import one canonical snapshot, then grow versioned datasets with provenance, ordering, schema validation, and checksums. Separate dataset changes from algorithm comparisons. The primary benchmark path must consume the composed runtime from the pre-M6 integration gate; legacy component orchestration may be retained only as an explicitly labeled comparison.
+Gate:
 
-Gate: primary replay remains offline; data provenance and licensing are clear; every imported snapshot is canonically checksum-verified before preparation; benchmark inputs are identical across base/head comparisons; raw results and environment metadata are retained; and the measured path uses one shared request context and non-recharged controls.
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm test:core
+git diff --check
+```
 
-## Milestone 7a — Path-level numerical allocation
+Required facade cases:
 
-Status: active. [ADR 0004](docs/adr/accepted/0004-path-level-numerical-allocation.md) freezes the additive proposal-only numerical model, deterministic reconstruction, exact residual scoring and authorization, typed controls/diagnostics, compatibility boundary, independent evidence obligations, and primary-versus-experimental decision rule. The internal proposal/reconstruction core and additive direct source-module numerical runtime are integrated with independent bounded evidence. The runtime resolves canonical pool-disjoint candidates from one prepared context, assigns the exact residual through complete exact option scans, scores exact-sum allocations, and permits incumbent replacement only after distinct fresh full-input replay agrees recursively with the score. The next gate is separately versioned identical-input retained evaluation and the resulting primary-versus-experimental decision; no performance claim follows from this runtime gate.
+- direct route;
+- two-hop beats direct;
+- split beats best single;
+- numerical result exact-authorized;
+- disconnected pair;
+- malformed request;
+- snapshot mismatch;
+- zero work or reached deadline returns a valid incumbent when one exists;
+- repeated deterministic run has the same semantic fingerprint.
 
-Add the missing numerical-allocation stage explicitly rather than allowing the greedy baseline to become the final allocator by omission. Over the bounded pool-disjoint candidate set, implement an approximate path-level shadow-price allocator using normalized `number` values only for proposal generation. Reconstruct a deterministic nonnegative `bigint` allocation whose sum is the exact input, compare residual units using exact replay or exact marginal deltas, and require a distinct full-input exact authorization replay before incumbent replacement.
+### PORT-003 — Human CLI, demo, and package build
 
-Retain no-split, equal-split, greedy, and tiny exhaustive modes as fallbacks and references. Record convergence, residual, iteration, and failure diagnostics. Keep the numerical mode as a primary routing option only if identical-input evidence justifies it; a negative result is retained honestly and cannot weaken the exact baseline.
+Purpose: make the work usable in five minutes.
 
-Gate: the allocator agrees with the independent tiny exhaustive reference within its documented proposal/reconstruction limits; every failure preserves the incumbent; exact allocations sum to the request at arbitrary precision; approximate values never authorize results; and representative M6 cases compare exact output, work, and convergence against equal and greedy without a global-optimality claim.
+Deliverables:
 
-## Milestone 7b — Evidence-led acceleration
+- `pnpm quote`;
+- readable default output and `--json`;
+- `pnpm demo` with at least one historical quote and one small split fixture;
+- `pnpm build`;
+- declarations and package exports;
+- `pnpm pack --dry-run`;
+- package version `0.1.0`;
+- project license chosen and added;
+- README quickstart.
 
-Profile the composed bounded baseline on representative snapshots. Add sound pruning first. Consider a PRIME-inspired core/shortcut experiment only when measured expansions or latency justify it, and keep it only if identical-input comparisons earn its complexity.
+The CLI uses no framework unless manual parsing would exceed about 150 lines.
 
-Gate: sound and heuristic pruning are reported separately; quality and work tradeoffs are explicit under the same request-scoped controls; exact replay still validates results; negative experiments and deletion decisions are preserved without overstated equivalence claims.
+Gate:
 
-## Milestone 8 — Thin boundaries
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm demo
+pnpm quote -- --help
+pnpm quote -- <documented fixture command>
+pnpm pack --dry-run
+```
 
-Add an HTTP quote boundary and fixture-based protocol mapping only after the core is stable. Keep routing logic out of adapters. Run concurrency/load experiments before choosing worker-thread or deployment architecture.
+### PORT-004 — Compact benchmark and report
 
-Gate: mapping tests are thin and deterministic; external requests cannot weaken snapshot or exactness contracts; operational deadlines do not alter replay semantics.
+Purpose: replace retained artifact bulk with evidence a human can interpret.
 
-## Milestone 9 — Optional learned ordering
+Deliverables:
 
-Proceed only after data-sufficiency review. Use a chronological split and a small advisory ranker to order proposals. Keep model-disabled routing correct and complete for supported deterministic mode. Evaluate stale, reversed, random, and corrupted predictions with downstream routing metrics.
+- one curated portfolio case set;
+- optional extended run over the retained corpus;
+- deterministic quality lane;
+- wall-clock latency lane;
+- best-single, greedy-split, numerical-split, and long-budget numerical reference;
+- exact output, regret, improvement, work, convergence, and rejection metrics;
+- p50/p95/p99 based on at least 100 measured observations per reported profile;
+- `reports/portfolio-v1.md`;
+- `reports/portfolio-v1.json` or CSV below 1 MB;
+- `reports/quality-vs-budget.svg`;
+- raw observations ignored.
 
-Gate: hard constraints and exact replay cannot be bypassed; model-disabled baselines remain visible; empirical results are not described as formal robustness or generalization guarantees.
+Do not claim that the long-budget numerical result is globally optimal.
 
-## Release and research integrity
+Gate:
 
-Every release gate records exact commands, integrated commits, limitations, and the distinction between local and CI evidence. Performance comparisons use identical versioned inputs and preserve raw results. Citations are references, not implementation claims: RouteLab uses “inspired by” unless equivalence is demonstrated. A smaller verified release is preferred to a broad partially validated one.
+```bash
+pnpm benchmark
+pnpm benchmark:verify
+pnpm test:benchmark
+git diff --check
+```
 
-Key risks are silent numeric coercion, stale mutable state, nondeterministic ordering, circular test oracles, benchmark drift, premature optimization, and overclaiming research correspondence. Mitigations are accepted semantics, exact replay, immutable snapshots, canonical ordering, independent bounded oracles, versioned inputs, and explicit keep/delete experiment gates.
+The committed report states dataset limits, environment, warmups, measured sample count, and exact configuration.
+
+### PORT-005 — Bounded HTTP quote service and load evidence
+
+Purpose: demonstrate an operational boundary and measured systems behavior.
+
+Endpoints:
+
+```text
+GET  /health
+GET  /v1/snapshots
+POST /v1/quote
+```
+
+Constraints:
+
+- Node built-in HTTP is preferred;
+- request body maximum 32 KiB;
+- exact amount is a canonical decimal string;
+- identifiers and numeric ranges are bounded;
+- the server, not the client, owns internal work caps;
+- structured request ID, status, strategy, termination, and timing log;
+- typed 4xx/5xx response envelope;
+- no remote network dependency.
+
+Load command:
+
+```bash
+pnpm load -- --concurrency 1,4,16
+```
+
+Measure:
+
+- completed and failed requests;
+- p50/p95/p99 end-to-end latency;
+- throughput;
+- deadline completion;
+- event-loop delay;
+- peak RSS or memory delta.
+
+Run the same-thread server first. Add a bounded worker pool only when the retained measurement shows a clear tail-latency or event-loop problem and the implementation remains small. A documented decision not to add workers is acceptable.
+
+Gate:
+
+```bash
+pnpm test:api
+pnpm serve:smoke
+pnpm load:smoke
+pnpm load -- --concurrency 1,4,16
+```
+
+### PORT-006 — NEAR Intents fixture adapter and release
+
+Purpose: connect the routing result to the target domain without pretending to be a live solver.
+
+Input boundary supports exact-input quote fields equivalent to:
+
+```text
+defuse_asset_identifier_in
+defuse_asset_identifier_out
+exact_amount_in
+min_deadline_ms
+```
+
+The adapter:
+
+- maps external asset IDs through an explicit fixture map;
+- converts canonical decimal strings to/from `bigint`;
+- invokes only the public `quote()` facade;
+- returns an unsigned quote candidate;
+- rejects exact-output requests in v0.1;
+- does not sign, connect to a relay, custody assets, or settle.
+
+Deliverables:
+
+- adapter types and functions;
+- one request fixture, asset map, and expected output fixture;
+- adapter tests;
+- final README, architecture, benchmark, and limitations;
+- CI;
+- release archive/package inspection;
+- final portfolio claims derived from committed evidence.
+
+Gate:
+
+```bash
+pnpm check
+pnpm benchmark
+pnpm test:api
+pnpm load:smoke
+pnpm pack --dry-run
+git archive --format=tar.gz --output=/tmp/routelab-v0.1.0.tar.gz HEAD
+```
+
+## Benchmark/release decision gates
+
+### Worker-thread gate
+
+Add workers only if all are true:
+
+1. same-thread service measurements are retained;
+2. CPU routing work is the dominant cause;
+3. concurrency materially harms p95/p99 or event-loop delay;
+4. a small fixed worker pool improves the result;
+5. snapshot initialization and deadline semantics remain clear.
+
+Otherwise retain the simpler server.
+
+### More-data gate
+
+Do not block v0.1 on more historical snapshots. Add snapshots only when the acquisition path is reproducible, redistribution is acceptable, and the work does not delay the public API/service.
+
+### ML and PRIME gate
+
+Neither is a v0.1 task. Reconsider only after the released benchmark identifies path ordering or path discovery as a material bottleneck on a larger dataset.
+
+## Final repository quality gate
+
+At release:
+
+- one supported route API;
+- no obsolete public router variants;
+- no generated evidence bulk;
+- no process-control subsystem;
+- no file above the documented size limit without a brief reason;
+- README below 250 lines;
+- all claims trace to a command or committed report;
+- the codebase is smaller or approximately the same size as `cdc5a83` despite adding the service and adapter.

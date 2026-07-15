@@ -1,6 +1,6 @@
-# Project-scoped Codex configuration for the RouteLab four-thread topology.
-
+# Keep the workflow small. One writer is the default; a second thread may be
+# used only for read-only review or a clearly isolated test review.
 [agents]
-max_threads = 4
+max_threads = 2
 max_depth = 1
 interrupt_message = true

@@ -1505,7 +1505,7 @@ function runSyntheticGit(
   arguments_: readonly string[],
   input?: string,
 ): string {
-  const result = spawnSync('git', [...arguments_], {
+  const result = spawnSync('git', ['-c', 'commit.gpgsign=false', ...arguments_], {
     cwd: repositoryRoot,
     encoding: 'utf8',
     input,

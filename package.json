@@ -1,8 +1,22 @@
 {
   "name": "routelab-ts",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Exact-input routing over immutable constant-product liquidity snapshots",
+  "license": "MIT",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "packageManager": "pnpm@11.12.0",
   "engines": {
     "node": ">=24.12.0 <25",
@@ -10,14 +24,16 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
     "lint": "eslint src cli tests",
     "test": "node --test \"tests/**/*.test.ts\"",
     "test:pool": "node --test tests/constant-product.test.ts",
     "verify:historical-data": "node cli/verify-historical-dataset.ts",
     "verify:synthetic-requests": "node cli/verify-synthetic-request-corpus.ts",
     "demo": "node cli/demo.ts",
+    "quote": "node cli/quote.ts",
     "test:core": "node --test tests/constant-product.test.ts tests/route-replay.test.ts tests/exact-input-split-replay.test.ts tests/simple-paths.test.ts tests/pool-disjoint-route-sets.test.ts tests/path-shadow-price-allocation.test.ts tests/anytime-exact-input-split-router.test.ts tests/numerical-exact-input-split-router.test.ts tests/public-facade.test.ts",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm verify:historical-data && pnpm verify:synthetic-requests && pnpm demo"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm verify:historical-data && pnpm verify:synthetic-requests && pnpm demo"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

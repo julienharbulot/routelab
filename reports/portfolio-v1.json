@@ -103,12 +103,12 @@
     ]
   },
   "environment": {
-    "observedAt": "2026-07-15T11:37:35.850Z",
+    "observedAt": "2026-07-15T23:12:15.197Z",
     "node": "v24.18.0",
     "platform": "linux",
     "arch": "x64",
     "cpu": "13th Gen Intel(R) Core(TM) i9-13900H",
-    "commit": "80d6eee"
+    "commit": "8ea395a"
   },
   "cases": [
     {
@@ -432,7 +432,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:85f4b9f7dc54f13312ed925ca7bf9fe5f1632c8480dc186e054b520b2bfb8c6a",
+      "planFingerprint": "sha256:8934629fd30660d57ee20b2ad69f2892d55f1611e4124e6c380e03334845a5a4",
       "routes": [
         {
           "allocation": "100",
@@ -478,7 +478,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:d56a0fbd25fb3525bd0396c9ee052b7a20fb165ff104af6a049651ce8c7efaf5",
+      "planFingerprint": "sha256:8934629fd30660d57ee20b2ad69f2892d55f1611e4124e6c380e03334845a5a4",
       "routes": [
         {
           "allocation": "100",
@@ -531,7 +531,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:ce69bba2e63b993f14c45346d44dbe8af6bf57ec006f2230a7669ebe0ab4362a",
+      "planFingerprint": "sha256:8934629fd30660d57ee20b2ad69f2892d55f1611e4124e6c380e03334845a5a4",
       "routes": [
         {
           "allocation": "100",
@@ -577,7 +577,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:750b2afeb9053fd34357c1fe5a53d9b5ec8408e1b08a478b2ffbe23dd701592a",
+      "planFingerprint": "sha256:8934629fd30660d57ee20b2ad69f2892d55f1611e4124e6c380e03334845a5a4",
       "routes": [
         {
           "allocation": "100",
@@ -623,7 +623,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:34b2d0631f87cdced55ab808197004e314c861023d024ef0231205264fd3638f",
+      "planFingerprint": "sha256:8934629fd30660d57ee20b2ad69f2892d55f1611e4124e6c380e03334845a5a4",
       "routes": [
         {
           "allocation": "100",
@@ -676,7 +676,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:f26f356c56e7610c6ffc37c26afbc80e6d097308b04823d5017a484e4a3ff375",
+      "planFingerprint": "sha256:8934629fd30660d57ee20b2ad69f2892d55f1611e4124e6c380e03334845a5a4",
       "routes": [
         {
           "allocation": "100",
@@ -722,7 +722,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:74cf2f4c671b67df31c61230376afc04d2f617d6234892f0c0eb7229705040b7",
+      "planFingerprint": "sha256:8934629fd30660d57ee20b2ad69f2892d55f1611e4124e6c380e03334845a5a4",
       "routes": [
         {
           "allocation": "100",
@@ -768,7 +768,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:db53b4fa8ec95ec971b996e1e7bb0057a46819083146ac690bfd65014e9b1a63",
+      "planFingerprint": "sha256:8934629fd30660d57ee20b2ad69f2892d55f1611e4124e6c380e03334845a5a4",
       "routes": [
         {
           "allocation": "100",
@@ -821,7 +821,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:176355b2e7f9e043a890a23798ebce8cb9af3bcc099c65d2c6eb78ce4e10a28b",
+      "planFingerprint": "sha256:8934629fd30660d57ee20b2ad69f2892d55f1611e4124e6c380e03334845a5a4",
       "routes": [
         {
           "allocation": "100",
@@ -874,7 +874,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:7fc1e7a6543b09c1b017e8de88232baaae090affbb6d5d636878e517ff36045b",
+      "planFingerprint": "sha256:8934629fd30660d57ee20b2ad69f2892d55f1611e4124e6c380e03334845a5a4",
       "routes": [
         {
           "allocation": "100",
@@ -920,7 +920,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:021ac356f16c699c81f57f67391a40323b75721155af07602ec1b1aea49e35eb",
+      "planFingerprint": "sha256:5c8f82edba404758bccb1ab6050c97b8c6e2967ef8be03b46b50e6289b947c0b",
       "routes": [
         {
           "allocation": "2",
@@ -966,7 +966,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:24363723d4fccbf9f417db55f590aefcfee120d44d8dabe6b4d2514930d58660",
+      "planFingerprint": "sha256:5c8f82edba404758bccb1ab6050c97b8c6e2967ef8be03b46b50e6289b947c0b",
       "routes": [
         {
           "allocation": "2",
@@ -1019,7 +1019,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:244ccc305a06e071e46edd6e1d1dc9488a28214b24514354a36ed649a4d59c29",
+      "planFingerprint": "sha256:5c8f82edba404758bccb1ab6050c97b8c6e2967ef8be03b46b50e6289b947c0b",
       "routes": [
         {
           "allocation": "2",
@@ -1065,7 +1065,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:147fb45067d2f76de61f762289487442540078de9b8ae3271ef533a16cbafe46",
+      "planFingerprint": "sha256:5c8f82edba404758bccb1ab6050c97b8c6e2967ef8be03b46b50e6289b947c0b",
       "routes": [
         {
           "allocation": "2",
@@ -1111,7 +1111,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:6da204742302aaeea8bfdedc082475b2004d25c0eaa757965c38515d343a86bc",
+      "planFingerprint": "sha256:5c8f82edba404758bccb1ab6050c97b8c6e2967ef8be03b46b50e6289b947c0b",
       "routes": [
         {
           "allocation": "2",
@@ -1164,7 +1164,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:6da0ce2c3615ece7f5bcb7c69958e10c812b242e1bafe412a18e922c28ea6e2b",
+      "planFingerprint": "sha256:5c8f82edba404758bccb1ab6050c97b8c6e2967ef8be03b46b50e6289b947c0b",
       "routes": [
         {
           "allocation": "2",
@@ -1210,7 +1210,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:fb8409984563f79fc98819730be4596497d4e1a112846f83d3823ec922f76a32",
+      "planFingerprint": "sha256:5c8f82edba404758bccb1ab6050c97b8c6e2967ef8be03b46b50e6289b947c0b",
       "routes": [
         {
           "allocation": "2",
@@ -1256,7 +1256,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:c68a63555f7e415c34f39f32ea56a9466c2c3230465352db4168162960c0e471",
+      "planFingerprint": "sha256:5c8f82edba404758bccb1ab6050c97b8c6e2967ef8be03b46b50e6289b947c0b",
       "routes": [
         {
           "allocation": "2",
@@ -1309,7 +1309,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:f9eeff58a228a9e063bde1e804a1333b3cf52e1adbe00dbc7e729af38e783a68",
+      "planFingerprint": "sha256:5c8f82edba404758bccb1ab6050c97b8c6e2967ef8be03b46b50e6289b947c0b",
       "routes": [
         {
           "allocation": "2",
@@ -1362,7 +1362,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:9ea198d4ed208352e40af83ce8797844fbc61aeb8c39c81cf1fdebc6e9e0002e",
+      "planFingerprint": "sha256:5c8f82edba404758bccb1ab6050c97b8c6e2967ef8be03b46b50e6289b947c0b",
       "routes": [
         {
           "allocation": "2",
@@ -1408,7 +1408,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:ed9ae5cd226d5bb2da60914d6ca053d7d6bb732e009dbae12800cdbb042dafd0",
+      "planFingerprint": "sha256:1fa392a2fbf487b1cac09b9af26130de6e2f379c10d411be54c9317b03d762be",
       "routes": [
         {
           "allocation": "500",
@@ -1454,7 +1454,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:d78c39b7e08875a778489e09b8d14d0e321e96a6c77717b0ca7d6c8e0a154dd1",
+      "planFingerprint": "sha256:1fa392a2fbf487b1cac09b9af26130de6e2f379c10d411be54c9317b03d762be",
       "routes": [
         {
           "allocation": "500",
@@ -1507,7 +1507,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:9c457cfce427b747d50d46484522e7f620520c4c20e2786412a4e05044167748",
+      "planFingerprint": "sha256:1fa392a2fbf487b1cac09b9af26130de6e2f379c10d411be54c9317b03d762be",
       "routes": [
         {
           "allocation": "500",
@@ -1553,7 +1553,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:9d227efd0507338a66e640125496f66aea199e6c590d7da5e50ddbe723639068",
+      "planFingerprint": "sha256:1fa392a2fbf487b1cac09b9af26130de6e2f379c10d411be54c9317b03d762be",
       "routes": [
         {
           "allocation": "500",
@@ -1599,7 +1599,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:81345bd09acdd7e3de0beee86f84e18c56bc78a7ec33c0597bce13cf819adffb",
+      "planFingerprint": "sha256:1fa392a2fbf487b1cac09b9af26130de6e2f379c10d411be54c9317b03d762be",
       "routes": [
         {
           "allocation": "500",
@@ -1652,7 +1652,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:2cb3f8e88a5f6b4a7ed1148bc39904e39129ebae173d4767f20d73b4165c4548",
+      "planFingerprint": "sha256:1fa392a2fbf487b1cac09b9af26130de6e2f379c10d411be54c9317b03d762be",
       "routes": [
         {
           "allocation": "500",
@@ -1698,7 +1698,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:0ba8e0d80dbc4550495355fb0a89a29eab73f9744f1415cc757568e481378199",
+      "planFingerprint": "sha256:1fa392a2fbf487b1cac09b9af26130de6e2f379c10d411be54c9317b03d762be",
       "routes": [
         {
           "allocation": "500",
@@ -1744,7 +1744,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:9ea000696e6db7b091cf129e356bb1704503155689249e2d2c725f217ab2c406",
+      "planFingerprint": "sha256:1fa392a2fbf487b1cac09b9af26130de6e2f379c10d411be54c9317b03d762be",
       "routes": [
         {
           "allocation": "500",
@@ -1797,7 +1797,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:0511f27b161757fb7ef0c09a55f21b9aa5bd286cbf9586b042307514bf94c6ad",
+      "planFingerprint": "sha256:1fa392a2fbf487b1cac09b9af26130de6e2f379c10d411be54c9317b03d762be",
       "routes": [
         {
           "allocation": "500",
@@ -1850,7 +1850,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:bd979b967fdf4d0145eda8c4a147feaa52a1cd9d551c84a13602f1fa49be8053",
+      "planFingerprint": "sha256:1fa392a2fbf487b1cac09b9af26130de6e2f379c10d411be54c9317b03d762be",
       "routes": [
         {
           "allocation": "500",
@@ -1896,7 +1896,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:688d157d6353306153d18702d79dccc9276bdef05660f148b65ca365a1f9f829",
+      "planFingerprint": "sha256:48c442c263931e0a049bd085e629223a8207e25a6719493f21420f11f44fadea",
       "routes": [
         {
           "allocation": "100",
@@ -1942,7 +1942,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:041c702e978f7e992d327d2f3420016b34672b647ea5d8ba2b1bab1c292d31e6",
+      "planFingerprint": "sha256:48c442c263931e0a049bd085e629223a8207e25a6719493f21420f11f44fadea",
       "routes": [
         {
           "allocation": "100",
@@ -1995,7 +1995,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:7764a699bf6cf7f9f207af267861b5fa887109d6be3c50aef7b608605898928e",
+      "planFingerprint": "sha256:48c442c263931e0a049bd085e629223a8207e25a6719493f21420f11f44fadea",
       "routes": [
         {
           "allocation": "100",
@@ -2041,7 +2041,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:c8b1145983cf50e27647779f474eb3ee1e938254cddfda310aa269b195a0f52d",
+      "planFingerprint": "sha256:48c442c263931e0a049bd085e629223a8207e25a6719493f21420f11f44fadea",
       "routes": [
         {
           "allocation": "100",
@@ -2087,7 +2087,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:5a6ade31bbb47f64da59de747bf38205b783556e611af4a9fbfb2ae00d4c369e",
+      "planFingerprint": "sha256:48c442c263931e0a049bd085e629223a8207e25a6719493f21420f11f44fadea",
       "routes": [
         {
           "allocation": "100",
@@ -2140,7 +2140,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:8f95763267a97bff858844949373b734cf15f74813bdfe3e08978410a4c4584a",
+      "planFingerprint": "sha256:48c442c263931e0a049bd085e629223a8207e25a6719493f21420f11f44fadea",
       "routes": [
         {
           "allocation": "100",
@@ -2186,7 +2186,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:71d95f551652e8c92d99876899ee8093a25a02c5dbdc32cc45fa03bb35987c07",
+      "planFingerprint": "sha256:48c442c263931e0a049bd085e629223a8207e25a6719493f21420f11f44fadea",
       "routes": [
         {
           "allocation": "100",
@@ -2232,7 +2232,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:217f36a2032c1ce895ada77d3663b3b78e10c048b74428139de5f73cbd47687d",
+      "planFingerprint": "sha256:48c442c263931e0a049bd085e629223a8207e25a6719493f21420f11f44fadea",
       "routes": [
         {
           "allocation": "100",
@@ -2285,7 +2285,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:99c121c1b73e105d6055b4651699a0213063b66e7ca1d403f6b4e2786833d857",
+      "planFingerprint": "sha256:48c442c263931e0a049bd085e629223a8207e25a6719493f21420f11f44fadea",
       "routes": [
         {
           "allocation": "100",
@@ -2338,7 +2338,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:8e6ad3a6b68a94ca5249847f49eb8e55af2f77a27990ae910c31c88ceefd409a",
+      "planFingerprint": "sha256:48c442c263931e0a049bd085e629223a8207e25a6719493f21420f11f44fadea",
       "routes": [
         {
           "allocation": "100",
@@ -2384,7 +2384,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:d19136c72bc5405f0af2245161efe8ea547dee9d524c36df225dbaf241f684dd",
+      "planFingerprint": "sha256:8a159c579f76293f09694298146b8726a281bee050e20602b84408ead421609a",
       "routes": [
         {
           "allocation": "100",
@@ -2435,7 +2435,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:f8daeda8078bcf8cdc90f0f926f4fec9df05aacf67992c37163be9a6bb220925",
+      "planFingerprint": "sha256:8a159c579f76293f09694298146b8726a281bee050e20602b84408ead421609a",
       "routes": [
         {
           "allocation": "100",
@@ -2493,7 +2493,7 @@
       "numericalIterations": 16,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:73879aaaa508b72d96c18a0892c810341296c8ac6e120019e9d87be4d3fe7081",
+      "planFingerprint": "sha256:8a159c579f76293f09694298146b8726a281bee050e20602b84408ead421609a",
       "routes": [
         {
           "allocation": "100",
@@ -2544,7 +2544,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:085c5b4bf9bd26cbcc329f949588a61549833b479aeb3842049af8a6789d4212",
+      "planFingerprint": "sha256:8a159c579f76293f09694298146b8726a281bee050e20602b84408ead421609a",
       "routes": [
         {
           "allocation": "100",
@@ -2595,7 +2595,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:e015a595fb6d63f169e31278154f7aaa14e140e00a9aa0d14591f9511c9cb189",
+      "planFingerprint": "sha256:8a159c579f76293f09694298146b8726a281bee050e20602b84408ead421609a",
       "routes": [
         {
           "allocation": "100",
@@ -2653,7 +2653,7 @@
       "numericalIterations": 64,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:2d7c6d7e75c0c31a8c07280577b8006162591f2f4e90d98cce7325cab6306c29",
+      "planFingerprint": "sha256:8a159c579f76293f09694298146b8726a281bee050e20602b84408ead421609a",
       "routes": [
         {
           "allocation": "100",
@@ -2704,7 +2704,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:fa2431dbb1760d1929a2920cae0020e1af3bc9e1d25c6b3befda4812439016c8",
+      "planFingerprint": "sha256:8a159c579f76293f09694298146b8726a281bee050e20602b84408ead421609a",
       "routes": [
         {
           "allocation": "100",
@@ -2755,7 +2755,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:4ae1b45cb2ff40f1fa7fe2cf3156412618e18370e4ad620f3d588aa8571a57b0",
+      "planFingerprint": "sha256:8a159c579f76293f09694298146b8726a281bee050e20602b84408ead421609a",
       "routes": [
         {
           "allocation": "100",
@@ -2813,7 +2813,7 @@
       "numericalIterations": 128,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:798746f861afb74ba0db163dcdff62d1136cb258ff935beb0ed3f600bdc6adbc",
+      "planFingerprint": "sha256:8a159c579f76293f09694298146b8726a281bee050e20602b84408ead421609a",
       "routes": [
         {
           "allocation": "100",
@@ -2871,7 +2871,7 @@
       "numericalIterations": 256,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:2454655aa8fdd9faf137522fdd0daaec19600336f72a86d0adc577980889d44c",
+      "planFingerprint": "sha256:8a159c579f76293f09694298146b8726a281bee050e20602b84408ead421609a",
       "routes": [
         {
           "allocation": "100",
@@ -2922,7 +2922,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:3b3e276c5965d719c461fe19c63b0ee1ba94bbf8d7e82577540a2f40475769b1",
+      "planFingerprint": "sha256:4239a1355e86c2768cccbe401b7c369e1ea389ecaa9fcf335f3e09495fe622e4",
       "routes": [
         {
           "allocation": "10",
@@ -2973,7 +2973,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:be1bea0b1b06fb0c0a2834cfa556204897e783fd4a058f59c7547cbe2c645829",
+      "planFingerprint": "sha256:4239a1355e86c2768cccbe401b7c369e1ea389ecaa9fcf335f3e09495fe622e4",
       "routes": [
         {
           "allocation": "10",
@@ -3031,7 +3031,7 @@
       "numericalIterations": 16,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:479d1cf7b7ecd3d80cefc160247ed50b9287ec6ed11a599e5dcc12a997ac8cfe",
+      "planFingerprint": "sha256:4239a1355e86c2768cccbe401b7c369e1ea389ecaa9fcf335f3e09495fe622e4",
       "routes": [
         {
           "allocation": "10",
@@ -3082,7 +3082,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:afa84c8064d2398913f92643674dc9d26d60aebaba4b29fd51977ec4543ff6b8",
+      "planFingerprint": "sha256:4239a1355e86c2768cccbe401b7c369e1ea389ecaa9fcf335f3e09495fe622e4",
       "routes": [
         {
           "allocation": "10",
@@ -3133,7 +3133,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:fbef0f3c7ce257696eb2bbd3976b168c1ee7428e66dc7cc088a01dda64363e60",
+      "planFingerprint": "sha256:4239a1355e86c2768cccbe401b7c369e1ea389ecaa9fcf335f3e09495fe622e4",
       "routes": [
         {
           "allocation": "10",
@@ -3191,7 +3191,7 @@
       "numericalIterations": 64,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:75c95298bef2dc1e78183a713e0a6da646456b34b7c7a7a0eaccf585adbe4f6c",
+      "planFingerprint": "sha256:4239a1355e86c2768cccbe401b7c369e1ea389ecaa9fcf335f3e09495fe622e4",
       "routes": [
         {
           "allocation": "10",
@@ -3242,7 +3242,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:f50c8de3c8014e34aefa67b4574a51125fbed8b097bc0b97f9df4baaf5ef987f",
+      "planFingerprint": "sha256:4239a1355e86c2768cccbe401b7c369e1ea389ecaa9fcf335f3e09495fe622e4",
       "routes": [
         {
           "allocation": "10",
@@ -3293,7 +3293,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:5cf68c43680978bfbc079698162f8c8bc3fd700751073bb0cd5f5ce9606fb1fa",
+      "planFingerprint": "sha256:4239a1355e86c2768cccbe401b7c369e1ea389ecaa9fcf335f3e09495fe622e4",
       "routes": [
         {
           "allocation": "10",
@@ -3351,7 +3351,7 @@
       "numericalIterations": 128,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:22b7b269e4a33d1854f3127111ee74826edcf1db9b3d8bdbf6b1a97e90ce1910",
+      "planFingerprint": "sha256:4239a1355e86c2768cccbe401b7c369e1ea389ecaa9fcf335f3e09495fe622e4",
       "routes": [
         {
           "allocation": "10",
@@ -3409,7 +3409,7 @@
       "numericalIterations": 256,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:4c99ac6d879e804356e96a89b8bafc8bd57b251b45509e9a68dffc03ad8aaf84",
+      "planFingerprint": "sha256:4239a1355e86c2768cccbe401b7c369e1ea389ecaa9fcf335f3e09495fe622e4",
       "routes": [
         {
           "allocation": "10",
@@ -3460,7 +3460,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:b208a278d4fc0915a8853b25762eab7803197150ef16afc25f89563a13e4bd8d",
+      "planFingerprint": "sha256:757f21fec749cf189b441536facb0b6bd213e800a401e05b238e4bc8ba6650ed",
       "routes": [
         {
           "allocation": "500",
@@ -3511,7 +3511,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:a025b70d360c22c2fade9d2178753cd51a63be8e8cefe64a94fbe20ffff2e995",
+      "planFingerprint": "sha256:58594902c9a57266f8770cb05ade51700cec66d5aee374e061abd87e64d9bf8b",
       "routes": [
         {
           "allocation": "186",
@@ -3580,7 +3580,7 @@
       "numericalIterations": 16,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:5108bb5541f0ecec83ee4734d3d5df6a26c195ad1720798777b121f9b26f1f69",
+      "planFingerprint": "sha256:58594902c9a57266f8770cb05ade51700cec66d5aee374e061abd87e64d9bf8b",
       "routes": [
         {
           "allocation": "186",
@@ -3642,7 +3642,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:e8f7e5c855369723fbaa61654f315da6dbb2695f7a7c6bd629984afc2805b611",
+      "planFingerprint": "sha256:757f21fec749cf189b441536facb0b6bd213e800a401e05b238e4bc8ba6650ed",
       "routes": [
         {
           "allocation": "500",
@@ -3693,7 +3693,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:d1892385d495706173f1c315c63beaa86b6754635d7874b75dc63ac796f2722f",
+      "planFingerprint": "sha256:3b9461b5d4aa53a56aaa6df3fd84826466ee3e0b5ba5c5ca3ea053e83719cbb7",
       "routes": [
         {
           "allocation": "155",
@@ -3762,7 +3762,7 @@
       "numericalIterations": 64,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:04788c38a30a4001369619f9daf107259d7be55ee86a7c1475ede535784d53a7",
+      "planFingerprint": "sha256:3b9461b5d4aa53a56aaa6df3fd84826466ee3e0b5ba5c5ca3ea053e83719cbb7",
       "routes": [
         {
           "allocation": "155",
@@ -3824,7 +3824,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:c883e1d6a93e86d51336fd3d930eccbfc62616ae79fe80330d5128369f83d5fb",
+      "planFingerprint": "sha256:757f21fec749cf189b441536facb0b6bd213e800a401e05b238e4bc8ba6650ed",
       "routes": [
         {
           "allocation": "500",
@@ -3875,7 +3875,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:353c48d09d80fec91096a32ce7d8a124a6fd6f56754b7bf4e27c4cc6e1ae5a05",
+      "planFingerprint": "sha256:3e7b557e64b08ac77ca09825c1269d119dd1c3b79e02ecc05c524f652b3c06fd",
       "routes": [
         {
           "allocation": "208",
@@ -3944,7 +3944,7 @@
       "numericalIterations": 128,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:247205ef6b055802e8235f4b115c71f36713d1dbbc5a1bdaabeb27ad8d22db0b",
+      "planFingerprint": "sha256:36c44b3d51f2bcfc9fbefa3eac220f589dc97fce38d41683ec13c5b9a6abb641",
       "routes": [
         {
           "allocation": "171",
@@ -4013,7 +4013,7 @@
       "numericalIterations": 256,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:db802a7965f7a2cbf20df23a0dc78b50704032f068ff4aeafeee71814b7b7638",
+      "planFingerprint": "sha256:606b9bf9d70d9d98cf2561b5b42ba3e04b2a6c07b51a75296972d8e02043b74c",
       "routes": [
         {
           "allocation": "222",
@@ -4075,7 +4075,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:6921b94039889b7a9daabf15917613fa5ad5c555e78bbd6bf107b87c194290d0",
+      "planFingerprint": "sha256:6d325400e598dc7489b78316cf0d367935baa81a696041f7d6fe2b8e8529a568",
       "routes": [
         {
           "allocation": "100",
@@ -4121,7 +4121,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:91c8fb014b1e28d2f17fb8a7223513c3cdd913490f30cb761d6ce148304cb725",
+      "planFingerprint": "sha256:6d325400e598dc7489b78316cf0d367935baa81a696041f7d6fe2b8e8529a568",
       "routes": [
         {
           "allocation": "100",
@@ -4174,7 +4174,7 @@
       "numericalIterations": 16,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:b1a62e83ba99e38dbc4848df0aecdfa5534232a56e328273cb3cb841fa2e7d48",
+      "planFingerprint": "sha256:6d325400e598dc7489b78316cf0d367935baa81a696041f7d6fe2b8e8529a568",
       "routes": [
         {
           "allocation": "100",
@@ -4220,7 +4220,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:f210695322fdcbbedac71fada6c5cc44dfbd7c9576f78a01328eb75d8eb6fd46",
+      "planFingerprint": "sha256:6d325400e598dc7489b78316cf0d367935baa81a696041f7d6fe2b8e8529a568",
       "routes": [
         {
           "allocation": "100",
@@ -4266,7 +4266,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:2832eea2330d47d79954672e00de47a3fc3aba668abdfefb185f6fd20f06a5d3",
+      "planFingerprint": "sha256:6d325400e598dc7489b78316cf0d367935baa81a696041f7d6fe2b8e8529a568",
       "routes": [
         {
           "allocation": "100",
@@ -4319,7 +4319,7 @@
       "numericalIterations": 64,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:00bc4594cc179e14d313082e338aacc94e1c1fd46d407816c45fcda48267f8d4",
+      "planFingerprint": "sha256:6d325400e598dc7489b78316cf0d367935baa81a696041f7d6fe2b8e8529a568",
       "routes": [
         {
           "allocation": "100",
@@ -4365,7 +4365,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:b21325dfddb61a95a03b4a0c3633ccc33687a2648b0acd94f3ba8d5b1f05094d",
+      "planFingerprint": "sha256:6d325400e598dc7489b78316cf0d367935baa81a696041f7d6fe2b8e8529a568",
       "routes": [
         {
           "allocation": "100",
@@ -4411,7 +4411,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:aa5aebdf335b3661d54af261056c1fd5a653a572e05a211b2b3bf2721b06593b",
+      "planFingerprint": "sha256:6d325400e598dc7489b78316cf0d367935baa81a696041f7d6fe2b8e8529a568",
       "routes": [
         {
           "allocation": "100",
@@ -4464,7 +4464,7 @@
       "numericalIterations": 128,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:997e8e689fb76e53c1a7da678a7ce4eb0d9e5058cd21e9e52260da694eee3aaa",
+      "planFingerprint": "sha256:6d325400e598dc7489b78316cf0d367935baa81a696041f7d6fe2b8e8529a568",
       "routes": [
         {
           "allocation": "100",
@@ -4517,7 +4517,7 @@
       "numericalIterations": 256,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:3baef7f9df3845322dd9d786284294bf51d3851971735f2e5419817131ba9464",
+      "planFingerprint": "sha256:6d325400e598dc7489b78316cf0d367935baa81a696041f7d6fe2b8e8529a568",
       "routes": [
         {
           "allocation": "100",
@@ -4563,7 +4563,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:82306cc64b4ff7683d9c406164edf491c1ea0c9ff3999237872ac408d5c4696b",
+      "planFingerprint": "sha256:2002502034470e5a5dbcc3efda87e48f0aa2c4f7e31a17cacd046734e24fd61d",
       "routes": [
         {
           "allocation": "100",
@@ -4609,7 +4609,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:80efc8f0710ab01985f7fee0d5be309dc6f0f4cc39d919341de8e8d02a03179f",
+      "planFingerprint": "sha256:ba9234786cdd28e3dc48c808c4b19dc078c21ed937abe76e601b026bd647ff04",
       "routes": [
         {
           "allocation": "50",
@@ -4673,7 +4673,7 @@
       "numericalIterations": 16,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:93342c3a26cc0f08f16e1d476616b4aa1ea7e8f0107060310191f46795410d20",
+      "planFingerprint": "sha256:ba9234786cdd28e3dc48c808c4b19dc078c21ed937abe76e601b026bd647ff04",
       "routes": [
         {
           "allocation": "50",
@@ -4730,7 +4730,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:db95bb58afd75a23fb70da5ddb02fa8c14c849c247337615edc19f4bfc2eb9e1",
+      "planFingerprint": "sha256:2002502034470e5a5dbcc3efda87e48f0aa2c4f7e31a17cacd046734e24fd61d",
       "routes": [
         {
           "allocation": "100",
@@ -4776,7 +4776,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:314edb3929116409cbe9797c19daeb2d45e44483150cd5d46bf033143bf36e25",
+      "planFingerprint": "sha256:ba9234786cdd28e3dc48c808c4b19dc078c21ed937abe76e601b026bd647ff04",
       "routes": [
         {
           "allocation": "50",
@@ -4840,7 +4840,7 @@
       "numericalIterations": 64,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:bb6355d5cc41ce7dd365b06991a7e657ea122d36305349a71b2697b5849d67c3",
+      "planFingerprint": "sha256:ba9234786cdd28e3dc48c808c4b19dc078c21ed937abe76e601b026bd647ff04",
       "routes": [
         {
           "allocation": "50",
@@ -4897,7 +4897,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:2136dd84427a44cd418a8b021ce30911ab614dc13a39bc634e4f7da3c1cb6684",
+      "planFingerprint": "sha256:2002502034470e5a5dbcc3efda87e48f0aa2c4f7e31a17cacd046734e24fd61d",
       "routes": [
         {
           "allocation": "100",
@@ -4943,7 +4943,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:31bc62c773f0937553f0dcb63139aa3fa305f978cc219cb15fbc07d0506471ad",
+      "planFingerprint": "sha256:ba9234786cdd28e3dc48c808c4b19dc078c21ed937abe76e601b026bd647ff04",
       "routes": [
         {
           "allocation": "50",
@@ -5007,7 +5007,7 @@
       "numericalIterations": 128,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:13dbb292049881463f1cd6a51dc6952d2b9f1248c2f300cd6cc339bf982e88d7",
+      "planFingerprint": "sha256:ba9234786cdd28e3dc48c808c4b19dc078c21ed937abe76e601b026bd647ff04",
       "routes": [
         {
           "allocation": "50",
@@ -5071,7 +5071,7 @@
       "numericalIterations": 256,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:54848a0ad160d65fc2ceac42e0ea10263ff3ca5c676867b928751394b63da009",
+      "planFingerprint": "sha256:ba9234786cdd28e3dc48c808c4b19dc078c21ed937abe76e601b026bd647ff04",
       "routes": [
         {
           "allocation": "50",
@@ -5128,7 +5128,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:891a95b550eb8a084e5dc8bdb56fdaa526f2c022c424563d8a65938b0698ec23",
+      "planFingerprint": "sha256:5a4a6d54a65349062bef1c4b478a874ea7179179a7d586601a198fb56ca1de0f",
       "routes": [
         {
           "allocation": "20",
@@ -5174,7 +5174,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:9d060b42779df4cc05c01f539e17adc3d53b35016ef6b4295ef2415d040b801c",
+      "planFingerprint": "sha256:5438e47e906cdb7e28be083bc2fa48303cdcc2cfe58fe0c05ebdb38ce9561d23",
       "routes": [
         {
           "allocation": "10",
@@ -5238,7 +5238,7 @@
       "numericalIterations": 16,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:fe8c31484d6f06da217b1680825aa4516d9d53885331e797f7e3e9dca205d59f",
+      "planFingerprint": "sha256:5438e47e906cdb7e28be083bc2fa48303cdcc2cfe58fe0c05ebdb38ce9561d23",
       "routes": [
         {
           "allocation": "10",
@@ -5295,7 +5295,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:70de891ca42a02ab248304b464d86cd1fbb792eb2620834a307e60b1b380b1dd",
+      "planFingerprint": "sha256:5a4a6d54a65349062bef1c4b478a874ea7179179a7d586601a198fb56ca1de0f",
       "routes": [
         {
           "allocation": "20",
@@ -5341,7 +5341,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:410e8900268d8e810c71bb4c2d5ba6594efa019e5477f592314e0c30d8849a6b",
+      "planFingerprint": "sha256:5438e47e906cdb7e28be083bc2fa48303cdcc2cfe58fe0c05ebdb38ce9561d23",
       "routes": [
         {
           "allocation": "10",
@@ -5405,7 +5405,7 @@
       "numericalIterations": 64,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:e04f4d761fa00313682cb3f1181a98aba85865a9c7510b003bc8a3e2eb3b027a",
+      "planFingerprint": "sha256:5438e47e906cdb7e28be083bc2fa48303cdcc2cfe58fe0c05ebdb38ce9561d23",
       "routes": [
         {
           "allocation": "10",
@@ -5462,7 +5462,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:c2362513e3a47e0212b6f7de9edcb77f87d178bc586db2b3affd808a15eb4b60",
+      "planFingerprint": "sha256:5a4a6d54a65349062bef1c4b478a874ea7179179a7d586601a198fb56ca1de0f",
       "routes": [
         {
           "allocation": "20",
@@ -5508,7 +5508,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:79949202e21261ef011b6976b76af756fb1c300b7482502d5eded2920c8c3e50",
+      "planFingerprint": "sha256:5438e47e906cdb7e28be083bc2fa48303cdcc2cfe58fe0c05ebdb38ce9561d23",
       "routes": [
         {
           "allocation": "10",
@@ -5572,7 +5572,7 @@
       "numericalIterations": 128,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:9b65546cd564fc2569275a198c15fc65c62ba6484fe42d5e44bb47cdd26c415c",
+      "planFingerprint": "sha256:5438e47e906cdb7e28be083bc2fa48303cdcc2cfe58fe0c05ebdb38ce9561d23",
       "routes": [
         {
           "allocation": "10",
@@ -5636,7 +5636,7 @@
       "numericalIterations": 256,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:f0b6004bf41397a67de5803b1ea7eec34bb76953bca87afbb8e6d54f13d3b883",
+      "planFingerprint": "sha256:5438e47e906cdb7e28be083bc2fa48303cdcc2cfe58fe0c05ebdb38ce9561d23",
       "routes": [
         {
           "allocation": "10",
@@ -5693,7 +5693,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:fb936a1e3a3ebdf966dd36018fd3ac2945e705955e8f8b2a416685d87cfa923b",
+      "planFingerprint": "sha256:61c6fb29758ea059054190bd826971f9394a3bc178adc74a6134567203bbfa23",
       "routes": [
         {
           "allocation": "1000",
@@ -5739,7 +5739,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:d571541fc07bb75de3d67f0239c2b2144f195344cada15a42fbccc6db4532a47",
+      "planFingerprint": "sha256:ddde853b54a14abaca63242dcde34c6bcd567389312b4fbb62f291db760408a7",
       "routes": [
         {
           "allocation": "500",
@@ -5803,7 +5803,7 @@
       "numericalIterations": 16,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:b388d430c4510427d7972c7d8ac5604757dd5c62b8533782136293bce79eee33",
+      "planFingerprint": "sha256:ddde853b54a14abaca63242dcde34c6bcd567389312b4fbb62f291db760408a7",
       "routes": [
         {
           "allocation": "500",
@@ -5860,7 +5860,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:2f63704be77b5f2df5658ffb00e9b83d14fabe3c0248afe34b92dd2e331d6989",
+      "planFingerprint": "sha256:61c6fb29758ea059054190bd826971f9394a3bc178adc74a6134567203bbfa23",
       "routes": [
         {
           "allocation": "1000",
@@ -5906,7 +5906,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:daaa2984c1a42424110ccdd18df26571da82269f786d957df6f2d00f8496747b",
+      "planFingerprint": "sha256:ddde853b54a14abaca63242dcde34c6bcd567389312b4fbb62f291db760408a7",
       "routes": [
         {
           "allocation": "500",
@@ -5970,7 +5970,7 @@
       "numericalIterations": 64,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:fc2f9fceb86aa49e65e10d0953088552f93c35abcc6c8a947f252b5e465a6519",
+      "planFingerprint": "sha256:ddde853b54a14abaca63242dcde34c6bcd567389312b4fbb62f291db760408a7",
       "routes": [
         {
           "allocation": "500",
@@ -6027,7 +6027,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:1534895a74b5f848a4d26224f10288ba818e14310c811e48e1aa51913e3ae1b0",
+      "planFingerprint": "sha256:61c6fb29758ea059054190bd826971f9394a3bc178adc74a6134567203bbfa23",
       "routes": [
         {
           "allocation": "1000",
@@ -6073,7 +6073,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:657e814c4336acf6dcd805b6af0e687c25636983d41869b79d241d3f40fa006d",
+      "planFingerprint": "sha256:ddde853b54a14abaca63242dcde34c6bcd567389312b4fbb62f291db760408a7",
       "routes": [
         {
           "allocation": "500",
@@ -6137,7 +6137,7 @@
       "numericalIterations": 128,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:829c5a85f9676d75629ad3e03c90ab150433cd0ced39a5498cc923355ef6b229",
+      "planFingerprint": "sha256:ddde853b54a14abaca63242dcde34c6bcd567389312b4fbb62f291db760408a7",
       "routes": [
         {
           "allocation": "500",
@@ -6201,7 +6201,7 @@
       "numericalIterations": 256,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:40c3f9b9a5476d0fdf1f1d8b0c2de1513c01acd71f9a0f6ca0c39821c00c8eff",
+      "planFingerprint": "sha256:ddde853b54a14abaca63242dcde34c6bcd567389312b4fbb62f291db760408a7",
       "routes": [
         {
           "allocation": "500",
@@ -6258,7 +6258,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:5d604f579da7a39620c2a011364c7b7b03ce53699052a73b93ab76f3bd391cff",
+      "planFingerprint": "sha256:53ba3c4701a207e15f5cb24bbbf6e6ef117ece7d3ecfc41b5daea6c6e647ba6f",
       "routes": [
         {
           "allocation": "100",
@@ -6304,7 +6304,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:50939ff0a4d1a477cc6c9137e9bfd60f854bcd1eed82c89e9d3130829b7c0e3a",
+      "planFingerprint": "sha256:07e1ebc6568b7e9aee9020ea9b57c7a64056231d6537cbc45764f0c2000bcba9",
       "routes": [
         {
           "allocation": "50",
@@ -6368,7 +6368,7 @@
       "numericalIterations": 16,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:eef64ec124f62ee001385975432565604c437d38b7746115b9ee832c00babf50",
+      "planFingerprint": "sha256:92d870051757dcf7816c104c75cd65fdbefa7d0a06e5d963cecd96816c14e536",
       "routes": [
         {
           "allocation": "44",
@@ -6425,7 +6425,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:c2efe82c38f0c0b3ea6ceae9c34e1a2254078889e1f6a4d9722c1e7e8204cae2",
+      "planFingerprint": "sha256:53ba3c4701a207e15f5cb24bbbf6e6ef117ece7d3ecfc41b5daea6c6e647ba6f",
       "routes": [
         {
           "allocation": "100",
@@ -6471,7 +6471,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:f4ff8d6d91c45bdd91f30ea89fb14cacd846904132a2fd78662442e16e7756c8",
+      "planFingerprint": "sha256:07e1ebc6568b7e9aee9020ea9b57c7a64056231d6537cbc45764f0c2000bcba9",
       "routes": [
         {
           "allocation": "50",
@@ -6535,7 +6535,7 @@
       "numericalIterations": 64,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:369c85bff47b94741710d4633db732e8293f936b10bda321b9aa95aad2828699",
+      "planFingerprint": "sha256:07e1ebc6568b7e9aee9020ea9b57c7a64056231d6537cbc45764f0c2000bcba9",
       "routes": [
         {
           "allocation": "50",
@@ -6592,7 +6592,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:6006f1cb00a50566f93754341aecce3364a09450fcca7bee7b31599436cfceb1",
+      "planFingerprint": "sha256:53ba3c4701a207e15f5cb24bbbf6e6ef117ece7d3ecfc41b5daea6c6e647ba6f",
       "routes": [
         {
           "allocation": "100",
@@ -6638,7 +6638,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:dd337ba8f7519c74d6e4f1e81671fa603e53e774b621c402f95f44252f7e0013",
+      "planFingerprint": "sha256:07e1ebc6568b7e9aee9020ea9b57c7a64056231d6537cbc45764f0c2000bcba9",
       "routes": [
         {
           "allocation": "50",
@@ -6702,7 +6702,7 @@
       "numericalIterations": 128,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:c36e45154f812c4785781452f9dce5015ad1a1fbaac25db3b112514e1149306f",
+      "planFingerprint": "sha256:92d870051757dcf7816c104c75cd65fdbefa7d0a06e5d963cecd96816c14e536",
       "routes": [
         {
           "allocation": "44",
@@ -6766,7 +6766,7 @@
       "numericalIterations": 256,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:4a6a3568b623512a983b8c0c0e67e584275774cc067dce63e493566d212cf497",
+      "planFingerprint": "sha256:07e1ebc6568b7e9aee9020ea9b57c7a64056231d6537cbc45764f0c2000bcba9",
       "routes": [
         {
           "allocation": "50",
@@ -6823,7 +6823,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:e20af4bea1a96da3ad9e360f12e87a885e36de1407a28df940a2b353db5c0772",
+      "planFingerprint": "sha256:8ca89b8d442680a83037bbbaf7d51a36205ee01d99b5bd7b0de8b80bd5a0c094",
       "routes": [
         {
           "allocation": "100",
@@ -6869,7 +6869,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:624c843b8b03386f7d5c74c48eec5cf7b03cf8ec233e23235efe3e6f227e8fc7",
+      "planFingerprint": "sha256:8ca89b8d442680a83037bbbaf7d51a36205ee01d99b5bd7b0de8b80bd5a0c094",
       "routes": [
         {
           "allocation": "100",
@@ -6922,7 +6922,7 @@
       "numericalIterations": 16,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:40344a1d0e35a77c0041753dc3b9f9d5102ef59f9614ed0e8cbc5b3f381aadf1",
+      "planFingerprint": "sha256:8ca89b8d442680a83037bbbaf7d51a36205ee01d99b5bd7b0de8b80bd5a0c094",
       "routes": [
         {
           "allocation": "100",
@@ -6968,7 +6968,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:1bfebba7acf674f0b8df785d5b82aba549f53e4404ae0e60930d5f02252d7b12",
+      "planFingerprint": "sha256:8ca89b8d442680a83037bbbaf7d51a36205ee01d99b5bd7b0de8b80bd5a0c094",
       "routes": [
         {
           "allocation": "100",
@@ -7014,7 +7014,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:5b308888fa5904d819e28289bb43bd41f0e6371e536e69d8eca62ab46587a324",
+      "planFingerprint": "sha256:8ca89b8d442680a83037bbbaf7d51a36205ee01d99b5bd7b0de8b80bd5a0c094",
       "routes": [
         {
           "allocation": "100",
@@ -7067,7 +7067,7 @@
       "numericalIterations": 64,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:8c01c32213760bd9062a2d5b0bbf89f7754228ebf3d7de9a04fa91d47c6b4b71",
+      "planFingerprint": "sha256:8ca89b8d442680a83037bbbaf7d51a36205ee01d99b5bd7b0de8b80bd5a0c094",
       "routes": [
         {
           "allocation": "100",
@@ -7113,7 +7113,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:2549216c3128762cd80809f4cdd35159ddcc5b3a4d7e5d2ac16b2df4f943b8ce",
+      "planFingerprint": "sha256:8ca89b8d442680a83037bbbaf7d51a36205ee01d99b5bd7b0de8b80bd5a0c094",
       "routes": [
         {
           "allocation": "100",
@@ -7159,7 +7159,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:684ea82e3c57546e230d025641a92b75449f88db7d5b14f3b348480c93ba8e22",
+      "planFingerprint": "sha256:8ca89b8d442680a83037bbbaf7d51a36205ee01d99b5bd7b0de8b80bd5a0c094",
       "routes": [
         {
           "allocation": "100",
@@ -7212,7 +7212,7 @@
       "numericalIterations": 128,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:e6d21aa757cac3566e8ae61a35b2991f4bee94ed5bcc99c20931bd5d5334f71b",
+      "planFingerprint": "sha256:8ca89b8d442680a83037bbbaf7d51a36205ee01d99b5bd7b0de8b80bd5a0c094",
       "routes": [
         {
           "allocation": "100",
@@ -7265,7 +7265,7 @@
       "numericalIterations": 256,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:e23f6100f963aff41b169efc3a0b60831dc842325452b9cf471a993ca50656fe",
+      "planFingerprint": "sha256:8ca89b8d442680a83037bbbaf7d51a36205ee01d99b5bd7b0de8b80bd5a0c094",
       "routes": [
         {
           "allocation": "100",
@@ -7311,7 +7311,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:43ad19c3def128c2d142e90f546023bad5490bc850e8e3679f8db2b6b22caca1",
+      "planFingerprint": "sha256:91077b9eef5c92c33bf45786eeb268434c3a4aeca43b5b36776ef2e3c83b5256",
       "routes": [
         {
           "allocation": "500",
@@ -7357,7 +7357,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:097c986203b31669b7540da01b3f9a26efeec3f145d14e0494030223a2743426",
+      "planFingerprint": "sha256:91077b9eef5c92c33bf45786eeb268434c3a4aeca43b5b36776ef2e3c83b5256",
       "routes": [
         {
           "allocation": "500",
@@ -7410,7 +7410,7 @@
       "numericalIterations": 16,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:5ae500ca05e9ecfe2cc841c760d368f401c3795ec24b841af5414c39286d2936",
+      "planFingerprint": "sha256:91077b9eef5c92c33bf45786eeb268434c3a4aeca43b5b36776ef2e3c83b5256",
       "routes": [
         {
           "allocation": "500",
@@ -7456,7 +7456,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:451d84cb068ef8bdf44190ea67772314bc784c2762fe5904a082f2f8bfaea1ff",
+      "planFingerprint": "sha256:91077b9eef5c92c33bf45786eeb268434c3a4aeca43b5b36776ef2e3c83b5256",
       "routes": [
         {
           "allocation": "500",
@@ -7502,7 +7502,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:577c8b9d50e1b0e4c3a9bde0309694269fd17306af16211561c6352a945c7bcd",
+      "planFingerprint": "sha256:91077b9eef5c92c33bf45786eeb268434c3a4aeca43b5b36776ef2e3c83b5256",
       "routes": [
         {
           "allocation": "500",
@@ -7555,7 +7555,7 @@
       "numericalIterations": 64,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:805a6040088b65419049d38040fae4c1994504827ee779a552e8792d12fcb9d5",
+      "planFingerprint": "sha256:91077b9eef5c92c33bf45786eeb268434c3a4aeca43b5b36776ef2e3c83b5256",
       "routes": [
         {
           "allocation": "500",
@@ -7601,7 +7601,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:08d6f89c218f229ac3ccfee6ab64b7f2bb726b75865bd4e5ec5960c262f2fd26",
+      "planFingerprint": "sha256:91077b9eef5c92c33bf45786eeb268434c3a4aeca43b5b36776ef2e3c83b5256",
       "routes": [
         {
           "allocation": "500",
@@ -7647,7 +7647,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:1a0f4563cdb2e80e38d629d2da9310fbbc157cdb40169b42d5a26cd0574ac1ed",
+      "planFingerprint": "sha256:91077b9eef5c92c33bf45786eeb268434c3a4aeca43b5b36776ef2e3c83b5256",
       "routes": [
         {
           "allocation": "500",
@@ -7700,7 +7700,7 @@
       "numericalIterations": 128,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:7d3e9009927ce7d8f5b4a6b4012a1495e4166bd3cb4e275ea1890d55d7af5ed7",
+      "planFingerprint": "sha256:91077b9eef5c92c33bf45786eeb268434c3a4aeca43b5b36776ef2e3c83b5256",
       "routes": [
         {
           "allocation": "500",
@@ -7753,7 +7753,7 @@
       "numericalIterations": 256,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:24ae044b8ae56b437bb6e58cb014848845adac29aa4ba14eb7f30038e7daa8ce",
+      "planFingerprint": "sha256:91077b9eef5c92c33bf45786eeb268434c3a4aeca43b5b36776ef2e3c83b5256",
       "routes": [
         {
           "allocation": "500",
@@ -7799,7 +7799,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:24233673c711e1e10fc6470339e51eb49efeaedfce7a302010440b2c983822be",
+      "planFingerprint": "sha256:df2988172037cbb10526fe86cc7f547bbc58d2a77a1390a1618274fbc5e9db94",
       "routes": [
         {
           "allocation": "10",
@@ -7845,7 +7845,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:0d13d6607c9b90186722507cfa38c693fb9fdab95113f57ca973ca6b562a1a7e",
+      "planFingerprint": "sha256:df2988172037cbb10526fe86cc7f547bbc58d2a77a1390a1618274fbc5e9db94",
       "routes": [
         {
           "allocation": "10",
@@ -7898,7 +7898,7 @@
       "numericalIterations": 16,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:3e7e2ff2579bc39ab7ceb423f5e9285ef7e6d142f71693249a6dc6cb94f997bb",
+      "planFingerprint": "sha256:df2988172037cbb10526fe86cc7f547bbc58d2a77a1390a1618274fbc5e9db94",
       "routes": [
         {
           "allocation": "10",
@@ -7944,7 +7944,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:2cff5093c52bc7b34b5c1f2b8867a87a316adb1edf38e6a4b5bc8397bb1c9b50",
+      "planFingerprint": "sha256:df2988172037cbb10526fe86cc7f547bbc58d2a77a1390a1618274fbc5e9db94",
       "routes": [
         {
           "allocation": "10",
@@ -7990,7 +7990,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:11e85452bda478f80e96c2b352bbf7e9156892dfb218592ed1608b8a88edd627",
+      "planFingerprint": "sha256:df2988172037cbb10526fe86cc7f547bbc58d2a77a1390a1618274fbc5e9db94",
       "routes": [
         {
           "allocation": "10",
@@ -8043,7 +8043,7 @@
       "numericalIterations": 64,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:4b0fb3c82b468b64cc54538723e7e0dd7c39666c9766633073c3fc8eb618e5e8",
+      "planFingerprint": "sha256:df2988172037cbb10526fe86cc7f547bbc58d2a77a1390a1618274fbc5e9db94",
       "routes": [
         {
           "allocation": "10",
@@ -8089,7 +8089,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:c05541f2502247a2f6b983dc9726f9cf3fca219e1eacdc8fe5676ad5bafb9702",
+      "planFingerprint": "sha256:df2988172037cbb10526fe86cc7f547bbc58d2a77a1390a1618274fbc5e9db94",
       "routes": [
         {
           "allocation": "10",
@@ -8135,7 +8135,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:54ef94585732b03313288fd96634a4cf3b29671b7659a93d407a0905b00dd731",
+      "planFingerprint": "sha256:df2988172037cbb10526fe86cc7f547bbc58d2a77a1390a1618274fbc5e9db94",
       "routes": [
         {
           "allocation": "10",
@@ -8188,7 +8188,7 @@
       "numericalIterations": 128,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:c173f0b3e2cc0096f3ff088b55ca30ca37622764bc27d853ee33b090cd0321b3",
+      "planFingerprint": "sha256:df2988172037cbb10526fe86cc7f547bbc58d2a77a1390a1618274fbc5e9db94",
       "routes": [
         {
           "allocation": "10",
@@ -8241,7 +8241,7 @@
       "numericalIterations": 256,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:6d51b11cb1c6cc020b19d4f4c9da853b5e056c01d597437dbf0819dc7f263241",
+      "planFingerprint": "sha256:df2988172037cbb10526fe86cc7f547bbc58d2a77a1390a1618274fbc5e9db94",
       "routes": [
         {
           "allocation": "10",
@@ -8287,7 +8287,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:9634f3673253594c29b86a6160983effd6032ddc20b0660d8222ef56e19ed12c",
+      "planFingerprint": "sha256:91159f574af7a3bd2f24b48e71b660b25a4844b5f08329686bbb37197a247ede",
       "routes": [
         {
           "allocation": "100",
@@ -8333,7 +8333,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:8274c9d3e5e3183fae4d6d62ac9efebd27052e51bb4c919c9cc11d4677edcf41",
+      "planFingerprint": "sha256:91159f574af7a3bd2f24b48e71b660b25a4844b5f08329686bbb37197a247ede",
       "routes": [
         {
           "allocation": "100",
@@ -8386,7 +8386,7 @@
       "numericalIterations": 16,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:48bc39b86f34b8227461ff452a73bc30e40a2cdde8f6dd1f7061b12cc9005801",
+      "planFingerprint": "sha256:91159f574af7a3bd2f24b48e71b660b25a4844b5f08329686bbb37197a247ede",
       "routes": [
         {
           "allocation": "100",
@@ -8432,7 +8432,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:31971ca1fc5be0a57f221f62c4a5265d7885762b7d7f69c7d52b36684a786f76",
+      "planFingerprint": "sha256:91159f574af7a3bd2f24b48e71b660b25a4844b5f08329686bbb37197a247ede",
       "routes": [
         {
           "allocation": "100",
@@ -8478,7 +8478,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:2d0270a64633aa30aed508daabd13394da07d994b456d01e36ecf2cf030f5e05",
+      "planFingerprint": "sha256:91159f574af7a3bd2f24b48e71b660b25a4844b5f08329686bbb37197a247ede",
       "routes": [
         {
           "allocation": "100",
@@ -8531,7 +8531,7 @@
       "numericalIterations": 64,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:58712002e61e2725d6810104c23c91c5e63444a6cc124d9f17f55b6e9b17ac89",
+      "planFingerprint": "sha256:91159f574af7a3bd2f24b48e71b660b25a4844b5f08329686bbb37197a247ede",
       "routes": [
         {
           "allocation": "100",
@@ -8577,7 +8577,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:6a1ec49c01d58fb6b2c9cb0b9945c4a3ffa3f053e0a559882a4be42eb2ed5ee5",
+      "planFingerprint": "sha256:91159f574af7a3bd2f24b48e71b660b25a4844b5f08329686bbb37197a247ede",
       "routes": [
         {
           "allocation": "100",
@@ -8623,7 +8623,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:7e8f303573bff529c8d76204b2449665e1e2349e9379bb797c7580cf2ca01e90",
+      "planFingerprint": "sha256:91159f574af7a3bd2f24b48e71b660b25a4844b5f08329686bbb37197a247ede",
       "routes": [
         {
           "allocation": "100",
@@ -8676,7 +8676,7 @@
       "numericalIterations": 128,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:40536ea98b5690e058f5e8944784a06bc8b249ea85af265ca20ea25c028c2593",
+      "planFingerprint": "sha256:91159f574af7a3bd2f24b48e71b660b25a4844b5f08329686bbb37197a247ede",
       "routes": [
         {
           "allocation": "100",
@@ -8729,7 +8729,7 @@
       "numericalIterations": 256,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:f74b204e29c8dbb9257f67190795284cb3db373f7a578a4ce2a79aa75e2dd725",
+      "planFingerprint": "sha256:91159f574af7a3bd2f24b48e71b660b25a4844b5f08329686bbb37197a247ede",
       "routes": [
         {
           "allocation": "100",
@@ -8775,7 +8775,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:33c9b559375443d1e55cd7a7725675f36bc0f04648745737eaebde848e7a1f51",
+      "planFingerprint": "sha256:88c4ccf994a99caea98051ba2684c2c6d070d3ef1d80cbe469bc6845c1b4817d",
       "routes": [
         {
           "allocation": "1",
@@ -8821,7 +8821,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:461af5f7ba5f4cfb4bfd1e255f5922bca094368ef35ea8acba0e67e19cb954fe",
+      "planFingerprint": "sha256:88c4ccf994a99caea98051ba2684c2c6d070d3ef1d80cbe469bc6845c1b4817d",
       "routes": [
         {
           "allocation": "1",
@@ -8874,7 +8874,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:64e736025f2bf28a80cf55a55ab93421975f7691f8f10f64fd0fc041a78b81e2",
+      "planFingerprint": "sha256:88c4ccf994a99caea98051ba2684c2c6d070d3ef1d80cbe469bc6845c1b4817d",
       "routes": [
         {
           "allocation": "1",
@@ -8920,7 +8920,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:214e278db18fdeadde5c414ef987a5e0bcfc5f54ed0d4ca007f6655a92a24aa2",
+      "planFingerprint": "sha256:88c4ccf994a99caea98051ba2684c2c6d070d3ef1d80cbe469bc6845c1b4817d",
       "routes": [
         {
           "allocation": "1",
@@ -8966,7 +8966,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:622d889eaddf6392eb683d746dd50c44f169330f211d15b08d1341326bb038cc",
+      "planFingerprint": "sha256:88c4ccf994a99caea98051ba2684c2c6d070d3ef1d80cbe469bc6845c1b4817d",
       "routes": [
         {
           "allocation": "1",
@@ -9019,7 +9019,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:ab86a2e567d18ecdbbd776f4015a077c716227e599ce2f804d62c99e23a0a315",
+      "planFingerprint": "sha256:88c4ccf994a99caea98051ba2684c2c6d070d3ef1d80cbe469bc6845c1b4817d",
       "routes": [
         {
           "allocation": "1",
@@ -9065,7 +9065,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:e9af3329b74dd136904d4fd051938ec1539d320267cce49f7d70f84822dc21b2",
+      "planFingerprint": "sha256:88c4ccf994a99caea98051ba2684c2c6d070d3ef1d80cbe469bc6845c1b4817d",
       "routes": [
         {
           "allocation": "1",
@@ -9111,7 +9111,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:5788a41275520e26933cffefce803ccb8afb9e4bd9cd98f713ee3b2afb5ecba0",
+      "planFingerprint": "sha256:88c4ccf994a99caea98051ba2684c2c6d070d3ef1d80cbe469bc6845c1b4817d",
       "routes": [
         {
           "allocation": "1",
@@ -9164,7 +9164,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:79dd33505b109a4190095f22b7a469caf84f7f0c0c64a479eaa29797591acec1",
+      "planFingerprint": "sha256:88c4ccf994a99caea98051ba2684c2c6d070d3ef1d80cbe469bc6845c1b4817d",
       "routes": [
         {
           "allocation": "1",
@@ -9217,7 +9217,7 @@
       "numericalIterations": 0,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:1ac769525fa64b2ae22f663be3db66895be42496c781db3577c160382dbbee1a",
+      "planFingerprint": "sha256:88c4ccf994a99caea98051ba2684c2c6d070d3ef1d80cbe469bc6845c1b4817d",
       "routes": [
         {
           "allocation": "1",
@@ -9249,7 +9249,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": null,
+      "planFingerprint": null,
       "routes": []
     },
     {
@@ -9269,7 +9269,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": null,
+      "planFingerprint": null,
       "routes": []
     },
     {
@@ -9289,7 +9289,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": null,
+      "planFingerprint": null,
       "routes": []
     },
     {
@@ -9309,7 +9309,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": null,
+      "planFingerprint": null,
       "routes": []
     },
     {
@@ -9329,7 +9329,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": null,
+      "planFingerprint": null,
       "routes": []
     },
     {
@@ -9349,7 +9349,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": null,
+      "planFingerprint": null,
       "routes": []
     },
     {
@@ -9369,7 +9369,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": null,
+      "planFingerprint": null,
       "routes": []
     },
     {
@@ -9389,7 +9389,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": null,
+      "planFingerprint": null,
       "routes": []
     },
     {
@@ -9409,7 +9409,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": null,
+      "planFingerprint": null,
       "routes": []
     },
     {
@@ -9429,7 +9429,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": null,
+      "planFingerprint": null,
       "routes": []
     },
     {
@@ -9463,7 +9463,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:0ad296f1045ac0e1061377d0be6c70e92dd4a9d5aa8cd3ad30140ec911298496",
+      "planFingerprint": "sha256:f1245e7ce52d2bb16d3f3e042e6af081ab7d7071c7aa65041aa67a80e0d30e44",
       "routes": [
         {
           "allocation": "269808139664661",
@@ -9514,7 +9514,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:002226bb4269807bc627367d572bf45266895804ef6d6f9cb7cd9d457306e6af",
+      "planFingerprint": "sha256:f1245e7ce52d2bb16d3f3e042e6af081ab7d7071c7aa65041aa67a80e0d30e44",
       "routes": [
         {
           "allocation": "269808139664661",
@@ -9572,7 +9572,7 @@
       "numericalIterations": 448,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:97ac56bcdfd4e4cbb25efe7ef1f0d36332dcc242bd71714005fca40dd136290b",
+      "planFingerprint": "sha256:f1245e7ce52d2bb16d3f3e042e6af081ab7d7071c7aa65041aa67a80e0d30e44",
       "routes": [
         {
           "allocation": "269808139664661",
@@ -9623,7 +9623,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:91bf5ad524fc6e8aaaca1ce948a6c4893df9046712ea07aea7fdfebb967ca701",
+      "planFingerprint": "sha256:f1245e7ce52d2bb16d3f3e042e6af081ab7d7071c7aa65041aa67a80e0d30e44",
       "routes": [
         {
           "allocation": "269808139664661",
@@ -9674,7 +9674,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:a34fe085e726eb23a2919ac01521bda0b8d3b3c8f6cdddf879cc8baac31f818d",
+      "planFingerprint": "sha256:49ffe85b5d820cd0ff6aa59108aba7951a153795ca7235201e4d8a2f969a553c",
       "routes": [
         {
           "allocation": "252945130935619",
@@ -9748,7 +9748,7 @@
       "numericalIterations": 1792,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:7a89dc87e197e75dd107dd50eb01f0cbe7553a996f38fcaeac036274a2695cec",
+      "planFingerprint": "sha256:49ffe85b5d820cd0ff6aa59108aba7951a153795ca7235201e4d8a2f969a553c",
       "routes": [
         {
           "allocation": "252945130935619",
@@ -9815,7 +9815,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:3d4bf30879f7683e051a3976e9d02573470ef4fc759a86170a7df29ccf4377ea",
+      "planFingerprint": "sha256:f1245e7ce52d2bb16d3f3e042e6af081ab7d7071c7aa65041aa67a80e0d30e44",
       "routes": [
         {
           "allocation": "269808139664661",
@@ -9866,7 +9866,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:19818227b9954bfe4924f1baec278af5422f4d266729290c6113a7e299437e8b",
+      "planFingerprint": "sha256:9e3d30e36cbb0b02ad1ae15c540a278bdff89e3e42fcc0448fa353fab5ba31e7",
       "routes": [
         {
           "allocation": "265592387482400",
@@ -9940,7 +9940,7 @@
       "numericalIterations": 3584,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:06b4d545deb1b676c44619ab23fb62355848842ce66f6083c018b68874c7c359",
+      "planFingerprint": "sha256:9e3d30e36cbb0b02ad1ae15c540a278bdff89e3e42fcc0448fa353fab5ba31e7",
       "routes": [
         {
           "allocation": "265592387482400",
@@ -10014,7 +10014,7 @@
       "numericalIterations": 7168,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:92f9cf71c525656208c151320ce3cf8b94c8c42d4977cb4ac9ca199dde047b2f",
+      "planFingerprint": "sha256:44569f8ed36eacee8e3c7d28d030d9516435ea5baf2515193b676c80c56b2a1e",
       "routes": [
         {
           "allocation": "265592387482399",
@@ -10081,7 +10081,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:55b41fb6dae30329e1cc4376b21ae2b79b936e7adc0d05ff73f495837fbeb739",
+      "planFingerprint": "sha256:36d09258f9062b1502ce79cb87c4d322295640875e58e60dc52b281c60beb5c6",
       "routes": [
         {
           "allocation": "26980813966466199",
@@ -10132,7 +10132,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:8e5309b2bf233452e9a7f3682a2da5d7dfeb8eb8556a53c5731c4c7a6cc384f0",
+      "planFingerprint": "sha256:36d09258f9062b1502ce79cb87c4d322295640875e58e60dc52b281c60beb5c6",
       "routes": [
         {
           "allocation": "26980813966466199",
@@ -10190,7 +10190,7 @@
       "numericalIterations": 160,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:f3e8c840093020e1f12b077c3b235083743507d95583b388d61082df72d7f0c4",
+      "planFingerprint": "sha256:36d09258f9062b1502ce79cb87c4d322295640875e58e60dc52b281c60beb5c6",
       "routes": [
         {
           "allocation": "26980813966466199",
@@ -10241,7 +10241,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:8670a265f2a9f651e83cd0621a903230725eacf84134ff51a7e0d82c6bd9e52a",
+      "planFingerprint": "sha256:36d09258f9062b1502ce79cb87c4d322295640875e58e60dc52b281c60beb5c6",
       "routes": [
         {
           "allocation": "26980813966466199",
@@ -10292,7 +10292,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:3d2682a99af687d43ae9436b4c1845c07eac2a369b29cab7e6c9bec1f716f8d3",
+      "planFingerprint": "sha256:36d09258f9062b1502ce79cb87c4d322295640875e58e60dc52b281c60beb5c6",
       "routes": [
         {
           "allocation": "26980813966466199",
@@ -10350,7 +10350,7 @@
       "numericalIterations": 640,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:c113efa6f9a4cfc7a5634cb3c093af4b7b8c6fdf000b4985f8c28ccb59500cbd",
+      "planFingerprint": "sha256:36d09258f9062b1502ce79cb87c4d322295640875e58e60dc52b281c60beb5c6",
       "routes": [
         {
           "allocation": "26980813966466199",
@@ -10401,7 +10401,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:d00025d62c1fe468d0b6e603db52563843da1098e1f9efc5cd0878f745b4be95",
+      "planFingerprint": "sha256:36d09258f9062b1502ce79cb87c4d322295640875e58e60dc52b281c60beb5c6",
       "routes": [
         {
           "allocation": "26980813966466199",
@@ -10452,7 +10452,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:6d9b501624ec5bd2d0c37aeee8f5f916dc67b25ea5bdfe4f4217c081b08a7177",
+      "planFingerprint": "sha256:36d09258f9062b1502ce79cb87c4d322295640875e58e60dc52b281c60beb5c6",
       "routes": [
         {
           "allocation": "26980813966466199",
@@ -10510,7 +10510,7 @@
       "numericalIterations": 1280,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:da26f01459e61e36be3f3f4fc4f7232f66a351da69f82b79f78039179e498e8d",
+      "planFingerprint": "sha256:36d09258f9062b1502ce79cb87c4d322295640875e58e60dc52b281c60beb5c6",
       "routes": [
         {
           "allocation": "26980813966466199",
@@ -10568,7 +10568,7 @@
       "numericalIterations": 2560,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:2a9988930863e93f02f9e6cc22885c10dfbe54e82832b9a31b3da6460c640a6b",
+      "planFingerprint": "sha256:36d09258f9062b1502ce79cb87c4d322295640875e58e60dc52b281c60beb5c6",
       "routes": [
         {
           "allocation": "26980813966466199",
@@ -10619,7 +10619,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:0fc9b20b13e531917f757f8eb93cb32e255cbaa7ed7bf9d8a3ae02a6368a3f1a",
+      "planFingerprint": "sha256:71052212ea4ba4a2f84a6cd09646b38511690759e4a1f30381bb4a94fcf7b24a",
       "routes": [
         {
           "allocation": "3350382043228657007",
@@ -10670,7 +10670,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:c85de3ae10e54d6ca2f9b90d96c9b1e72c0c5b93a294d668ae739cd2b55c6176",
+      "planFingerprint": "sha256:9c96ada4a508caa5aa1e4dfc790a2590ab43fe891a19fd9e465a8c1e1d195ada",
       "routes": [
         {
           "allocation": "1675191021614328503",
@@ -10744,7 +10744,7 @@
       "numericalIterations": 880,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:fda3fe6018fe07e3c698222956400ea84f19105b237ddb314699d400250f24db",
+      "planFingerprint": "sha256:9c96ada4a508caa5aa1e4dfc790a2590ab43fe891a19fd9e465a8c1e1d195ada",
       "routes": [
         {
           "allocation": "1675191021614328503",
@@ -10811,7 +10811,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:bbfeec3a916228011421e5e46c8727c5598916c6efa530d7c4fc800996d8fb4f",
+      "planFingerprint": "sha256:71052212ea4ba4a2f84a6cd09646b38511690759e4a1f30381bb4a94fcf7b24a",
       "routes": [
         {
           "allocation": "3350382043228657007",
@@ -10862,7 +10862,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:06e694cacf7d8a17a6948183bc5e2229ec2618c18485e6589755d0cb1a41ad0b",
+      "planFingerprint": "sha256:f855292f6747ad11de97f8d08c196eb2fe957b57a9db63c00c67b80bbfada970",
       "routes": [
         {
           "allocation": "209398877701791063",
@@ -10936,7 +10936,7 @@
       "numericalIterations": 3520,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:9a4de27614cfebc882466aa473c7c26ba9703d2d1dc3d4e9afae671d598d05b7",
+      "planFingerprint": "sha256:68133a52e1e3307a25b7fae316b92b4de18de38a7c1d2f832280a344ee90190f",
       "routes": [
         {
           "allocation": "3345144191183729768",
@@ -11003,7 +11003,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:5a3477f9c8606705a923f675ed27a4a19e6976d3488d5044582a12e0dd81c7c6",
+      "planFingerprint": "sha256:71052212ea4ba4a2f84a6cd09646b38511690759e4a1f30381bb4a94fcf7b24a",
       "routes": [
         {
           "allocation": "3350382043228657007",
@@ -11054,7 +11054,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:e9adf581b102d45eafb460de0227e83eb92bd76f6f766d3b265ba6cfc66dc66e",
+      "planFingerprint": "sha256:42b4130df1c6905286d544bb6e768c099233e9b3f49422a2745b543b32892201",
       "routes": [
         {
           "allocation": "157049158276343298",
@@ -11128,7 +11128,7 @@
       "numericalIterations": 7040,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:0da603b1486dd44297cf7f88daa7adc7681fc0cd3213f3689374b1aaab731f60",
+      "planFingerprint": "sha256:42b4130df1c6905286d544bb6e768c099233e9b3f49422a2745b543b32892201",
       "routes": [
         {
           "allocation": "157049158276343298",
@@ -11202,7 +11202,7 @@
       "numericalIterations": 14080,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:db2609661bcc0fdab50a5d8077a7332a5630015479194566b3062518cc2f3d01",
+      "planFingerprint": "sha256:42b4130df1c6905286d544bb6e768c099233e9b3f49422a2745b543b32892201",
       "routes": [
         {
           "allocation": "157049158276343298",
@@ -11269,7 +11269,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:b1a78055ea494ce503314088fa95678664736827f51979a4df096423530c9c13",
+      "planFingerprint": "sha256:9539fbcc68ce5e32b5c38d305770d9dcd517bcbefade97126f47ec29f78bd441",
       "routes": [
         {
           "allocation": "910542921916222749",
@@ -11320,7 +11320,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:45d60ffe62235d43b95f55d29b23675522c4b2865a4607efa730b2d023d2ceba",
+      "planFingerprint": "sha256:9539fbcc68ce5e32b5c38d305770d9dcd517bcbefade97126f47ec29f78bd441",
       "routes": [
         {
           "allocation": "910542921916222749",
@@ -11378,7 +11378,7 @@
       "numericalIterations": 576,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:0c7f694a1fc31c39bf33db1082965543af7a9a015feab33800327607966b5cbb",
+      "planFingerprint": "sha256:9539fbcc68ce5e32b5c38d305770d9dcd517bcbefade97126f47ec29f78bd441",
       "routes": [
         {
           "allocation": "910542921916222749",
@@ -11429,7 +11429,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:07e4bdf7bc08e501de1768e38465111c856740ab3fe344928327b4c778b4b369",
+      "planFingerprint": "sha256:9539fbcc68ce5e32b5c38d305770d9dcd517bcbefade97126f47ec29f78bd441",
       "routes": [
         {
           "allocation": "910542921916222749",
@@ -11480,7 +11480,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:a11271d847116be30a2176d0fcfff091778461d7cb928b7009fdaad8f8ea2e88",
+      "planFingerprint": "sha256:8df2f542de8854a722f1149d456cd3806ed826faba748cc8e13e0b11a99cd7f7",
       "routes": [
         {
           "allocation": "56908932619763922",
@@ -11554,7 +11554,7 @@
       "numericalIterations": 2304,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:abece9e4d4daf652d71433f71f6c90e9786fe4bcd5a8bd20b3b7c3f114667900",
+      "planFingerprint": "sha256:18845a2873283f5eb7cda4dec91a39834779c961e5322730f9d68b53cf31cb0d",
       "routes": [
         {
           "allocation": "19580343987765268",
@@ -11621,7 +11621,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:881cbb073e061452b156af119233ae820a6de5f41ca1f91e766fe95ea3fde8e1",
+      "planFingerprint": "sha256:9539fbcc68ce5e32b5c38d305770d9dcd517bcbefade97126f47ec29f78bd441",
       "routes": [
         {
           "allocation": "910542921916222749",
@@ -11672,7 +11672,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:ba7c4d5ec7985002a75355e4de22d56afeff8cb956616916bff1c9b12608d8fb",
+      "planFingerprint": "sha256:ec041cc29d52689290b510e2c47651e9105cc5086c3bef7f1edcdb196abdc69b",
       "routes": [
         {
           "allocation": "14227233154940981",
@@ -11746,7 +11746,7 @@
       "numericalIterations": 4608,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:ce665548d644ca2f8cfb8e997e7fb6407972d68cbb5ecc9aa6cdc71df2c64d9a",
+      "planFingerprint": "sha256:ec041cc29d52689290b510e2c47651e9105cc5086c3bef7f1edcdb196abdc69b",
       "routes": [
         {
           "allocation": "14227233154940981",
@@ -11820,7 +11820,7 @@
       "numericalIterations": 9216,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:3fd9a5d2e8f615be34f8715807aa3780ecdf51aaafd4c4cb8f84c19015fca1e5",
+      "planFingerprint": "sha256:1e040bcd87065ab12e7fa41b0198a7586d9285ef4798df834516030e993ea9d4",
       "routes": [
         {
           "allocation": "903429305338752258",
@@ -11887,7 +11887,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:90276233156139c8d7b73ed3028728aeee6138e91617bdbc3470b3e29fdf4a47",
+      "planFingerprint": "sha256:7a589232a4348852b7b1b2a295a9ea3a6fda41ff80aaa34d5c5b6cc77d488950",
       "routes": [
         {
           "allocation": "494228268",
@@ -11938,7 +11938,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:7bbccd74628aa4e55207870009a07aa6a18146603ffc3fc0da0dad103d8b0030",
+      "planFingerprint": "sha256:ed6ba3924961330cdf1c26fcc673895c8e726650e2a22bd7ac33a4b709179231",
       "routes": [
         {
           "allocation": "432449734",
@@ -12007,7 +12007,7 @@
       "numericalIterations": 880,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:c81708959105a417d8a3c22c3b6409a7d1464c2698414bbaa732086ed8ae7e51",
+      "planFingerprint": "sha256:ed6ba3924961330cdf1c26fcc673895c8e726650e2a22bd7ac33a4b709179231",
       "routes": [
         {
           "allocation": "432449734",
@@ -12069,7 +12069,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:e7c9529bfe1e226ab5f8da7aa7902a95be040b8451a752ecadf0dfc445e357bf",
+      "planFingerprint": "sha256:7a589232a4348852b7b1b2a295a9ea3a6fda41ff80aaa34d5c5b6cc77d488950",
       "routes": [
         {
           "allocation": "494228268",
@@ -12120,7 +12120,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:1a7809eb7ae99ec93ca0895e7dec3ea943389f644b91993c8c6bd16ac6b2c1a3",
+      "planFingerprint": "sha256:ed6ba3924961330cdf1c26fcc673895c8e726650e2a22bd7ac33a4b709179231",
       "routes": [
         {
           "allocation": "432449734",
@@ -12189,7 +12189,7 @@
       "numericalIterations": 3520,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:34339ec95a3737c3e10b213f3dba8b4d354e03ed815d7dd1a925d667cb675eea",
+      "planFingerprint": "sha256:ed6ba3924961330cdf1c26fcc673895c8e726650e2a22bd7ac33a4b709179231",
       "routes": [
         {
           "allocation": "432449734",
@@ -12251,7 +12251,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:c91001a36fc5eafd9b7b5b272f4c86c6922bbf8b1c866ad024281bb637217fa9",
+      "planFingerprint": "sha256:7a589232a4348852b7b1b2a295a9ea3a6fda41ff80aaa34d5c5b6cc77d488950",
       "routes": [
         {
           "allocation": "494228268",
@@ -12302,7 +12302,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:6d4ef36c5c616e7c08f6af880e0e4bc2c0abee8b4b7c5cee96ede9c831aded2c",
+      "planFingerprint": "sha256:19560be54ba012bbb4abe5657862839245b3f03f13d61a7abbc0b202d3a64f1f",
       "routes": [
         {
           "allocation": "440172050",
@@ -12371,7 +12371,7 @@
       "numericalIterations": 7040,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:cfe07b0d290768f254106a3b545783fd355c4f1b2b63a30e991bc76bf4b1398a",
+      "planFingerprint": "sha256:19560be54ba012bbb4abe5657862839245b3f03f13d61a7abbc0b202d3a64f1f",
       "routes": [
         {
           "allocation": "440172050",
@@ -12440,7 +12440,7 @@
       "numericalIterations": 14080,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:8246ebe05c055716afe88d588c6095683a7695fedb2445947deae10a143b682e",
+      "planFingerprint": "sha256:893db9aaa626c8e670e301d6f5bcc41ef2276ccc685ab6974cfcab03d37a3835",
       "routes": [
         {
           "allocation": "444033201",
@@ -12502,7 +12502,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:fb3397f1d81d75c4808d2d066b3124191e9ef9b552fb107cac9adc5ee9ca39b3",
+      "planFingerprint": "sha256:bdfb9056ecdb75f401ecdb3df4616702c8ff587b15496b90b33fd152a0f360fc",
       "routes": [
         {
           "allocation": "75619326628",
@@ -12553,7 +12553,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:a12bbd878d90b5910cfc39c235832a86243f80784a578577a1e8880430a043db",
+      "planFingerprint": "sha256:bdfb9056ecdb75f401ecdb3df4616702c8ff587b15496b90b33fd152a0f360fc",
       "routes": [
         {
           "allocation": "75619326628",
@@ -12611,7 +12611,7 @@
       "numericalIterations": 240,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:5ce1371c18a47cbc9ecb7a69f78df9c58f0fd2c4cc7aa9ccbffe7502b5789758",
+      "planFingerprint": "sha256:a2259595c146e11bc94a8f60c4ae49efec69bcdc736916ef9bcc0df745830f00",
       "routes": [
         {
           "allocation": "75607211104",
@@ -12678,7 +12678,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:096af354a123345c110d2da3bad4f5e18997c92f99739803d96507a11e5088e3",
+      "planFingerprint": "sha256:bdfb9056ecdb75f401ecdb3df4616702c8ff587b15496b90b33fd152a0f360fc",
       "routes": [
         {
           "allocation": "75619326628",
@@ -12729,7 +12729,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:454e0b1638dda518c45583dc37d1a4b1482b860d69fe9e4b2ce4ca0300d27af7",
+      "planFingerprint": "sha256:bdfb9056ecdb75f401ecdb3df4616702c8ff587b15496b90b33fd152a0f360fc",
       "routes": [
         {
           "allocation": "75619326628",
@@ -12787,7 +12787,7 @@
       "numericalIterations": 960,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:0967b12e5afabd2ef1a7402a66b5eb0ab30ede9199e43e22a7cf6ee541ba66f5",
+      "planFingerprint": "sha256:df000beb70f2e93e1484abb4bfeb56d83120b8dad5e797ee5cb1a966b5fa8907",
       "routes": [
         {
           "allocation": "73986064304",
@@ -12849,7 +12849,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:b10006d75c85438fe7ef83fda2368c743e5f4612e4386e75647453fc4b493e70",
+      "planFingerprint": "sha256:bdfb9056ecdb75f401ecdb3df4616702c8ff587b15496b90b33fd152a0f360fc",
       "routes": [
         {
           "allocation": "75619326628",
@@ -12900,7 +12900,7 @@
       "numericalIterations": 0,
       "numericalConverged": null,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:2ac53fb2d69997d1fa1d38cf99e834ecef70b57fb6c268be5d82d56e8427af0f",
+      "planFingerprint": "sha256:f09b2144ca3b76371521872d82f828a653025aa3696d946c76866ddfcc54497e",
       "routes": [
         {
           "allocation": "74437774649",
@@ -12969,7 +12969,7 @@
       "numericalIterations": 1920,
       "numericalConverged": true,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:06cc56dd5b2f5fa4da4c2f026770e4491b74b238023b321cf5accc6bbd91b8f7",
+      "planFingerprint": "sha256:18617ac13d74ec92fd5dfc47101f6ee177e35584ae0c56d8beda2b8339131725",
       "routes": [
         {
           "allocation": "73986064307",
@@ -13038,7 +13038,7 @@
       "numericalIterations": 3840,
       "numericalConverged": false,
       "authorizationRejections": 0,
-      "semanticFingerprint": "sha256:5a7b67852622bc682be5b778b8380c323098b493a8eb3a68fe64d5bb77c6cc50",
+      "planFingerprint": "sha256:18617ac13d74ec92fd5dfc47101f6ee177e35584ae0c56d8beda2b8339131725",
       "routes": [
         {
           "allocation": "73986064307",
@@ -13220,12 +13220,12 @@
       "samples": 100,
       "successful": 96,
       "expectedNoRoute": 4,
-      "p50Micros": 65,
-      "p95Micros": 279,
-      "p99Micros": 490,
-      "minMicros": 22,
-      "maxMicros": 1650,
-      "throughputPerSecond": 7539.456
+      "p50Micros": 16,
+      "p95Micros": 66,
+      "p99Micros": 76,
+      "minMicros": 6,
+      "maxMicros": 92,
+      "throughputPerSecond": 35133.787
     },
     {
       "strategy": "greedy-split",
@@ -13234,12 +13234,12 @@
       "samples": 100,
       "successful": 96,
       "expectedNoRoute": 4,
-      "p50Micros": 274,
-      "p95Micros": 14703,
-      "p99Micros": 21522,
-      "minMicros": 19,
-      "maxMicros": 22387,
-      "throughputPerSecond": 388.763
+      "p50Micros": 66,
+      "p95Micros": 3291,
+      "p99Micros": 3580,
+      "minMicros": 5,
+      "maxMicros": 3587,
+      "throughputPerSecond": 1845.951
     },
     {
       "strategy": "numerical-split",
@@ -13248,12 +13248,12 @@
       "samples": 100,
       "successful": 96,
       "expectedNoRoute": 4,
-      "p50Micros": 529,
-      "p95Micros": 25586,
-      "p99Micros": 30007,
-      "minMicros": 25,
-      "maxMicros": 31471,
-      "throughputPerSecond": 235.533
+      "p50Micros": 87,
+      "p95Micros": 6150,
+      "p99Micros": 6520,
+      "minMicros": 5,
+      "maxMicros": 6546,
+      "throughputPerSecond": 1045.192
     }
   ]
 }

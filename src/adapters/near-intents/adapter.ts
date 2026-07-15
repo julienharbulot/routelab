@@ -221,7 +221,7 @@ export function quoteNearIntentsExactInput(
       valid_for_ms: validity as number,
       snapshot_id: result.value.snapshotId,
       snapshot_checksum: result.value.snapshotChecksum,
-      routelab_semantic_fingerprint: result.value.semanticFingerprint,
+      routelab_plan_fingerprint: result.value.planFingerprint,
       selected_strategy: result.value.requestedStrategy,
       effort: result.value.effort,
       termination: result.value.termination,

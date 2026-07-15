@@ -4,6 +4,7 @@ import {
   formatQuote,
   prepareSnapshot,
   quote,
+  type AssetDisplayMetadata,
   type QuoteRequest,
   type RoutingContext,
   type ValidatedQuote,
@@ -36,15 +37,21 @@ function exactQuote(prepared: RoutingContext, request: QuoteRequest): ValidatedQ
   return result.value;
 }
 
-function render(title: string, value: ValidatedQuote, bestSingle: bigint): string {
+function render(
+  title: string,
+  value: ValidatedQuote,
+  bestSingle: bigint,
+  assetMetadata?: Readonly<Record<string, AssetDisplayMetadata>>,
+): string {
   return [
     title,
     '-'.repeat(title.length),
-    formatQuote(value),
-    `best single: ${bestSingle.toString(10)}`,
-    `exact improvement: ${(value.amountOut - bestSingle).toString(10)}`,
+    formatQuote(value, {
+      bestSingleAmountOut: bestSingle,
+      ...(assetMetadata === undefined ? {} : { assetMetadata }),
+    }),
     'authorization: fresh exact bigint replay passed',
-    `fingerprint: ${value.semanticFingerprint}`,
+    `plan fingerprint: ${value.planFingerprint}`,
   ].join('\n');
 }
 
@@ -65,6 +72,20 @@ const historicalRaw = JSON.parse(await readFile(
   'datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/snapshot.json',
   'utf8',
 )) as unknown;
+const historicalManifest = JSON.parse(await readFile(
+  'datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/manifest.json',
+  'utf8',
+)) as { readonly selectedTokens: readonly {
+  readonly address: string;
+  readonly symbol: string;
+  readonly decimals: number;
+}[] };
+const historicalMetadata = Object.freeze(Object.fromEntries(
+  historicalManifest.selectedTokens.map(({ address, symbol, decimals }) => [
+    address,
+    Object.freeze({ symbol, decimals }),
+  ]),
+));
 const historicalContext = context(historicalRaw);
 const historicalRequest = {
   snapshotId: historicalContext.snapshotId,
@@ -79,5 +100,10 @@ const historicalSingle = quote(historicalContext, historicalRequest, { strategy:
 if (!historicalSingle.ok) throw new Error('Historical best-single quote failed.');
 
 process.stdout.write(`${render('Small split fixture', small, smallSingle.value.amountOut)}\n\n`);
-process.stdout.write(`${render('Retained historical snapshot', historical, historicalSingle.value.amountOut)}\n`);
+process.stdout.write(`${render(
+  'Retained historical snapshot',
+  historical,
+  historicalSingle.value.amountOut,
+  historicalMetadata,
+)}\n`);
 process.stdout.write('\nLimits: immutable offline snapshots; no transaction submission, signing, custody, or settlement.\n');

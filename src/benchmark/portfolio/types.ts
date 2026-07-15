@@ -47,7 +47,7 @@ export interface ExactBenchmarkQuote {
   readonly numericalIterations: number;
   readonly numericalConverged: boolean | null;
   readonly authorizationRejections: number;
-  readonly semanticFingerprint: string;
+  readonly planFingerprint: string;
 }
 
 export type ExactBenchmarkOutcome =
@@ -71,7 +71,7 @@ export interface QualityRow {
   readonly numericalIterations: number;
   readonly numericalConverged: boolean | null;
   readonly authorizationRejections: number;
-  readonly semanticFingerprint: string | null;
+  readonly planFingerprint: string | null;
   readonly routes: readonly SerializedBenchmarkRoute[];
 }
 

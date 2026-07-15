@@ -122,7 +122,7 @@ export async function verifyPortfolioBenchmark(root = process.cwd()): Promise<re
   }
   const regenerated = runQuality(cases);
   if (!same(report.quality, regenerated)) {
-    issues.push('Deterministic quality rows or semantic fingerprints changed.');
+    issues.push('Deterministic quality rows or plan fingerprints changed.');
   }
   for (const expected of LATENCY_COMBINATIONS) {
     const row = report.latency.find((value) =>

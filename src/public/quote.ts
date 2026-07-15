@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto';
-
 import type { ExactInputSplitReplayReceipt } from '../replay/exact-input-split/index.ts';
 import {
   routeExactInputSplitAnytime,
@@ -19,6 +17,7 @@ import {
 } from '../runtime/prepared-routing-context/index.ts';
 import { parseLiquiditySnapshot } from '../domain/index.ts';
 import { effortProfile } from './effort-profiles.ts';
+import { computePlanFingerprint } from './plan-fingerprint.ts';
 import type {
   PrepareSnapshotResult,
   QuoteDiagnostics,
@@ -302,7 +301,17 @@ function diagnostics(
   numerical: readonly NumericalExactInputSplitDiagnostic[],
   strategy: QuoteStrategy,
 ): QuoteDiagnostics {
+  const numericalOutcome = strategy !== 'numerical-split' || numerical.length === 0
+    ? 'not-applicable' as const
+    : numerical.some(({ status }) => status === 'improved')
+      ? 'improved' as const
+      : numerical.some(({ status }) => status === 'not-better')
+        ? 'not-better' as const
+        : numerical.some(({ status }) => status === 'failed')
+          ? 'failed' as const
+          : 'stopped' as const;
   return Object.freeze({
+    work: work(counters),
     pathExpansions: counters.pathExpansions,
     candidateSetExpansions: counters.candidateSetExpansions,
     numericalProposals: numericCounter(counters, 'numericalProposals'),
@@ -311,6 +320,7 @@ function diagnostics(
       ? numerical.length > 0 && numerical.every(({ converged }) => converged)
       : null,
     numericalFailures: numerical.filter(({ status }) => status === 'failed').length,
+    numericalOutcome,
     authorizationRejections:
       counters.finalAuthorizationRejections +
       numericCounter(counters, 'numericalAuthorizationReplayRejections'),
@@ -326,36 +336,6 @@ function termination(value: string): QuoteTermination {
     return value;
   }
   return 'interrupted';
-}
-
-function fingerprint(value: Omit<ValidatedQuote, 'semanticFingerprint' | 'timing' | 'diagnostics'>): string {
-  const semantic = {
-    schemaVersion: 'routelab.quote-semantic.v1',
-    snapshotId: value.snapshotId,
-    snapshotChecksum: value.snapshotChecksum,
-    assetIn: value.assetIn,
-    assetOut: value.assetOut,
-    amountIn: value.amountIn.toString(10),
-    amountOut: value.amountOut.toString(10),
-    routes: value.routes.map((route) => ({
-      allocation: route.allocation.toString(10),
-      amountOut: route.amountOut.toString(10),
-      hops: route.hops.map((hop) => ({
-        poolId: hop.poolId,
-        assetIn: hop.assetIn,
-        assetOut: hop.assetOut,
-        amountIn: hop.amountIn.toString(10),
-        amountOut: hop.amountOut.toString(10),
-      })),
-    })),
-    requestedStrategy: value.requestedStrategy,
-    effort: value.effort,
-    planKind: value.planKind,
-    fallbackUsed: value.fallbackUsed,
-    termination: value.termination,
-    work: value.work,
-  };
-  return `sha256:${createHash('sha256').update(JSON.stringify(semantic), 'utf8').digest('hex')}`;
 }
 
 export function quote(
@@ -392,7 +372,8 @@ export function quote(
     ? result.plan.search.numericalDiagnostics
     : Object.freeze([]);
   const selectedRoutes = routes(authorized);
-  const semantic = Object.freeze({
+  const selectedNumericalImprovement = numerical.some(({ status }) => status === 'improved');
+  const execution = Object.freeze({
     snapshotId: authorized.snapshotId,
     snapshotChecksum: authorized.snapshotChecksum,
     assetIn: authorized.assetIn,
@@ -403,15 +384,14 @@ export function quote(
     requestedStrategy: capturedOptions.strategy,
     effort: capturedOptions.effort,
     planKind: selectedRoutes.length === 1 ? 'single' as const : 'split' as const,
-    fallbackUsed:
-      capturedOptions.strategy === 'numerical-split' &&
-      !numerical.some(({ status }) => status === 'improved'),
+    ...(capturedOptions.strategy === 'numerical-split'
+      ? { numericalImprovementSelected: selectedNumericalImprovement }
+      : {}),
     termination: termination(result.plan.search.termination),
-    work: work(result.plan.search.counters),
   });
   const value: ValidatedQuote = {
-    ...semantic,
-    semanticFingerprint: fingerprint(semantic),
+    ...execution,
+    planFingerprint: computePlanFingerprint(execution),
     timing: Object.freeze({
       elapsedMicros: Number((process.hrtime.bigint() - started) / 1_000n),
     }),

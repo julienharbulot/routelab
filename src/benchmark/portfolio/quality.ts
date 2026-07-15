@@ -43,12 +43,12 @@ function fromPublicQuote(value: ValidatedQuote): ExactBenchmarkQuote {
       }))),
     }))),
     termination: value.termination,
-    work: value.work,
+    work: value.diagnostics?.work ?? Object.freeze({}),
     numericalProposals: value.diagnostics?.numericalProposals ?? 0,
     numericalIterations: value.diagnostics?.numericalIterations ?? 0,
     numericalConverged: value.diagnostics?.numericalConverged ?? null,
     authorizationRejections: value.diagnostics?.authorizationRejections ?? 0,
-    semanticFingerprint: value.semanticFingerprint,
+    planFingerprint: value.planFingerprint,
   });
 }
 
@@ -91,7 +91,7 @@ function row(
       numericalIterations: 0,
       numericalConverged: null,
       authorizationRejections: 0,
-      semanticFingerprint: null,
+      planFingerprint: null,
       routes: Object.freeze([]),
     });
   }
@@ -114,7 +114,7 @@ function row(
     numericalIterations: value.numericalIterations,
     numericalConverged: value.numericalConverged,
     authorizationRejections: value.authorizationRejections,
-    semanticFingerprint: value.semanticFingerprint,
+    planFingerprint: value.planFingerprint,
     routes: routes(value),
   });
 }

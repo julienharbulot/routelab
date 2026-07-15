@@ -1,5 +1,4 @@
-import { createHash } from 'node:crypto';
-
+import { computePlanFingerprint } from '../../public/plan-fingerprint.ts';
 import {
   routeExactInputSplitNumericalAnytime,
   type NumericalExactInputSplitWorkCounters,
@@ -8,35 +7,8 @@ import { replayPreparedExactInputSplit } from '../../runtime/prepared-routing-co
 import { REFERENCE_PROFILE } from './config.ts';
 import type {
   ExactBenchmarkOutcome,
-  ExactBenchmarkQuote,
   PortfolioCase,
 } from './types.ts';
-
-function fingerprint(
-  input: PortfolioCase,
-  value: Omit<ExactBenchmarkQuote, 'semanticFingerprint'>,
-): string {
-  const semantic = {
-    schemaVersion: 'routelab.benchmark-reference-semantic.v1',
-    caseId: input.caseId,
-    snapshotId: input.snapshot.snapshotId,
-    snapshotChecksum: input.snapshot.snapshotChecksum,
-    assetIn: input.request.assetIn,
-    assetOut: input.request.assetOut,
-    amountIn: input.request.amountIn.toString(10),
-    amountOut: value.amountOut.toString(10),
-    routes: value.routes.map((route) => ({
-      allocation: route.allocation.toString(10),
-      amountOut: route.amountOut.toString(10),
-      hops: route.hops,
-    })),
-    strategy: 'numerical-reference',
-    profile: REFERENCE_PROFILE,
-    termination: value.termination,
-    work: value.work,
-  };
-  return `sha256:${createHash('sha256').update(JSON.stringify(semantic), 'utf8').digest('hex')}`;
-}
 
 function counter(counters: NumericalExactInputSplitWorkCounters, field: string): number {
   const value = (counters as unknown as Record<string, unknown>)[field];
@@ -80,12 +52,23 @@ export function runReference(input: PortfolioCase): ExactBenchmarkOutcome {
   }
   const counters = result.plan.search.counters;
   const diagnostics = result.plan.search.numericalDiagnostics;
+  const planRoutes = Object.freeze(authorization.value.legs.map((leg) => Object.freeze({
+    allocation: leg.allocation,
+    amountOut: leg.receipt.amountOut,
+    hops: Object.freeze(leg.receipt.hops.map((hop) => Object.freeze({
+      poolId: hop.poolId,
+      assetIn: hop.assetIn,
+      assetOut: hop.assetOut,
+      amountIn: hop.amountIn,
+      amountOut: hop.amountOut,
+    }))),
+  })));
   const semantic = Object.freeze({
     amountOut: authorization.value.amountOut,
-    routes: Object.freeze(authorization.value.legs.map((leg) => Object.freeze({
-      allocation: leg.allocation,
-      amountOut: leg.receipt.amountOut,
-      hops: Object.freeze(leg.receipt.hops.map(({ poolId, assetIn, assetOut }) => Object.freeze({
+    routes: Object.freeze(planRoutes.map((route) => Object.freeze({
+      allocation: route.allocation,
+      amountOut: route.amountOut,
+      hops: Object.freeze(route.hops.map(({ poolId, assetIn, assetOut }) => Object.freeze({
         poolId,
         assetIn,
         assetOut,
@@ -102,6 +85,17 @@ export function runReference(input: PortfolioCase): ExactBenchmarkOutcome {
   });
   return Object.freeze({
     outcome: 'quote',
-    value: Object.freeze({ ...semantic, semanticFingerprint: fingerprint(input, semantic) }),
+    value: Object.freeze({
+      ...semantic,
+      planFingerprint: computePlanFingerprint({
+        snapshotId: input.snapshot.snapshotId,
+        snapshotChecksum: input.snapshot.snapshotChecksum,
+        assetIn: input.request.assetIn,
+        assetOut: input.request.assetOut,
+        amountIn: input.request.amountIn,
+        amountOut: authorization.value.amountOut,
+        routes: planRoutes,
+      }),
+    }),
   });
 }

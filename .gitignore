@@ -11,10 +11,9 @@ reports/raw/
 reports/tmp/
 .benchmarks/
 
-# Local agent/tool state
+# Local development-tool state
 .routelab-private/
 .serena/
-AGENTS.override.md
 
 # Local secrets and environment
 .env

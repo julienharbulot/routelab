@@ -22,9 +22,20 @@ export interface QuoteRequest {
 export interface QuoteOptions {
   readonly strategy?: QuoteStrategy;
   readonly effort?: QuoteEffort;
-  /** Relative CPU budget from quote invocation, in whole milliseconds. */
+  /** Relative monotonic wall-clock stop budget from quote invocation, in whole milliseconds. */
   readonly deadlineMs?: number;
   readonly includeDiagnostics?: boolean;
+}
+
+export interface AssetDisplayMetadata {
+  readonly symbol: string;
+  readonly decimals: number;
+}
+
+export interface FormatQuoteOptions {
+  readonly assetMetadata?: Readonly<Record<string, AssetDisplayMetadata>>;
+  readonly bestSingleAmountOut?: bigint;
+  readonly raw?: boolean;
 }
 
 export interface QuoteHop {
@@ -42,12 +53,14 @@ export interface QuoteRoute {
 }
 
 export interface QuoteDiagnostics {
+  readonly work: Readonly<Record<string, number>>;
   readonly pathExpansions: number;
   readonly candidateSetExpansions: number;
   readonly numericalProposals: number;
   readonly numericalIterations: number;
   readonly numericalConverged: boolean | null;
   readonly numericalFailures: number;
+  readonly numericalOutcome: 'improved' | 'not-better' | 'failed' | 'stopped' | 'not-applicable';
   readonly authorizationRejections: number;
 }
 
@@ -62,10 +75,9 @@ export interface ValidatedQuote {
   readonly requestedStrategy: QuoteStrategy;
   readonly effort: QuoteEffort;
   readonly planKind: 'single' | 'split';
-  readonly fallbackUsed: boolean;
+  readonly numericalImprovementSelected?: boolean;
   readonly termination: QuoteTermination;
-  readonly work: Readonly<Record<string, number>>;
-  readonly semanticFingerprint: string;
+  readonly planFingerprint: string;
   readonly timing: {
     readonly elapsedMicros: number;
   };
@@ -133,10 +145,9 @@ export interface SerializedQuote {
   readonly requestedStrategy: QuoteStrategy;
   readonly effort: QuoteEffort;
   readonly planKind: 'single' | 'split';
-  readonly fallbackUsed: boolean;
+  readonly numericalImprovementSelected?: boolean;
   readonly termination: QuoteTermination;
-  readonly work: Readonly<Record<string, number>>;
-  readonly semanticFingerprint: string;
+  readonly planFingerprint: string;
   readonly timing: { readonly elapsedMicros: number };
   readonly diagnostics?: QuoteDiagnostics;
 }

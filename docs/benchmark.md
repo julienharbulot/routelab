@@ -81,7 +81,7 @@ For each case, strategy, and profile record:
 - numerical iteration count;
 - convergence status;
 - exact authorization rejection count;
-- semantic fingerprint.
+- plan fingerprint.
 
 Use integer or rational calculations for regret where practical. Do not route exact amounts through `number`.
 
@@ -185,7 +185,7 @@ The Markdown report starts with:
 - exact amounts are canonical decimal strings;
 - allocations sum to exact input;
 - success quotes replay exactly;
-- semantic fingerprints are stable;
+- plan fingerprints match freshly replayed exact plans;
 - aggregate counts reconcile with per-case rows;
 - percentile sample counts are sufficient;
 - committed summary configuration matches the runner configuration;

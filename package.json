@@ -3,6 +3,23 @@
   "version": "0.1.0",
   "description": "Exact-input routing over immutable constant-product liquidity snapshots",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/julienharbulot/routelab.git"
+  },
+  "homepage": "https://github.com/julienharbulot/routelab#readme",
+  "bugs": {
+    "url": "https://github.com/julienharbulot/routelab/issues"
+  },
+  "keywords": [
+    "typescript",
+    "defi",
+    "liquidity-routing",
+    "bigint",
+    "benchmarking",
+    "near-intents"
+  ],
+  "sideEffects": false,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,6 +36,7 @@
   "files": [
     "dist",
     "README.md",
+    "DATA_NOTICE.md",
     "LICENSE"
   ],
   "packageManager": "pnpm@11.12.0",
@@ -28,8 +46,9 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "tsc -p tsconfig.build.json",
-    "lint": "eslint src cli tests",
+    "build": "node scripts/clean-dist.ts && tsc -p tsconfig.build.json",
+    "prepack": "pnpm build",
+    "lint": "eslint src cli scripts tests",
     "test": "node --test \"tests/**/*.test.ts\"",
     "test:pool": "node --test tests/constant-product.test.ts",
     "verify:historical-data": "node cli/verify-historical-dataset.ts",
@@ -47,6 +66,7 @@
     "load": "node cli/load.ts",
     "load:smoke": "node cli/load.ts --smoke",
     "test:intents": "node --test tests/near-intents-adapter.test.ts",
+    "test:package": "node scripts/test-package.ts",
     "test:core": "node --test tests/constant-product.test.ts tests/route-replay.test.ts tests/exact-input-split-replay.test.ts tests/simple-paths.test.ts tests/pool-disjoint-route-sets.test.ts tests/path-shadow-price-allocation.test.ts tests/anytime-exact-input-split-router.test.ts tests/numerical-exact-input-split-router.test.ts tests/public-facade.test.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm verify:historical-data && pnpm verify:synthetic-requests && pnpm demo"
   },

@@ -26,7 +26,7 @@ export interface NearIntentsUnsignedQuoteCandidate {
   readonly valid_for_ms: number;
   readonly snapshot_id: string;
   readonly snapshot_checksum: string;
-  readonly routelab_semantic_fingerprint: string;
+  readonly routelab_plan_fingerprint: string;
   readonly selected_strategy: QuoteStrategy;
   readonly effort: QuoteEffort;
   readonly termination: string;

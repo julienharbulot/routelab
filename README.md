@@ -45,9 +45,9 @@ if (!result.ok) throw new Error(result.error.code);
 console.log(formatQuote(result.value));
 ```
 
-Strategies are `best-single`, `greedy-split`, and `numerical-split`. Effort profiles are `fast`, `balanced`, and `thorough`. The default is balanced greedy split; raw iteration and replay caps are deliberately internal.
+Strategies are `best-single`, `greedy-split`, and `numerical-split`. Effort profiles are `fast`, `balanced`, and `thorough`. The default is balanced greedy split; raw iteration and replay caps are deliberately internal. `deadlineMs` is a relative monotonic wall-clock stop budget, not a CPU-time budget.
 
-`serializeQuote()` converts every exact value to a canonical decimal string. The semantic fingerprint includes the deterministic plan, strategy, profile, termination, and work counters, but excludes elapsed time.
+`serializeQuote()` converts every exact value to a canonical decimal string. `planFingerprint` identifies only the snapshot-bound request and exact executable plan, so strategy, effort, termination, timing, and work counters cannot change it. Raw work counters and numerical outcome details are available only with `includeDiagnostics: true`.
 
 ## Quote CLI
 
@@ -56,14 +56,16 @@ This documented offline command quotes one WETH input into USDC on the retained 
 ```bash
 pnpm quote -- \
   --snapshot datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/snapshot.json \
-  --asset-in 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2 \
-  --asset-out 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 \
+  --asset-in WETH \
+  --asset-out USDC \
   --amount-in 1000000000000000000 \
   --strategy greedy-split \
-  --effort balanced
+  --effort balanced \
+  --max-hops 3 \
+  --max-routes 3
 ```
 
-Add `--json` for decimal-string JSON. Run `pnpm quote -- --help` for all options. The readable output shows allocations, route hops, exact output, best-single improvement, fallback/termination, elapsed time, exact validation, and the semantic fingerprint.
+The CLI loads symbols and decimals from a dataset manifest beside the snapshot. Run `pnpm quote -- --snapshot <path> --list-assets` to discover aliases, add `--raw` for full identifiers/base units, or add `--json` for canonical decimal-string JSON. Readable output shows exact token units, allocation and improvement percentages, abbreviated routes, termination, elapsed time, exact validation, and the plan fingerprint.
 
 ## Local quote service
 
@@ -79,7 +81,7 @@ internal work caps. Run `pnpm serve:smoke`, `pnpm test:api`, or `pnpm load:smoke
 ## Benchmark evidence
 
 `pnpm benchmark` regenerates deterministic quality and 100-sample in-process latency evidence;
-`pnpm benchmark:verify` independently replays every reported success. `pnpm load --
+`pnpm benchmark:verify` freshly replays every reported success. `pnpm load --
 --concurrency 1,4,16` measures the actual same-thread HTTP service. Raw observations are ignored.
 
 See the concise [portfolio report](reports/portfolio-v1.md), [load report](reports/load-v1.md),
@@ -107,6 +109,7 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
+pnpm test:package
 pnpm verify:historical-data
 pnpm verify:synthetic-requests
 pnpm benchmark:verify
@@ -115,7 +118,7 @@ pnpm load:smoke
 pnpm pack --dry-run
 ```
 
-The package archive allowlist contains only `dist/`, this README, the MIT license, and package metadata.
+The package consumer check packs a tarball, installs it into a clean temporary ESM project, imports the root and NEAR subpath, and executes one exact quote. The archive allowlist contains `dist/`, this README, the code license, the data notice, and package metadata; source/declaration maps are omitted so consumers receive no broken source references.
 
 ## Scope and limitations
 
@@ -124,10 +127,10 @@ The package archive allowlist contains only `dist/`, this README, the MIT licens
 - The retained dataset is one 54-pool allowlist snapshot at Ethereum block 19,000,000. Its synthetic request corpus is not historical or representative demand.
 - The project uses snapshots and localhost only; it does not submit transactions, sign messages, hold funds, connect to a relay, or settle trades.
 - The HTTP service is synchronous and same-thread. The retained concurrency report shows event-loop queueing; worker isolation is not included.
-- Timing is observational and excluded from semantic fingerprints; no production-latency claim is made.
+- Timing is observational and excluded from plan fingerprints; no production-latency claim is made.
 
-See [architecture](docs/architecture.md), [benchmark design](docs/benchmark.md), [accepted invariants](docs/invariants.md), and [current status](STATUS.md).
+See [architecture](docs/architecture.md), [benchmark design](docs/benchmark.md), [accepted invariants](docs/invariants.md), [roadmap](docs/roadmap.md), and [current status](STATUS.md).
 
 ## License
 
-MIT.
+Project code is MIT licensed. Curated historical facts and referenced provider/source material have a separate [data notice](DATA_NOTICE.md); dataset manifests grant no license.

@@ -32,5 +32,8 @@ jobs:
       - name: Run repository checks
         run: pnpm check
 
+      - name: Test packed package consumer
+        run: pnpm test:package
+
       - name: Run benchmark smoke and verify committed evidence
         run: pnpm benchmark:smoke && pnpm benchmark:verify

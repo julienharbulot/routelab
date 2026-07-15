@@ -28,13 +28,19 @@ export function serializeQuote(value: ValidatedQuote): SerializedQuote {
     requestedStrategy: value.requestedStrategy,
     effort: value.effort,
     planKind: value.planKind,
-    fallbackUsed: value.fallbackUsed,
+    ...(value.numericalImprovementSelected === undefined
+      ? {}
+      : { numericalImprovementSelected: value.numericalImprovementSelected }),
     termination: value.termination,
-    work: Object.freeze({ ...value.work }),
-    semanticFingerprint: value.semanticFingerprint,
+    planFingerprint: value.planFingerprint,
     timing: Object.freeze({ ...value.timing }),
     ...(value.diagnostics === undefined
       ? {}
-      : { diagnostics: Object.freeze({ ...value.diagnostics }) }),
+      : {
+          diagnostics: Object.freeze({
+            ...value.diagnostics,
+            work: Object.freeze({ ...value.diagnostics.work }),
+          }),
+        }),
   });
 }

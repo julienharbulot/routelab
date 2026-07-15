@@ -103,7 +103,8 @@ void test('successful quote returns exact strings, routes, timing, fingerprint, 
     assert.equal(body['requestedStrategy'], 'greedy-split');
     assert.equal(body['effort'], 'balanced');
     assert.equal(Array.isArray(body['routes']), true);
-    assert.equal(typeof body['semanticFingerprint'], 'string');
+    assert.equal(typeof body['planFingerprint'], 'string');
+    assert.equal(Object.hasOwn(body, 'work'), false);
     assert.equal(typeof body['timing'], 'object');
     assert.equal(Object.hasOwn(body, 'diagnostics'), false);
     const log = JSON.parse(logs[0] ?? '{}') as { readonly status?: unknown };

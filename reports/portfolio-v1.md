@@ -21,9 +21,9 @@ On this retained 24-case set, every published success passed fresh exact replay.
 
 | Strategy | Profile | Samples | p50 µs | p95 µs | p99 µs | calls/s |
 |---|---:|---:|---:|---:|---:|---:|
-| best-single | fast | 100 | 65 | 279 | 490 | 7539.5 |
-| greedy-split | fast | 100 | 274 | 14703 | 21522 | 388.8 |
-| numerical-split | fast | 100 | 529 | 25586 | 30007 | 235.5 |
+| best-single | fast | 100 | 16 | 66 | 76 | 35133.8 |
+| greedy-split | fast | 100 | 66 | 3291 | 3580 | 1846.0 |
+| numerical-split | fast | 100 | 87 | 6150 | 6520 | 1045.2 |
 
 ## HTTP load
 
@@ -46,4 +46,4 @@ On this retained 24-case set, every published success passed fresh exact replay.
 
 Quality covers 24 named cases and uses deterministic work caps only. Exact values remain decimal strings in the JSON report. Latency uses process.hrtime.bigint(), 10 warmups, and 100 measured calls per reported combination while rotating cases. Raw observations are ignored by Git.
 
-Environment: v24.18.0; linux/x64; 13th Gen Intel(R) Core(TM) i9-13900H; revision 80d6eee; observed 2026-07-15T11:37:35.850Z.
+Environment: v24.18.0; linux/x64; 13th Gen Intel(R) Core(TM) i9-13900H; revision 8ea395a; observed 2026-07-15T23:12:15.197Z.

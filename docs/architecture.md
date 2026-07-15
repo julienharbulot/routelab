@@ -93,6 +93,7 @@ export type QuoteEffort = 'fast' | 'balanced' | 'thorough';
 export interface QuoteOptions {
   readonly strategy?: QuoteStrategy;
   readonly effort?: QuoteEffort;
+  // Relative monotonic wall-clock stop budget, not CPU time.
   readonly deadlineMs?: number;
   readonly includeDiagnostics?: boolean;
 }
@@ -113,18 +114,21 @@ export interface ValidatedQuote {
     }[];
   }[];
   readonly requestedStrategy: QuoteStrategy;
+  readonly effort: QuoteEffort;
   readonly planKind: 'single' | 'split';
+  readonly numericalImprovementSelected?: boolean;
   readonly termination: 'complete' | 'work-limit' | 'deadline' | 'interrupted';
-  readonly work: Readonly<Record<string, number>>;
-  readonly semanticFingerprint: string;
-  readonly timing?: {
+  readonly planFingerprint: string;
+  readonly timing: {
     readonly elapsedMicros: number;
   };
   readonly diagnostics?: {
+    readonly work: Readonly<Record<string, number>>;
     readonly pathExpansions: number;
     readonly candidateSetExpansions: number;
     readonly numericalIterations: number;
     readonly numericalConverged: boolean | null;
+    readonly numericalOutcome: 'improved' | 'not-better' | 'failed' | 'stopped' | 'not-applicable';
     readonly authorizationRejections: number;
   };
 }
@@ -168,19 +172,20 @@ thorough   larger offline or explicit user budget
 
 The benchmark records the exact underlying caps. Do not tune a profile to individual benchmark cases.
 
-A caller may optionally provide `deadlineMs`. The deadline is a stop boundary; deterministic work profiles remain the basis of semantic comparison.
+A caller may optionally provide `deadlineMs`. It is measured from quote invocation using a monotonic clock and includes elapsed wall-clock time; it is not a CPU-time allowance. The deadline is a stop boundary, while deterministic work profiles remain the basis of semantic comparison.
 
-## Semantic versus observational fields
+## Plan identity versus execution metadata
 
-Semantic fields:
+`planFingerprint` hashes only:
 
 - snapshot ID/checksum;
 - request;
 - routes and allocations;
-- exact output;
-- strategy;
-- termination;
-- deterministic work counters.
+- exact hop and final outputs.
+
+The same exact executable plan has the same fingerprint even when it is found by a different strategy or effort profile. Strategy, effort, termination, numerical selection, and timing remain useful execution metadata but are not plan identity.
+
+Raw deterministic work counters and detailed numerical outcome are opt-in diagnostics. This keeps internal counter names out of the always-present result contract.
 
 Observational fields:
 
@@ -190,7 +195,7 @@ Observational fields:
 - event-loop delay;
 - memory.
 
-The semantic fingerprint excludes observational fields.
+Neither observational fields nor diagnostics affect the plan fingerprint.
 
 ## Service boundary
 

@@ -14,10 +14,11 @@ void test('demo prints deterministic small-split and historical exact quotes', (
   assert.equal(second.stdout, first.stdout);
   assert.match(first.stdout, /Small split fixture/u);
   assert.match(first.stdout, /A 100 -> B 66/u);
-  assert.match(first.stdout, /route 1: input 50, output 33/u);
-  assert.match(first.stdout, /best single: 50/u);
-  assert.match(first.stdout, /exact improvement: 16/u);
+  assert.match(first.stdout, /route 1: input A 50 \(50\.00%\), output B 33/u);
+  assert.match(first.stdout, /best single: B 50/u);
+  assert.match(first.stdout, /improvement: B 16 \(32\.00%\)/u);
   assert.match(first.stdout, /Retained historical snapshot/u);
+  assert.match(first.stdout, /WETH 1 -> USDC 2556\.965908/u);
   assert.match(first.stdout, /ethereum-mainnet-uniswap-v2-block-19000000-core12-v1/u);
   assert.match(first.stdout, /authorization: fresh exact bigint replay passed/u);
   assert.match(first.stdout, /no transaction submission, signing, custody, or settlement/u);

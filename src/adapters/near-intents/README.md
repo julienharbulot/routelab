@@ -9,7 +9,8 @@ Documentation checked on **2026-07-15**:
 The official quote request supports `defuse_asset_identifier_in`,
 `defuse_asset_identifier_out`, one of `exact_amount_in` or `exact_amount_out`, and
 `min_deadline_ms`. This adapter deliberately accepts only exact input. It treats
-`min_deadline_ms` as candidate-validity metadata, not as a RouteLab CPU deadline.
+`min_deadline_ms` as candidate-validity metadata, not as RouteLab's relative monotonic wall-clock
+stop budget.
 
 The adapter prepares an immutable snapshot through the package facade, maps fictional external
 identifiers through a closed asset map, calls the public `quote()` function, and returns an

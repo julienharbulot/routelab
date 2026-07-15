@@ -1,7 +1,7 @@
 const SHA256 = /^sha256:[0-9a-f]{64}$/u;
 const CANONICAL_PATH = /^(?!\/)(?!.*(?:^|\/)\.\.?(?:\/|$))(?!.*\/\/)[^\\\0]+$/u;
 const REVIEWED_INPUT_BINDING_RECORD =
-  '{"status":"pending"}';
+  '{"status":"reviewed","path":"fixtures/m7c/service-fast-numerical/experiment-inputs.v1.ndjson","bytes":22608083,"sha256":"sha256:a7f79b910dced36e7b65d3e5912763d089f35c071c4880ddacf6e6c67dac66c5"}';
 void REVIEWED_INPUT_BINDING_RECORD;
 
 export const SERVICE_FAST_REVIEWED_INPUT_BINDING_PATH =

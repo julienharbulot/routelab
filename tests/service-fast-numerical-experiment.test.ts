@@ -1834,16 +1834,17 @@ async function createSyntheticClosureRepository(
     bytes: inputBytes.byteLength + (bindingState === 'mismatch' ? 1 : 0),
     sha256: sha256Bytes(inputBytes),
   });
-  if (bindingState !== 'pending') {
-    const bindingSourcePath = path.join(root, SERVICE_FAST_REVIEWED_INPUT_BINDING_PATH);
-    const pendingSource = await readFile(bindingSourcePath, 'utf8');
-    const reviewedSource = pendingSource.replace(
-      '{"status":"pending"}',
-      JSON.stringify(reviewedInputBinding),
-    );
-    assert.notEqual(reviewedSource, pendingSource);
-    await writeFile(bindingSourcePath, reviewedSource);
-  }
+  const bindingSourcePath = path.join(root, SERVICE_FAST_REVIEWED_INPUT_BINDING_PATH);
+  const currentBindingSource = await readFile(bindingSourcePath, 'utf8');
+  const fixtureBinding = bindingState === 'pending'
+    ? Object.freeze({ status: 'pending' as const })
+    : reviewedInputBinding;
+  const fixtureBindingSource = currentBindingSource.replace(
+    /^const REVIEWED_INPUT_BINDING_RECORD =\n {2}'[^'\n]+';$/mu,
+    `const REVIEWED_INPUT_BINDING_RECORD =\n  '${JSON.stringify(fixtureBinding)}';`,
+  );
+  assert.notEqual(fixtureBindingSource, currentBindingSource);
+  await writeFile(bindingSourcePath, fixtureBindingSource);
   for (const requiredFile of config.artifacts.sourceClosure.requiredFiles) {
     if (copyPaths.has(requiredFile) || requiredFile === config.inputConstruction.inputArtifact.path) {
       continue;

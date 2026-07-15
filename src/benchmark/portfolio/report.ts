@@ -1,8 +1,9 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type {
   BenchmarkReport,
+  HttpLoadRow,
   LatencyRow,
   QualityAggregate,
 } from './types.ts';
@@ -37,7 +38,14 @@ function conclusion(report: BenchmarkReport): string {
   return `On this retained ${report.configuration.caseCount}-case set, every published success passed fresh exact replay. ${numerical} The reference is a longer-budget result over the same bounded candidate restrictions, not a global optimum.`;
 }
 
-export function renderMarkdown(report: BenchmarkReport): string {
+function loadTable(values: readonly HttpLoadRow[]): string {
+  if (values.length === 0) return '| Pending PORT-005 measurement | n/a | n/a | n/a | n/a | n/a | n/a |';
+  return values.map((value) =>
+    `| greedy-split/fast | ${value.concurrency} | ${value.requests} | ${(value.p50Micros / 1_000).toFixed(2)} ms | ${(value.p95Micros / 1_000).toFixed(2)} ms | ${value.p99Micros === null ? 'n/a' : `${(value.p99Micros / 1_000).toFixed(2)} ms`} | ${value.throughputPerSecond.toFixed(1)} req/s |`
+  ).join('\n');
+}
+
+export function renderMarkdown(report: BenchmarkReport, load: readonly HttpLoadRow[] = []): string {
   return [
     '# RouteLab portfolio benchmark v1',
     '',
@@ -55,7 +63,7 @@ export function renderMarkdown(report: BenchmarkReport): string {
     '',
     '| Service profile | Concurrency | Requests | p50 | p95 | p99 | Throughput |',
     '|---|---:|---:|---:|---:|---:|---:|',
-    '| Added in PORT-005 | n/a | n/a | n/a | n/a | n/a | n/a |',
+    loadTable(load),
     '',
     '![Quality versus budget](quality-vs-budget.svg)',
     '',
@@ -109,9 +117,18 @@ export function renderSvg(report: BenchmarkReport): string {
 export async function writeReport(report: BenchmarkReport, root = process.cwd()): Promise<void> {
   const directory = path.join(root, 'reports');
   await mkdir(directory, { recursive: true });
+  let load: readonly HttpLoadRow[] = [];
+  try {
+    const summary = JSON.parse(await readFile(path.join(directory, 'load-v1.json'), 'utf8')) as {
+      readonly rows?: readonly HttpLoadRow[];
+    };
+    if (summary.rows !== undefined) load = summary.rows;
+  } catch {
+    // Load evidence is added by PORT-005 and is optional while regenerating PORT-004 alone.
+  }
   await Promise.all([
     writeFile(path.join(directory, 'portfolio-v1.json'), `${JSON.stringify(report, null, 2)}\n`),
-    writeFile(path.join(directory, 'portfolio-v1.md'), renderMarkdown(report)),
+    writeFile(path.join(directory, 'portfolio-v1.md'), renderMarkdown(report, load)),
     writeFile(path.join(directory, 'quality-vs-budget.svg'), renderSvg(report)),
   ]);
 }

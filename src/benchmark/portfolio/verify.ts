@@ -11,7 +11,7 @@ import {
 } from './config.ts';
 import { loadPortfolioCases } from './cases.ts';
 import { aggregateQuality, compareNumerical, runQuality } from './quality.ts';
-import type { BenchmarkReport, PortfolioCase, QualityRow } from './types.ts';
+import type { BenchmarkReport, HttpLoadRow, PortfolioCase, QualityRow } from './types.ts';
 
 const DECIMAL = /^(?:0|[1-9][0-9]*)$/u;
 const SIGNED_DECIMAL = /^(?:0|-?[1-9][0-9]*)$/u;
@@ -152,6 +152,38 @@ export async function verifyPortfolioBenchmark(root = process.cwd()): Promise<re
   for (const file of ['portfolio-v1.json', 'portfolio-v1.md', 'quality-vs-budget.svg']) {
     const fileStat = await stat(path.join(root, 'reports', file));
     if (fileStat.size >= 1_000_000) issues.push(`${file}: committed result exceeds 1 MB.`);
+  }
+  try {
+    const load = JSON.parse(await readFile(path.join(root, 'reports', 'load-v1.json'), 'utf8')) as {
+      readonly configuration?: { readonly requestsPerConcurrency?: number };
+      readonly rows?: readonly HttpLoadRow[];
+    };
+    if (
+      load.configuration?.requestsPerConcurrency === undefined ||
+      load.configuration.requestsPerConcurrency < 100 ||
+      load.rows === undefined ||
+      !same(load.rows.map(({ concurrency }) => concurrency), [1, 4, 16])
+    ) {
+      issues.push('HTTP load configuration mismatch.');
+    } else {
+      for (const row of load.rows) {
+        if (
+          row.requests < 100 ||
+          row.completed + row.failed + row.timedOut !== row.requests ||
+          row.completed < 100 ||
+          row.p99Micros === null ||
+          row.throughputPerSecond <= 0 ||
+          row.eventLoopDelayMaxMicros < 0 ||
+          row.peakRssBytes < row.initialRssBytes
+        ) {
+          issues.push(`HTTP load evidence is invalid at concurrency ${row.concurrency}.`);
+        }
+      }
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      issues.push('Could not verify HTTP load evidence.');
+    }
   }
   return Object.freeze(issues);
 }

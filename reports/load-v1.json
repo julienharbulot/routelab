@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "routelab.http-load.v1",
+  "observedAt": "2026-07-15T11:24:48.824Z",
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "linux",
+    "arch": "x64",
+    "cpu": "13th Gen Intel(R) Core(TM) i9-13900H",
+    "commit": "20867d8"
+  },
+  "configuration": {
+    "host": "127.0.0.1",
+    "requestsPerConcurrency": 120,
+    "warmups": 10,
+    "requestTimeoutMs": 10000,
+    "quoteDeadlineMs": 5000,
+    "strategy": "greedy-split",
+    "effort": "fast",
+    "caseCount": 6,
+    "sameThread": true
+  },
+  "rows": [
+    {
+      "concurrency": 1,
+      "requests": 120,
+      "completed": 120,
+      "failed": 0,
+      "timedOut": 0,
+      "p50Micros": 13637,
+      "p95Micros": 26069,
+      "p99Micros": 28809,
+      "throughputPerSecond": 67.365,
+      "deadlineCompletionRate": 1,
+      "eventLoopDelayMeanMicros": 16208,
+      "eventLoopDelayMaxMicros": 33456,
+      "initialRssBytes": 113614848,
+      "peakRssBytes": 143761408,
+      "rssDeltaBytes": 30146560
+    },
+    {
+      "concurrency": 4,
+      "requests": 120,
+      "completed": 120,
+      "failed": 0,
+      "timedOut": 0,
+      "p50Micros": 51542,
+      "p95Micros": 79934,
+      "p99Micros": 88529,
+      "throughputPerSecond": 72.133,
+      "deadlineCompletionRate": 1,
+      "eventLoopDelayMeanMicros": 27798,
+      "eventLoopDelayMaxMicros": 65339,
+      "initialRssBytes": 143925248,
+      "peakRssBytes": 183738368,
+      "rssDeltaBytes": 39813120
+    },
+    {
+      "concurrency": 16,
+      "requests": 120,
+      "completed": 120,
+      "failed": 0,
+      "timedOut": 0,
+      "p50Micros": 187425,
+      "p95Micros": 358444,
+      "p99Micros": 783216,
+      "throughputPerSecond": 81.577,
+      "deadlineCompletionRate": 1,
+      "eventLoopDelayMeanMicros": 64060,
+      "eventLoopDelayMaxMicros": 122356,
+      "initialRssBytes": 183738368,
+      "peakRssBytes": 183902208,
+      "rssDeltaBytes": 163840
+    }
+  ]
+}

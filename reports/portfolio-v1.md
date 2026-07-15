@@ -29,7 +29,9 @@ On this retained 24-case set, every published success passed fresh exact replay.
 
 | Service profile | Concurrency | Requests | p50 | p95 | p99 | Throughput |
 |---|---:|---:|---:|---:|---:|---:|
-| Added in PORT-005 | n/a | n/a | n/a | n/a | n/a | n/a |
+| greedy-split/fast | 1 | 120 | 13.64 ms | 26.07 ms | 28.81 ms | 67.4 req/s |
+| greedy-split/fast | 4 | 120 | 51.54 ms | 79.93 ms | 88.53 ms | 72.1 req/s |
+| greedy-split/fast | 16 | 120 | 187.43 ms | 358.44 ms | 783.22 ms | 81.6 req/s |
 
 ![Quality versus budget](quality-vs-budget.svg)
 

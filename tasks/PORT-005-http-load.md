@@ -63,6 +63,12 @@ Do not expose stack traces.
 - Gracefully stop on SIGINT/SIGTERM.
 - Use no live upstream.
 
+## Implementation note
+
+The retained v0.1 service stays on one thread. The concurrency measurement deliberately exposes
+event-loop queueing and throughput saturation; a worker pool would add snapshot replication and
+message-boundary code that is not necessary for the local portfolio service.
+
 ## Load command
 
 ```bash

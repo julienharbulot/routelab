@@ -2,7 +2,7 @@
 
 RouteLab is a small, exact TypeScript liquidity router. Given an immutable snapshot of two-asset constant-product pools and an exact-input request, it deterministically searches within explicit hop and work limits, exactly replays every complete candidate, and returns a validated plan under exact output and deterministic tie-breaking.
 
-It also supports canonical snapshot, single-path run/case, and additive split run/case records; checksum-verified prepared contexts; one curated, independently reconciled historical snapshot; one exhaustive result-blind synthetic request corpus with offline integrity and derivation verification; one checksummed offline composed-runtime evaluation over that corpus; a composed anytime split runtime with one shared discovery pass and request-wide typed controls; deterministic interruption and process-local single-path resume; immediate exact-replayed direct incumbents; injected cooperative deadlines; and exact pool-disjoint no-split/equal/greedy policies with a safe fallback. See [current public status](STATUS.md) for the precise integrated boundary.
+It includes checksum-verified prepared contexts, a curated historical snapshot, a result-blind synthetic request corpus, bounded anytime split routing, and a path-shadow-price numerical allocator whose proposals require fresh exact authorization. See [current status](STATUS.md) for the active release task.
 
 ## A 30-second executable example
 
@@ -14,7 +14,6 @@ corepack install --global pnpm@11.12.0
 pnpm install --frozen-lockfile
 pnpm verify:historical-data
 pnpm verify:synthetic-requests
-pnpm verify:historical-evaluation
 pnpm replay:cases
 pnpm replay:split-cases
 pnpm demo
@@ -29,8 +28,6 @@ The emitted JSON still uses the versioned `routelab.benchmark-report.v1` schema 
 `pnpm verify:historical-data` verifies the first curated historical import entirely offline. It checks the closed manifest and six declared companion artifacts, exact Infura/SQD normalized-source agreement, canonical pool ordering and financial-content checksum, and the untrusted parse-before-prepare boundary before returning a prepared context summary. The imported snapshot is a frozen 54-pool subset at one block, not a request corpus or benchmark.
 
 `pnpm verify:synthetic-requests` first revalidates that historical import, then verifies a separately versioned 396-request corpus. The corpus exhaustively combines all 132 ordered distinct asset pairs with three exact input-asset liquidity-relative amount tiers. Its ordering, byte hash, maximum-reserve amounts, and graph-only direct/two-hop labels are independently rederived offline. It contains no runtime configuration or router results and does not model historical demand or equal-value trades.
-
-`pnpm verify:historical-evaluation` revalidates those inputs once, reuses their prepared context, and freshly reproduces all 2,376 exact request/profile results from the [timing-free, prose-free comparison config and retained evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/composed-two-hop-pair-v3/README.md). All 396 terminal-profile cells completed within the bounded two-hop/two-route policy, and no adjacent profile step lost a plan or regressed under the full exact objective. The separate observation config and 11,880 elapsed values are raw call-only evidence on one recorded environment, not a speedup, threshold, percentile, scaling, or production claim.
 
 ## Why exact replay matters
 
@@ -62,21 +59,19 @@ The core layers are immutable domain validation, exact constant-product transiti
 
 ## Verification strategy
 
-The repository combines hand-auditable fixtures, focused unit tests, independent oracle and differential tests, deterministic replay cases, and public-surface checks. Tests are evidence for the accepted contracts in [docs/invariants.md](docs/invariants.md); they do not override those contracts.
+The repository combines hand-auditable fixtures, focused unit tests, independent oracle and differential tests, and deterministic replay cases. Tests are evidence for the accepted contracts in [docs/invariants.md](docs/invariants.md); they do not override those contracts.
 
 ```bash
 pnpm replay:cases       # Verify fixed offline router cases and emit JSON evidence.
 pnpm replay:split-cases # Verify deterministic exact split records with no timing state.
 pnpm verify:historical-data # Verify the curated historical import and preparation boundary offline.
 pnpm verify:synthetic-requests # Verify the result-blind synthetic request corpus offline.
-pnpm verify:historical-evaluation # Freshly replay the exact composed historical evaluation.
 pnpm measure:anytime    # Emit separate quality/work and repeated raw latency observations.
 pnpm lint               # Run typed ESLint rules.
 pnpm typecheck          # Run strict TypeScript checks without emitting files.
 pnpm test               # Run production and independent-oracle tests.
 pnpm demo               # Execute and report the fixed composed split fixture.
 pnpm check              # Run the complete local gate.
-pnpm trace:check:head   # Verify the current commit's public surface.
 ```
 
 CI uses the same pinned pnpm version, performs a frozen install, and runs `pnpm check`.
@@ -91,16 +86,10 @@ CI uses the same pinned pnpm version, performs a frozen install, and runs `pnpm 
 - `pnpm replay:cases` remains a single-observation verification harness. `pnpm measure:anytime` uses one fixed offline input, warmups, alternating repeated samples, environment metadata, and raw observations, but performs no statistical inference and supports no speedup, threshold, scaling, or production-latency claim.
 - The executable split demo and `pnpm replay:split-cases` cover one fixed offline two-pool fixture. They support no scaling, latency, throughput, production, or unrestricted-optimality conclusion.
 - Legacy Milestone 2–5 routers remain standalone compatibility and component-test surfaces. The additive high-level split runtime is the composed path with a verified context, one request-local discovery frontier, and one non-recharged typed ledger.
-- `prepareRoutingContext` is a lower-level typed compatibility surface and assumes its `LiquiditySnapshot` is already domain-validated; untrusted JavaScript or imported data must use `parseAndPrepareRoutingContext`. The first curated historical dataset is imported and verified through that boundary. Its separate synthetic corpus exhaustively covers the frozen allowlist pair grid at three maximum-reserve-relative input scales, but it is not historical order flow or a representative market distribution. The retained evaluation covers only that bounded synthetic grid and makes no algorithm-comparison or performance claim.
+- `prepareRoutingContext` is a lower-level typed compatibility surface and assumes its `LiquiditySnapshot` is already domain-validated; untrusted JavaScript or imported data must use `parseAndPrepareRoutingContext`. The first curated historical dataset is imported and verified through that boundary. Its separate synthetic corpus exhaustively covers the frozen allowlist pair grid at three maximum-reserve-relative input scales, but it is not historical order flow or a representative market distribution.
 
 ## Roadmap
 
-The current release target is deterministic offline exact-input routing over immutable snapshots. Milestones 0–5 are integrated and cumulatively reviewed complete for their accepted gates. Milestone 6 is integrated and cumulatively reviewed complete for the additive composed-runtime prerequisite, enforced parse-before-prepare input boundary, accepted [historical-source and dataset contract](docs/adr/accepted/0003-historical-source-and-dataset-contract.md), [canonical one-snapshot import](datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/README.md), separately versioned [synthetic exhaustive request corpus](datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/README.md), and [checksummed composed-runtime evaluation](datasets/evaluations/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/composed-two-hop-pair-v3/README.md); its exact completion commit passed CI. Milestone 7a is active. Exact replay consolidation and the accepted [path-level numerical allocation contract](docs/adr/accepted/0004-path-level-numerical-allocation.md) are integrated. The additive direct source-module numerical runtime now composes the independently verified proposal core with exact residual assignment, scoring, and distinct full-input authorization while preserving the exact no-split/equal/greedy baseline. Identical-input retained evaluation and the primary-versus-experimental decision remain pending; no historical algorithm comparison or performance result exists. Acceleration, services, protocol adapters, and learned ordering remain later gated work.
+The v0.1 work adds one public facade, a readable CLI, a compact benchmark, a local quote service, load evidence, and a fixture-only intent adapter around the retained exact core.
 
 See the [technical roadmap](IMPLEMENTATION_PLAN.md), [current release gate](STATUS.md), [accepted invariants](docs/invariants.md), [Milestone 0 fixture derivations](fixtures/m0/README.md), and [research references](docs/references.md).
-
-## Agent-assisted engineering model
-
-RouteLab uses a bounded, human-led workflow with separate implementation, independent oracle, and read-only review roles. Stable contracts, reviewed decisions, reproducible evidence, and concise integrated outcomes remain public; active coordination, raw reports, prompts, unpublished evidence, and local tool state remain private.
-
-See the [development model](docs/CODEX_OPERATING_MODEL.md), [review contract](docs/CODE_REVIEW.md), [task template](tasks/TASK_TEMPLATE.md), and [engineering log](docs/engineering-log/README.md). Public trace checks enforce the boundary between reviewed repository evidence and private operational material.

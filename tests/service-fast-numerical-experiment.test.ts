@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { spawnSync, type SpawnSyncOptions } from 'node:child_process';
+import { constants } from 'node:fs';
+import type { FileHandle } from 'node:fs/promises';
 import {
   chmod,
   lstat,
@@ -140,6 +142,65 @@ import {
   ServiceFastSizeAdmissionError,
   admitPreSourceClosureArtifactSizes,
 } from '../src/benchmark/service-fast-numerical-experiment/tooling/size-admission.ts';
+import type { ExperimentInputOperations } from '../src/benchmark/service-fast-numerical-experiment/input/build.ts';
+import {
+  ACCEPTED_EXECUTION_SCHEDULE,
+  ACCEPTED_DEADLINES_MS,
+  ACCEPTED_HOTSPOT_CASE_IDS,
+  ACCEPTED_OPERATIONAL_CASE_IDS,
+  ACCEPTED_POLICY_IDS,
+  ACCEPTED_RETAINED_DIRECTORY,
+  acceptedRetainedFileContracts,
+  type AcceptedInputRecord,
+  type AcceptedJsonObject,
+} from '../src/benchmark/service-fast-numerical-experiment/accepted-run/contract.ts';
+import {
+  AcceptedAnalysisAccumulator,
+  buildAcceptedAnalysis,
+  compareAcceptedPolicyResults,
+  decideAcceptedPolicy,
+  qualifyAcceptedPolicy,
+} from '../src/benchmark/service-fast-numerical-experiment/accepted-run/analysis.ts';
+import {
+  ACCEPTED_RUN_INTERNAL_FAILURE_REGISTRY,
+  AcceptedRunFailure,
+  acceptedRunFailure,
+  acceptedRunFailureEnvelope,
+  encodeAcceptedRunFailure,
+} from '../src/benchmark/service-fast-numerical-experiment/accepted-run/failure.ts';
+import {
+  defaultAcceptedPublicationDependencies,
+  admitAcceptedPublication,
+  abortAcceptedPublication,
+  publishAcceptedArtifacts,
+  type AcceptedPublicationDependencies,
+  type AcceptedPreparedArtifact,
+} from '../src/benchmark/service-fast-numerical-experiment/accepted-run/publication.ts';
+import {
+  acceptedCallProtocolSchedule,
+  acceptedDeadlineProtocolSchedule,
+  acceptedSemanticSchedule,
+  acceptedTimelineSchedule,
+} from '../src/benchmark/service-fast-numerical-experiment/accepted-run/schedule.ts';
+import {
+  ACCEPTED_MAXIMUM_CLOCK_NANOSECONDS,
+  acceptedAbsoluteDeadline,
+  admitAcceptedClockSample,
+  measureAcceptedInvocation,
+  runAcceptedExperiment,
+} from '../src/benchmark/service-fast-numerical-experiment/accepted-run/run.ts';
+import {
+  ACCEPTED_RUN_RUNTIME_PATHS,
+  acceptedRunRuntimeAuditProfile,
+} from '../src/benchmark/service-fast-numerical-experiment/accepted-run/runtime-profile.ts';
+import {
+  admitAcceptedEntryIncumbentReplay,
+  admitAcceptedRecordBindings,
+} from '../src/benchmark/service-fast-numerical-experiment/accepted-run/input.ts';
+import {
+  recheckAcceptedBoundBytes,
+  type AcceptedPreflightResult,
+} from '../src/benchmark/service-fast-numerical-experiment/accepted-run/preflight.ts';
 
 function pool(
   poolId: string,
@@ -1124,6 +1185,244 @@ void test('fresh-replays an entry incumbent and preserves it on an objective tie
     }),
     TypeError,
   );
+});
+
+void test('fresh-replays each accepted entry incumbent outside candidate accounting', () => {
+  const value = snapshot();
+  const context = prepareContext(value);
+  const cell = prepareServiceFastExperimentCell({
+    context,
+    snapshotId: value.snapshotId,
+    snapshotChecksum: value.snapshotChecksum,
+    assetIn: 'A',
+    assetOut: 'C',
+    amountIn: 101n,
+    candidateSets: [resolvedCandidate(context)],
+    repairTargetSetIndex: 0,
+  });
+  const incumbent = semanticComplete(cell, 0).finalIncumbent;
+  assert.notEqual(incumbent, null);
+  if (incumbent === null) throw new Error('Expected synthetic incumbent.');
+  let replayCalls = 0;
+  const operations = {
+    replay: (
+      replayContext: unknown,
+      request: Parameters<ExperimentInputOperations['replay']>[1],
+    ) => {
+      replayCalls += 1;
+      assert.equal(replayContext, context);
+      assert.equal(request.amountIn, incumbent.amountIn);
+      assert.deepEqual(
+        request.legs.map((leg) => leg.allocation),
+        incumbent.legs.map((leg) => leg.allocation),
+      );
+      return Object.freeze({ ok: true as const, value: incumbent });
+    },
+  } as unknown as ExperimentInputOperations;
+  admitAcceptedEntryIncumbentReplay(context, operations, incumbent);
+  assert.equal(replayCalls, 1);
+
+  const mismatchedOperations = {
+    replay: () => Object.freeze({
+      ok: true as const,
+      value: Object.freeze({ ...incumbent, amountOut: incumbent.amountOut + 1n }),
+    }),
+  } as unknown as ExperimentInputOperations;
+  assert.throws(
+    () => admitAcceptedEntryIncumbentReplay(context, mismatchedOperations, incumbent),
+    /fresh replay differs/u,
+  );
+});
+
+void test('rechecks accepted retained-record bindings without regenerating discovery or baseline', () => {
+  const request = Object.freeze({
+    requestId: 'synthetic-request',
+    assetIn: 'A',
+    assetOut: 'C',
+    amountBucket: 'small',
+    amountIn: '101',
+    topology: 'parallel',
+  });
+  const suiteCase = Object.freeze({
+    caseId: 'synthetic-case',
+    snapshotId: 'synthetic-snapshot',
+    snapshotChecksum: `sha256:${'1'.repeat(64)}`,
+    serviceDecision: true,
+    operational: true,
+    snapshot: Object.freeze({}),
+    requests: Object.freeze([request]),
+  });
+  const baselineCell: AcceptedJsonObject = Object.freeze({
+    caseId: suiteCase.caseId,
+    requestId: request.requestId,
+    result: Object.freeze({
+      status: 'no-route',
+      reason: 'no-route',
+      search: Object.freeze({ termination: 'complete' }),
+    }),
+  });
+  const eligibilityCell = Object.freeze({
+    caseId: suiteCase.caseId,
+    requestId: request.requestId,
+    status: 'eligible',
+    reason: null,
+    search: Object.freeze({
+      pathExpansions: 2,
+      enumeratedPaths: 2,
+      pathTermination: 'complete',
+      candidateSetExpansions: 1,
+      enumeratedCandidateSets: 1,
+      candidateSetTermination: 'complete',
+    }),
+    modelValidCandidateSetCount: 1,
+  });
+  const routes = [
+    [{ poolId: 'left-ac', assetIn: 'A', assetOut: 'C' }],
+    [{ poolId: 'right-ac', assetIn: 'A', assetOut: 'C' }],
+  ];
+  const projectedRoutes = routes.map((route, routeIndex) => ({
+    routeKey: JSON.stringify(route.map((hop) => [hop.assetIn, hop.poolId, hop.assetOut])),
+    hops: route,
+    resolvedHops: route.map((hop) => ({
+      ...hop,
+      reserveIn: String(10_000 + routeIndex),
+      reserveOut: String(12_000 + routeIndex),
+      feeChargedNumerator: '3',
+      feeDenominator: '1000',
+    })),
+  }));
+  const record: AcceptedJsonObject = Object.freeze({
+    schemaVersion: 'routelab.service-fast-numerical-experiment-input.v1',
+    sourceIndex: 0,
+    caseId: suiteCase.caseId,
+    requestId: request.requestId,
+    snapshot: Object.freeze({
+      snapshotId: suiteCase.snapshotId,
+      snapshotChecksum: suiteCase.snapshotChecksum,
+    }),
+    request: Object.freeze({
+      assetIn: request.assetIn,
+      assetOut: request.assetOut,
+      amountBucket: request.amountBucket,
+      amountIn: request.amountIn,
+      topology: request.topology,
+      maxHops: 2,
+      maxRoutes: 2,
+      greedyParts: 16,
+    }),
+    priorEligibility: Object.freeze({
+      status: 'eligible',
+      reason: null,
+      search: eligibilityCell.search,
+      modelValidCandidateSetCount: 1,
+    }),
+    serviceDecisionMember: true,
+    amplifiedStressMember: false,
+    timingCohortIndex: 0,
+    entryBaseline: Object.freeze({
+      boundSemanticCellHash: sha256Bytes(
+        new TextEncoder().encode(JSON.stringify(baselineCell)),
+      ),
+      freshReplayMatchesBoundCell: true,
+      incumbent: Object.freeze({
+        status: 'no-route',
+        reason: 'no-route',
+        receipt: null,
+        objective: Object.freeze({
+          hasPlan: false,
+          amountOut: null,
+          legCount: null,
+          totalHops: null,
+          routeKeys: Object.freeze([]),
+          allocations: Object.freeze([]),
+        }),
+        receiptHash: null,
+      }),
+    }),
+    candidateDiscovery: Object.freeze({
+      termination: 'complete',
+      counters: Object.freeze({
+        pathExpansions: 2,
+        enumeratedPaths: 2,
+        candidateSetExpansions: 1,
+        enumeratedCandidateSets: 1,
+      }),
+      candidateSets: Object.freeze([Object.freeze({
+        setIndex: 0,
+        candidateSetKey: JSON.stringify(routes.map((route) =>
+          route.map((hop) => [hop.assetIn, hop.poolId, hop.assetOut]))),
+        routes: projectedRoutes,
+        resolutionStatus: 'resolved',
+        failureCode: null,
+      })]),
+    }),
+    repairTargetSetIndex: 0,
+    actionCeilingProfileId: 'structural-complete',
+  });
+  admitAcceptedRecordBindings(
+    record,
+    suiteCase,
+    request,
+    baselineCell,
+    eligibilityCell,
+    0,
+  );
+
+  type Mutable = Record<string, unknown>;
+  const nested = (value: unknown): Mutable => value as Mutable;
+  const mutations: readonly ((value: Mutable) => void)[] = [
+    (value) => { value['schemaVersion'] = 'hostile'; },
+    (value) => { nested(value['request'])['maxHops'] = 3; },
+    (value) => { nested(value['priorEligibility'])['status'] = 'ineligible'; },
+    (value) => { nested(value['entryBaseline'])['boundSemanticCellHash'] = `sha256:${'2'.repeat(64)}`; },
+    (value) => { nested(value['entryBaseline'])['freshReplayMatchesBoundCell'] = false; },
+    (value) => {
+      nested(nested(value['entryBaseline'])['incumbent'])['reason'] = 'hostile';
+    },
+    (value) => {
+      nested(nested(nested(value['entryBaseline'])['incumbent'])['objective'])['hasPlan'] = true;
+    },
+    (value) => { nested(value['candidateDiscovery'])['termination'] = 'work-limit'; },
+    (value) => {
+      nested(nested(value['candidateDiscovery'])['counters'])['pathExpansions'] = 122;
+    },
+    (value) => {
+      const set = (nested(value['candidateDiscovery'])['candidateSets'] as Mutable[])[0];
+      if (set !== undefined) set['candidateSetKey'] = 'hostile';
+    },
+    (value) => {
+      const set = (nested(value['candidateDiscovery'])['candidateSets'] as Mutable[])[0];
+      const route = (set?.['routes'] as Mutable[] | undefined)?.[0];
+      if (route !== undefined) route['routeKey'] = 'hostile';
+    },
+    (value) => {
+      const set = (nested(value['candidateDiscovery'])['candidateSets'] as Mutable[])[0];
+      if (set !== undefined) set['failureCode'] = 'invalid-route-model';
+    },
+    (value) => {
+      const set = (nested(value['candidateDiscovery'])['candidateSets'] as Mutable[])[0];
+      const route = (set?.['routes'] as Mutable[] | undefined)?.[0];
+      const resolved = (route?.['resolvedHops'] as Mutable[] | undefined)?.[0];
+      if (resolved !== undefined) resolved['poolId'] = 'hostile';
+    },
+    (value) => { value['repairTargetSetIndex'] = null; },
+    (value) => { value['actionCeilingProfileId'] = 'hostile'; },
+  ];
+  for (const mutate of mutations) {
+    const candidate = JSON.parse(JSON.stringify(record)) as Mutable;
+    mutate(candidate);
+    assert.throws(
+      () => admitAcceptedRecordBindings(
+        candidate as AcceptedJsonObject,
+        suiteCase,
+        request,
+        baselineCell,
+        eligibilityCell,
+        0,
+      ),
+      TypeError,
+    );
+  }
 });
 
 void test('keeps 255-bit amounts exact through reconstruction, repair, and authorization', () => {
@@ -3652,8 +3951,9 @@ void test('audits disjoint exact parent and generation-child runtime closures an
   const acceptedEnvironmentSource = [
     "import { availableParallelism, cpus, endianness, release, totalmem, type } from 'node:os';",
     "import { isMainThread } from 'node:worker_threads';",
+    'const runtimeVersions = process.versions;',
     'const captured = [',
-    '  process.version, process.versions.v8, process.versions.uv,',
+    '  process.version, runtimeVersions.v8, runtimeVersions.uv,',
     '  process.platform, process.arch, process.execArgv,',
     "  process.env['NODE_OPTIONS'],",
     '  availableParallelism(), cpus(), endianness(), release(), totalmem(), type(),',
@@ -4454,6 +4754,1224 @@ void test('renders only the three closure-bound README decisions within the maxi
       (error: unknown) =>
         error instanceof ServiceFastReadmeRenderingError &&
         error.code === 'invalid-readme-environment',
+    );
+  }
+});
+
+function syntheticAcceptedScheduleRecords(): readonly AcceptedInputRecord[] {
+  const cases = Object.freeze([
+    Object.freeze({ caseId: 'historical-anchor', records: 396, timing: 72 }),
+    Object.freeze({ caseId: 'synthetic-dual-spanning-tree', records: 396, timing: 108 }),
+    Object.freeze({ caseId: 'synthetic-reserve-compressed-1e12', records: 396, timing: 72 }),
+    Object.freeze({ caseId: 'synthetic-reserve-amplified-1e60', records: 396, timing: 0 }),
+  ]);
+  const records: AcceptedInputRecord[] = [];
+  let timingCohortIndex = 0;
+  for (const suiteCase of cases) {
+    for (let requestIndex = 0; requestIndex < suiteCase.records; requestIndex += 1) {
+      const service = suiteCase.timing > 0;
+      records.push(Object.freeze({
+        value: Object.freeze({}),
+        sourceIndex: records.length,
+        caseId: suiteCase.caseId,
+        requestId: `${suiteCase.caseId}-${requestIndex}`,
+        timingCohortIndex: requestIndex < suiteCase.timing
+          ? timingCohortIndex++
+          : null,
+        serviceDecisionMember: service,
+        amplifiedStressMember: !service,
+      }));
+    }
+  }
+  return Object.freeze(records);
+}
+
+void test('enumerates the frozen accepted schedule and exact case boundaries lazily', () => {
+  const records = syntheticAcceptedScheduleRecords();
+  let semanticCount = 0;
+  for (const item of acceptedSemanticSchedule(records)) {
+    assert.equal(item.observationIndex, semanticCount);
+    semanticCount += 1;
+  }
+  assert.equal(semanticCount, ACCEPTED_EXECUTION_SCHEDULE.semanticCalls);
+
+  let callWarmups = 0;
+  let callRetained = 0;
+  const callBoundaries = new Map<number, string>();
+  for (const item of acceptedCallProtocolSchedule(records)) {
+    if (item.phase === 'call-warmup') {
+      callWarmups += 1;
+    } else {
+      assert.equal(item.observationIndex, callRetained);
+      if ([0, 8_639, 8_640, 21_599, 21_600, 30_239].includes(callRetained)) {
+        callBoundaries.set(callRetained, item.cell.caseId);
+      }
+      callRetained += 1;
+    }
+  }
+  assert.equal(callWarmups, ACCEPTED_EXECUTION_SCHEDULE.callWarmups);
+  assert.equal(callRetained, ACCEPTED_EXECUTION_SCHEDULE.callRetained);
+  assert.deepEqual([...callBoundaries], [
+    [0, 'historical-anchor'],
+    [8_639, 'historical-anchor'],
+    [8_640, 'synthetic-dual-spanning-tree'],
+    [21_599, 'synthetic-dual-spanning-tree'],
+    [21_600, 'synthetic-reserve-compressed-1e12'],
+    [30_239, 'synthetic-reserve-compressed-1e12'],
+  ]);
+
+  let timelineCount = 0;
+  const timelineBoundaries = new Map<number, string>();
+  for (const item of acceptedTimelineSchedule(records)) {
+    assert.equal(item.observationIndex, timelineCount);
+    if ([0, 5_183, 5_184, 12_959, 12_960, 18_143].includes(timelineCount)) {
+      timelineBoundaries.set(timelineCount, item.cell.caseId);
+    }
+    timelineCount += 1;
+  }
+  assert.equal(timelineCount, ACCEPTED_EXECUTION_SCHEDULE.timelineRetained);
+  assert.deepEqual([...timelineBoundaries], [
+    [0, 'historical-anchor'],
+    [5_183, 'historical-anchor'],
+    [5_184, 'synthetic-dual-spanning-tree'],
+    [12_959, 'synthetic-dual-spanning-tree'],
+    [12_960, 'synthetic-reserve-compressed-1e12'],
+    [18_143, 'synthetic-reserve-compressed-1e12'],
+  ]);
+
+  let deadlineWarmups = 0;
+  let deadlineRetained = 0;
+  const deadlineBoundaries = new Map<number, string>();
+  let finalDeadlinePolicy: number | null = null;
+  for (const item of acceptedDeadlineProtocolSchedule(records)) {
+    if (item.phase === 'deadline-warmup') {
+      deadlineWarmups += 1;
+    } else {
+      assert.equal(item.observationIndex, deadlineRetained);
+      if ([0, 31_103, 31_104, 77_759, 77_760, 108_863].includes(deadlineRetained)) {
+        deadlineBoundaries.set(deadlineRetained, item.cell.caseId);
+      }
+      finalDeadlinePolicy = item.policyMatrixIndex;
+      deadlineRetained += 1;
+    }
+  }
+  assert.equal(deadlineWarmups, ACCEPTED_EXECUTION_SCHEDULE.deadlineWarmups);
+  assert.equal(deadlineRetained, ACCEPTED_EXECUTION_SCHEDULE.deadlineRetained);
+  assert.equal(finalDeadlinePolicy, 17);
+  assert.deepEqual([...deadlineBoundaries], [
+    [0, 'historical-anchor'],
+    [31_103, 'historical-anchor'],
+    [31_104, 'synthetic-dual-spanning-tree'],
+    [77_759, 'synthetic-dual-spanning-tree'],
+    [77_760, 'synthetic-reserve-compressed-1e12'],
+    [108_863, 'synthetic-reserve-compressed-1e12'],
+  ]);
+  assert.equal(
+    semanticCount + callWarmups + callRetained + timelineCount +
+      deadlineWarmups + deadlineRetained,
+    ACCEPTED_EXECUTION_SCHEDULE.totalPolicyCalls,
+  );
+});
+
+void test('uses an injected monotonic clock and the explicit trustworthy no-qualifier fallback', () => {
+  const samples = [100n, 115n];
+  const measured = measureAcceptedInvocation(
+    () => samples.shift() ?? assert.fail('unexpected clock sample'),
+    (entry) => {
+      assert.equal(entry, 100n);
+      return 'complete';
+    },
+  );
+  assert.deepEqual(measured, {
+    value: 'complete',
+    entrySample: 100n,
+    returnSample: 115n,
+  });
+  assert.throws(
+    () => measureAcceptedInvocation(
+      (() => {
+        const reversed = [2n, 1n];
+        return () => reversed.shift() ?? 0n;
+      })(),
+      () => null,
+    ),
+    (error: unknown) =>
+      error instanceof AcceptedRunFailure &&
+      error.envelope.phase === 'candidate',
+  );
+  assert.deepEqual(decideAcceptedPolicy([], []), {
+    status: 'strict-reference-fallback',
+    policyId: null,
+    fallbackDecisionId: 'strict-reference-fallback',
+    rankedQualifyingPolicyIds: [],
+    reason: 'trustworthy-complete-no-policy-qualified',
+  });
+});
+
+void test('bounds every accepted clock sample and constructed absolute deadline', () => {
+  assert.equal(
+    admitAcceptedClockSample(ACCEPTED_MAXIMUM_CLOCK_NANOSECONDS),
+    ACCEPTED_MAXIMUM_CLOCK_NANOSECONDS,
+  );
+  for (const sample of [-1n, ACCEPTED_MAXIMUM_CLOCK_NANOSECONDS + 1n]) {
+    assert.throws(
+      () => admitAcceptedClockSample(sample),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure && error.envelope.phase === 'candidate',
+    );
+  }
+  assert.equal(acceptedAbsoluteDeadline(0n, 1), 1_000_000n);
+  assert.throws(
+    () => acceptedAbsoluteDeadline(ACCEPTED_MAXIMUM_CLOCK_NANOSECONDS, 1),
+    (error: unknown) =>
+      error instanceof AcceptedRunFailure && error.envelope.phase === 'candidate',
+  );
+});
+
+void test('rechecks every closure-bound byte sequence immediately before candidates', async () => {
+  const bytes = new TextEncoder().encode('closure-bound');
+  const bound = Object.freeze({
+    path: 'synthetic/bound.ts',
+    bytes: bytes.byteLength,
+    sha256: sha256Bytes(bytes),
+  });
+  let calls = 0;
+  await recheckAcceptedBoundBytes('/synthetic/repository', [bound], {
+    readIdentity: (options) => {
+      calls += 1;
+      assert.deepEqual(options, {
+        repositoryRoot: '/synthetic/repository',
+        relativePath: bound.path,
+        maximumBytes: bound.bytes,
+        expectedBytes: bound.bytes,
+      });
+      return Promise.resolve(bytes);
+    },
+  });
+  assert.equal(calls, 1);
+  await assert.rejects(
+    recheckAcceptedBoundBytes('/synthetic/repository', [bound], {
+      readIdentity: () => Promise.resolve(new TextEncoder().encode('closure-tampered')),
+    }),
+    (error: unknown) =>
+      error instanceof AcceptedRunFailure &&
+      error.envelope.cause === 'repository-state-mismatch' &&
+      error.envelope.phase === 'preflight',
+  );
+});
+
+void test('qualifies all six clauses and applies every deterministic ranking tie-break', () => {
+  const rational = (numerator: string, denominator: string): AcceptedJsonObject =>
+    Object.freeze({ numerator, denominator });
+  const qualifyingResult: AcceptedJsonObject = Object.freeze({
+    policyId: 'qualifying-policy',
+    semantic: Object.freeze({
+      invalidFreshReplayCount: 0,
+      forcedFailureIncumbentMismatchCount: 0,
+      finalObjectivesNeverWorse: true,
+      anchorPlanLostCount: 0,
+      unterminatedDiagnosticCount: 0,
+      anchorServiceFailures: Object.freeze({
+        nonConvergence: 2,
+        residualOptionsExhausted: 1,
+      }),
+      candidateServiceFailures: Object.freeze({
+        nonConvergence: 1,
+        residualOptionsExhausted: 1,
+      }),
+      amplifiedFailures: Object.freeze({
+        untypedFailures: 0,
+        exactSafetyFailures: 0,
+      }),
+    }),
+    callCases: Object.freeze(ACCEPTED_OPERATIONAL_CASE_IDS.map((caseId) => Object.freeze({
+      caseId,
+      pairedDeltaMedian: rational('0', '1'),
+      elapsedRatio: rational(
+        ACCEPTED_HOTSPOT_CASE_IDS.includes(
+          caseId as typeof ACCEPTED_HOTSPOT_CASE_IDS[number],
+        ) ? '9' : '1',
+        ACCEPTED_HOTSPOT_CASE_IDS.includes(
+          caseId as typeof ACCEPTED_HOTSPOT_CASE_IDS[number],
+        ) ? '10' : '1',
+      ),
+    }))),
+    deadlineCases: Object.freeze([Object.freeze({
+      caseId: ACCEPTED_HOTSPOT_CASE_IDS[0],
+      anchor: Object.freeze({ entryPlan: 1, anchorQuality: 1 }),
+      candidate: Object.freeze({ entryPlan: 1, anchorQuality: 2 }),
+    })]),
+    instrumentedEvents: Object.freeze([Object.freeze({
+      anchorAvailabilityCount: 1,
+      candidateAvailabilityCount: 1,
+      pairedFiniteCount: 1,
+      pairedFiniteMedianDelta: rational('-1', '1'),
+    })]),
+  });
+  const qualification = qualifyAcceptedPolicy(qualifyingResult);
+  assert.equal(qualification['qualifies'], true);
+  const clauses = qualification['clauseResults'];
+  assert.ok(Array.isArray(clauses));
+  assert.equal(clauses.length, 6);
+  assert.equal(clauses.every((entry) =>
+    (entry as AcceptedJsonObject)['passed'] === true), true);
+
+  const ranked = (
+    ratioNumerator: string,
+    quality: number,
+    ceiling: number,
+    policyMatrixIndex: number,
+  ): AcceptedJsonObject => Object.freeze({
+    rankingValues: Object.freeze({
+      worstHotspotElapsedRatio: rational(ratioNumerator, '10'),
+      anchorQualityVector: Object.freeze([quality]),
+      mappedShareActionCeiling: ceiling,
+      policyMatrixIndex,
+    }),
+  });
+  assert.ok(compareAcceptedPolicyResults(ranked('8', 1, 2, 2), ranked('9', 9, 1, 1)) < 0);
+  assert.ok(compareAcceptedPolicyResults(ranked('8', 2, 2, 2), ranked('8', 1, 1, 1)) < 0);
+  assert.ok(compareAcceptedPolicyResults(ranked('8', 2, 1, 2), ranked('8', 2, 2, 1)) < 0);
+  assert.ok(compareAcceptedPolicyResults(ranked('8', 2, 1, 1), ranked('8', 2, 1, 2)) < 0);
+});
+
+void test('keeps analysis medians and ratios as exact unreduced bigint witnesses', () => {
+  const accumulator = new AcceptedAnalysisAccumulator();
+  for (let policyMatrixIndex = 0;
+    policyMatrixIndex < ACCEPTED_POLICY_IDS.length;
+    policyMatrixIndex += 1) {
+    for (const [caseIndex, caseId] of ACCEPTED_OPERATIONAL_CASE_IDS.entries()) {
+      for (let sweepIndex = 0; sweepIndex < 5; sweepIndex += 1) {
+        accumulator.acceptCall(Object.freeze({
+          policyMatrixIndex,
+          caseId,
+          timingCohortIndex: caseIndex,
+          sweepIndex,
+          elapsedNanoseconds: String(policyMatrixIndex + 2),
+        }));
+      }
+      for (const deadlineMilliseconds of ACCEPTED_DEADLINES_MS) {
+        for (let sweepIndex = 0; sweepIndex < 3; sweepIndex += 1) {
+          accumulator.acceptDeadline(Object.freeze({
+            policyMatrixIndex,
+            caseId,
+            deadlineMilliseconds,
+            sweepIndex,
+            entryPlan: false,
+            anyValidScore: false,
+            anyImprovement: false,
+            anchorQuality: false,
+            completeStage: false,
+          }));
+        }
+      }
+    }
+    for (const [caseIndex, caseId] of ACCEPTED_HOTSPOT_CASE_IDS.entries()) {
+      for (let sweepIndex = 0; sweepIndex < 3; sweepIndex += 1) {
+        accumulator.acceptTimeline(Object.freeze({
+          policyMatrixIndex,
+          caseId,
+          timingCohortIndex: caseIndex,
+          sweepIndex,
+          firstStrictImprovementNanoseconds: null,
+          finalBestInstallNanoseconds: null,
+        }));
+      }
+    }
+  }
+  const driverIds = [...new Set(ACCEPTED_POLICY_IDS.map((policyId) =>
+    policyId.split('--')[0] as string))];
+  const config: AcceptedJsonObject = Object.freeze({
+    acceptedBaseRevision: 'a'.repeat(40),
+    policyMatrix: Object.freeze({
+      drivers: Object.freeze(driverIds.map((driverId) => Object.freeze({
+        driverId,
+        maximumShareActions: 1,
+      }))),
+    }),
+  });
+  const hash = `sha256:${'b'.repeat(64)}`;
+  const descriptor = Object.freeze({ path: 'synthetic', bytes: 1, sha256: hash });
+  const analysis = buildAcceptedAnalysis(
+    accumulator,
+    config,
+    Object.freeze({ implementationInputRevision: 'c'.repeat(40) }),
+    Object.freeze({
+      config: descriptor,
+      artifactSchema: descriptor,
+      sourceClosure: descriptor,
+      inputArtifact: descriptor,
+    }),
+    Object.freeze({ timezone: 'Pacific/Fiji' }),
+  );
+  const policyResults = analysis['policyResults'];
+  assert.ok(Array.isArray(policyResults));
+  const anchor = policyResults[0] as AcceptedJsonObject;
+  const callCases = anchor['callCases'];
+  assert.ok(Array.isArray(callCases));
+  assert.deepEqual((callCases[0] as AcceptedJsonObject)['elapsedRatio'], {
+    numerator: '2',
+    denominator: '2',
+  });
+  assert.deepEqual((callCases[0] as AcceptedJsonObject)['pairedDeltaMedian'], {
+    numerator: '0',
+    denominator: '1',
+  });
+  assert.deepEqual(analysis['decision'], {
+    status: 'strict-reference-fallback',
+    policyId: null,
+    fallbackDecisionId: 'strict-reference-fallback',
+    rankedQualifyingPolicyIds: [],
+    reason: 'trustworthy-complete-no-policy-qualified',
+  });
+});
+
+void test('encodes one closed six-field accepted-run failure line', () => {
+  assert.equal(
+    encodeAcceptedRunFailure(
+      acceptedRunFailure(
+        'precommit-artifact-write',
+        false,
+        'owned-staging-cleanup-failure',
+      ),
+      'invocation',
+    ),
+    '{"ok":false,"cause":"artifact-write-failure","phase":"publication-precommit","detailCode":"artifact-write-failure","committed":false,"secondaryCleanup":{"cause":"owned-staging-cleanup-failure","detailCode":"owned-staging-cleanup-failure"}}\n',
+  );
+});
+
+void test('projects every internal failure through one exact getter-safe registry', () => {
+  assert.deepEqual(
+    [...new Set(Object.values(ACCEPTED_RUN_INTERNAL_FAILURE_REGISTRY).map(
+      (projection) => projection.cause,
+    ))].sort(),
+    [
+      'artifact-sync-failure',
+      'artifact-write-failure',
+      'environment-admission-failure',
+      'filesystem-not-admitted',
+      'final-destination-conflict',
+      'initial-destination-conflict',
+      'invalid-invocation',
+      'owned-lock-cleanup-failure',
+      'owned-staging-cleanup-failure',
+      'postcommit-parent-sync-failure',
+      'provisional-destination-cleanup-failure',
+      'publication-lock-conflict',
+      'publication-rename-failure',
+      'repository-state-mismatch',
+      'runtime-import-closure-mismatch',
+      'unexpected-tool-exception',
+    ],
+  );
+  const original = acceptedRunFailure('precommit-artifact-write');
+  const throwingGet = new Proxy(original, {
+    get: () => { throw new Error('hostile getter text'); },
+  });
+  assert.deepEqual(
+    acceptedRunFailureEnvelope(throwingGet, 'invocation'),
+    {
+      ok: false,
+      cause: 'unexpected-tool-exception',
+      phase: 'invocation',
+      detailCode: 'unexpected-tool-exception',
+      committed: false,
+      secondaryCleanup: null,
+    },
+  );
+  const throwingDescriptor = new Proxy({}, {
+    getOwnPropertyDescriptor: () => { throw new Error('hostile proxy text'); },
+  });
+  assert.deepEqual(
+    acceptedRunFailureEnvelope(throwingDescriptor, 'candidate'),
+    {
+      ok: false,
+      cause: 'unexpected-tool-exception',
+      phase: 'candidate',
+      detailCode: 'unexpected-tool-exception',
+      committed: false,
+      secondaryCleanup: null,
+    },
+  );
+  const throwingFamily = {};
+  Object.defineProperty(throwingFamily, 'toolFailureFamily', {
+    get: () => { throw new Error('hostile family getter text'); },
+  });
+  const encoded = encodeAcceptedRunFailure(throwingFamily, 'invocation');
+  assert.equal(encoded.includes('hostile'), false);
+  assert.equal(
+    encoded,
+    '{"ok":false,"cause":"unexpected-tool-exception","phase":"invocation","detailCode":"unexpected-tool-exception","committed":false,"secondaryCleanup":null}\n',
+  );
+  for (const forgedEnvelope of [
+    {
+      cause: 'postcommit-parent-sync-failure',
+      phase: 'candidate',
+      detailCode: 'postcommit-parent-sync-failure',
+      committed: true,
+      secondaryCleanup: null,
+    },
+    {
+      cause: 'artifact-write-failure',
+      phase: 'publication-precommit',
+      detailCode: 'artifact-write-failure',
+      committed: false,
+      secondaryCleanup: {
+        cause: 'owned-lock-cleanup-failure',
+        detailCode: 'owned-lock-cleanup-failure',
+      },
+    },
+  ]) {
+    assert.deepEqual(
+      acceptedRunFailureEnvelope({ envelope: forgedEnvelope }, 'verification'),
+      {
+        ok: false,
+        cause: 'unexpected-tool-exception',
+        phase: 'verification',
+        detailCode: 'unexpected-tool-exception',
+        committed: false,
+        secondaryCleanup: null,
+      },
+    );
+  }
+});
+
+void test('keeps staging unreachable across every final prepublication boundary failure', async () => {
+  const boundaries = [
+    'last-semantic',
+    'last-call',
+    'last-timeline',
+    'last-deadline-shadow',
+    'last-authorization',
+    'analysis',
+    'serialization',
+  ];
+  for (const boundary of boundaries) {
+    const events: string[] = [];
+    const primary = acceptedRunFailure(
+      boundary === 'analysis' || boundary === 'serialization'
+        ? 'serialization-unexpected'
+        : 'candidate-unexpected',
+    );
+    const preflight = {
+      publication: { released: false, committed: false },
+    } as unknown as AcceptedPreflightResult;
+    await assert.rejects(
+      runAcceptedExperiment('/synthetic/repository', {
+        preflight: () => {
+          events.push('lock-admitted');
+          return Promise.resolve(preflight);
+        },
+        execute: () => {
+          events.push(boundary);
+          throw primary;
+        },
+        publish: () => {
+          events.push('staging-created');
+          return Promise.resolve();
+        },
+        abort: () => {
+          events.push('lock-cleaned');
+          return Promise.reject(primary);
+        },
+      }),
+      (error: unknown) => error === primary,
+    );
+    assert.deepEqual(events, ['lock-admitted', boundary, 'lock-cleaned']);
+  }
+
+  const successEvents: string[] = [];
+  const successPreflight = {
+    publication: { released: false, committed: false },
+  } as unknown as AcceptedPreflightResult;
+  await runAcceptedExperiment('/synthetic/repository', {
+    preflight: () => Promise.resolve(successPreflight),
+    execute: () => {
+      successEvents.push('sealed-artifacts');
+      return Object.freeze([]);
+    },
+    publish: () => {
+      successEvents.push('staging-created');
+      return Promise.resolve();
+    },
+    abort: (_session, error) => Promise.reject(
+      error instanceof Error ? error : new Error('Synthetic abort failure.'),
+    ),
+  });
+  assert.deepEqual(successEvents, ['sealed-artifacts', 'staging-created']);
+});
+
+function syntheticAcceptedArtifacts(): readonly AcceptedPreparedArtifact[] {
+  const encoder = new TextEncoder();
+  return Object.freeze(acceptedRetainedFileContracts().map((file) => {
+    const bytes = file.recordCount === null
+      ? encoder.encode(file.name === 'README.md' ? '# retained\n' : '{}\n')
+      : encoder.encode('{}\n'.repeat(file.recordCount));
+    return Object.freeze({
+      name: file.name,
+      bytes,
+      sha256: sha256Bytes(bytes),
+      recordCount: file.recordCount,
+    });
+  }));
+}
+
+function acceptedPublicationDependencies(
+  overrides: Partial<AcceptedPublicationDependencies> = {},
+): AcceptedPublicationDependencies {
+  const defaults = defaultAcceptedPublicationDependencies(sha256Bytes);
+  return Object.freeze({
+    ...defaults,
+    statfs: (() => Promise.resolve({
+      type: 0xef53n,
+      bsize: 4_096n,
+      blocks: 1n,
+      bfree: 1n,
+      bavail: 1n,
+      files: 1n,
+      ffree: 1n,
+    })) as unknown as typeof defaults.statfs,
+    suffix: () => 'a'.repeat(32),
+    ...overrides,
+  });
+}
+
+function fileHandleProxy(
+  handle: FileHandle,
+  overrides: Partial<Pick<FileHandle, 'stat' | 'sync'>>,
+): FileHandle {
+  return new Proxy(handle, {
+    get: (target, property): unknown => {
+      if (property === 'stat' && overrides.stat !== undefined) return overrides.stat;
+      if (property === 'sync' && overrides.sync !== undefined) return overrides.sync;
+      return boundObjectProperty(target, property);
+    },
+  });
+}
+
+function boundObjectProperty(target: object, property: string | symbol): unknown {
+  const value: unknown = Reflect.get(target, property, target);
+  return typeof value === 'function'
+    ? (...arguments_: unknown[]): unknown => Reflect.apply(value, target, arguments_)
+    : value;
+}
+
+async function assertAcceptedPathAbsent(target: string): Promise<void> {
+  await assert.rejects(lstat(target), (error: unknown) =>
+    error instanceof Error && 'code' in error && error.code === 'ENOENT');
+}
+
+void test('admits lock before destination conflicts and atomically publishes only sealed bytes', async () => {
+  const temporary = await mkdtemp(path.join(tmpdir(), 'routelab-accepted-publication-'));
+  const dependencies = acceptedPublicationDependencies();
+  try {
+    const first = await admitAcceptedPublication(temporary, dependencies);
+    await mkdir(first.destinationPath);
+    await assert.rejects(
+      admitAcceptedPublication(temporary, dependencies),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'publication-lock-conflict',
+    );
+    await rm(first.destinationPath, { recursive: true });
+    await assert.rejects(
+      abortAcceptedPublication(
+        first,
+        acceptedRunFailure('candidate-unexpected'),
+      ),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure && error.envelope.phase === 'candidate',
+    );
+
+    await mkdir(first.destinationPath);
+    await assert.rejects(
+      admitAcceptedPublication(temporary, dependencies),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'initial-destination-conflict' &&
+        error.envelope.phase === 'preflight',
+    );
+    await assert.rejects(lstat(first.lockPath), (error: unknown) =>
+      error instanceof Error && 'code' in error && error.code === 'ENOENT');
+    await rm(first.destinationPath, { recursive: true });
+
+    const session = await admitAcceptedPublication(temporary, dependencies);
+    assert.deepEqual(await readdir(session.parentPath), [path.basename(session.lockPath)]);
+    await publishAcceptedArtifacts(session, syntheticAcceptedArtifacts());
+    assert.deepEqual(
+      (await readdir(session.destinationPath)).sort(),
+      acceptedRetainedFileContracts().map((file) => file.name).sort(),
+    );
+    await assert.rejects(lstat(session.lockPath), (error: unknown) =>
+      error instanceof Error && 'code' in error && error.code === 'ENOENT');
+    const publicationSource = await readFile(
+      'src/benchmark/service-fast-numerical-experiment/accepted-run/publication.ts',
+      'utf8',
+    );
+    const postcommit = publicationSource.slice(
+      publicationSource.indexOf('session.committed = true;'),
+      publicationSource.indexOf('/** Release only the owned lock'),
+    );
+    assert.equal(postcommit.includes('destinationPath'), false);
+    assert.equal(postcommit.includes('dependencies.rm'), false);
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
+
+void test('rejects non-ext publication admission before creating an owned lock', async () => {
+  const temporary = await mkdtemp(path.join(tmpdir(), 'routelab-accepted-nonext-'));
+  const dependencies = acceptedPublicationDependencies({
+    statfs: (() => Promise.resolve({
+      type: 0x0102_1994n,
+      bsize: 4_096n,
+      blocks: 1n,
+      bfree: 1n,
+      bavail: 1n,
+      files: 1n,
+      ffree: 1n,
+    })) as unknown as AcceptedPublicationDependencies['statfs'],
+  });
+  try {
+    await assert.rejects(
+      admitAcceptedPublication(temporary, dependencies),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'filesystem-not-admitted' &&
+        error.envelope.phase === 'preflight',
+    );
+    const entries = await readdir(path.dirname(path.join(
+      temporary,
+      ACCEPTED_RETAINED_DIRECTORY,
+    )));
+    assert.deepEqual(entries, []);
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
+
+void test('rejects a symlinked publication parent component before lock admission', async () => {
+  const temporary = await mkdtemp(path.join(tmpdir(), 'routelab-accepted-parent-link-'));
+  const external = await mkdtemp(path.join(tmpdir(), 'routelab-accepted-parent-target-'));
+  try {
+    await symlink(external, path.join(temporary, 'datasets'));
+    await assert.rejects(
+      admitAcceptedPublication(temporary, acceptedPublicationDependencies()),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'filesystem-not-admitted' &&
+        error.envelope.phase === 'preflight',
+    );
+    assert.deepEqual(await readdir(external), []);
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+    await rm(external, { recursive: true, force: true });
+  }
+});
+
+void test('cleans invalid artifacts, final conflicts, and rename failures without touching destinations', async () => {
+  const temporary = await mkdtemp(path.join(tmpdir(), 'routelab-accepted-precommit-'));
+  try {
+    const invalidSession = await admitAcceptedPublication(
+      temporary,
+      acceptedPublicationDependencies({ suffix: () => '1'.repeat(32) }),
+    );
+    const invalidArtifacts = syntheticAcceptedArtifacts().map((artifact, index) =>
+      index === 0 ? Object.freeze({ ...artifact, sha256: `sha256:${'0'.repeat(64)}` }) : artifact);
+    await assert.rejects(
+      publishAcceptedArtifacts(invalidSession, invalidArtifacts),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'artifact-write-failure' &&
+        error.envelope.secondaryCleanup === null,
+    );
+    await assertAcceptedPathAbsent(invalidSession.lockPath);
+    await assertAcceptedPathAbsent(path.join(
+      invalidSession.parentPath,
+      `.${path.basename(invalidSession.destinationPath)}.staging-${'1'.repeat(32)}`,
+    ));
+
+    const conflictSession = await admitAcceptedPublication(
+      temporary,
+      acceptedPublicationDependencies({ suffix: () => '2'.repeat(32) }),
+    );
+    await mkdir(conflictSession.destinationPath);
+    const marker = path.join(conflictSession.destinationPath, 'owner-marker');
+    await writeFile(marker, 'preexisting');
+    await assert.rejects(
+      publishAcceptedArtifacts(conflictSession, syntheticAcceptedArtifacts()),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'final-destination-conflict' &&
+        error.envelope.phase === 'publication-precommit' &&
+        error.envelope.secondaryCleanup === null,
+    );
+    assert.equal(await readFile(marker, 'utf8'), 'preexisting');
+    await assertAcceptedPathAbsent(conflictSession.lockPath);
+    await assertAcceptedPathAbsent(path.join(
+      conflictSession.parentPath,
+      `.${path.basename(conflictSession.destinationPath)}.staging-${'2'.repeat(32)}`,
+    ));
+    await rm(conflictSession.destinationPath, { recursive: true });
+
+    const renameSession = await admitAcceptedPublication(
+      temporary,
+      acceptedPublicationDependencies({
+        suffix: () => '3'.repeat(32),
+        rename: (() => Promise.reject(new Error('forced rename failure'))) as
+          unknown as AcceptedPublicationDependencies['rename'],
+      }),
+    );
+    await assert.rejects(
+      publishAcceptedArtifacts(renameSession, syntheticAcceptedArtifacts()),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'publication-rename-failure' &&
+        error.envelope.secondaryCleanup === null,
+    );
+    await assertAcceptedPathAbsent(renameSession.destinationPath);
+    await assertAcceptedPathAbsent(renameSession.lockPath);
+    await assertAcceptedPathAbsent(path.join(
+      renameSession.parentPath,
+      `.${path.basename(renameSession.destinationPath)}.staging-${'3'.repeat(32)}`,
+    ));
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
+
+void test('rejects symlink and cross-device readback identities before rename', async () => {
+  for (const mode of ['symlink', 'cross-device'] as const) {
+    const temporary = await mkdtemp(path.join(tmpdir(), `routelab-accepted-${mode}-`));
+    const defaults = acceptedPublicationDependencies();
+    let tampered = false;
+    const dependencies = mode === 'symlink'
+      ? acceptedPublicationDependencies({
+          readdir: (async (target: string) => {
+            const names = await defaults.readdir(target);
+            if (!tampered && target.includes('.staging-')) {
+              tampered = true;
+              const artifact = path.join(target, 'analysis.json');
+              await rm(artifact);
+              await symlink('manifest.json', artifact);
+            }
+            return names;
+          }) as unknown as typeof defaults.readdir,
+          suffix: () => '4'.repeat(32),
+        })
+      : acceptedPublicationDependencies({
+          open: (async (target: string, flags: string | number, modeValue?: number) => {
+            const handle = await defaults.open(target, flags, modeValue);
+            if (
+              target.endsWith('/analysis.json') &&
+              flags === (constants.O_RDONLY | constants.O_NOFOLLOW)
+            ) {
+              return fileHandleProxy(handle, {
+                stat: (async (options?: { bigint?: boolean }) => {
+                  const admitted = await handle.stat(options as { bigint: true });
+                  return new Proxy(admitted, {
+                    get: (statTarget, property): unknown =>
+                      property === 'dev'
+                        ? statTarget.dev + 1n
+                        : boundObjectProperty(statTarget, property),
+                  });
+                }) as FileHandle['stat'],
+              });
+            }
+            return handle;
+          }) as unknown as typeof defaults.open,
+          suffix: () => '5'.repeat(32),
+        });
+    try {
+      const session = await admitAcceptedPublication(temporary, dependencies);
+      await assert.rejects(
+        publishAcceptedArtifacts(session, syntheticAcceptedArtifacts()),
+        (error: unknown) =>
+          error instanceof AcceptedRunFailure &&
+          error.envelope.cause === 'artifact-write-failure' &&
+          error.envelope.phase === 'publication-precommit' &&
+          error.envelope.secondaryCleanup === null,
+      );
+      await assertAcceptedPathAbsent(session.destinationPath);
+      await assertAcceptedPathAbsent(session.lockPath);
+      assert.deepEqual(await readdir(session.parentPath), []);
+    } finally {
+      await rm(temporary, { recursive: true, force: true });
+    }
+  }
+});
+
+void test('rejects mutated bytes and extra staging files during bounded readback', async () => {
+  for (const mode of ['byte-mutation', 'extra-file'] as const) {
+    const temporary = await mkdtemp(path.join(tmpdir(), `routelab-accepted-${mode}-`));
+    const defaults = acceptedPublicationDependencies();
+    let tampered = false;
+    const dependencies = acceptedPublicationDependencies({
+      readdir: (async (target: string) => {
+        if (!tampered && target.includes('.staging-')) {
+          tampered = true;
+          if (mode === 'extra-file') {
+            await writeFile(path.join(target, 'unexpected'), 'hostile');
+          } else {
+            const artifactPath = path.join(target, 'analysis.json');
+            const bytes = Uint8Array.from(await readFile(artifactPath));
+            bytes[0] = bytes[0] === 0x7b ? 0x5b : 0x7b;
+            await writeFile(artifactPath, bytes);
+          }
+        }
+        return defaults.readdir(target);
+      }) as unknown as typeof defaults.readdir,
+      suffix: () => mode === 'byte-mutation' ? 'a'.repeat(32) : 'b'.repeat(32),
+    });
+    try {
+      const session = await admitAcceptedPublication(temporary, dependencies);
+      await assert.rejects(
+        publishAcceptedArtifacts(session, syntheticAcceptedArtifacts()),
+        (error: unknown) =>
+          error instanceof AcceptedRunFailure &&
+          error.envelope.cause === 'artifact-write-failure' &&
+          error.envelope.phase === 'publication-precommit' &&
+          error.envelope.secondaryCleanup === null,
+      );
+      await assertAcceptedPathAbsent(session.destinationPath);
+      await assertAcceptedPathAbsent(session.lockPath);
+      assert.deepEqual(await readdir(session.parentPath), []);
+    } finally {
+      await rm(temporary, { recursive: true, force: true });
+    }
+  }
+});
+
+void test('classifies a retained-file sync failure before staging readback', async () => {
+  const temporary = await mkdtemp(path.join(tmpdir(), 'routelab-accepted-file-sync-'));
+  const defaults = acceptedPublicationDependencies();
+  const dependencies = acceptedPublicationDependencies({
+    open: (async (target: string, flags: string | number, modeValue?: number) => {
+      const handle = await defaults.open(target, flags, modeValue);
+      if (target.endsWith('/analysis.json') && flags === 'wx') {
+        return fileHandleProxy(handle, {
+          sync: () => Promise.reject(new Error('forced retained-file sync failure')),
+        });
+      }
+      return handle;
+    }) as unknown as typeof defaults.open,
+    suffix: () => 'c'.repeat(32),
+  });
+  try {
+    const session = await admitAcceptedPublication(temporary, dependencies);
+    await assert.rejects(
+      publishAcceptedArtifacts(session, syntheticAcceptedArtifacts()),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'artifact-sync-failure' &&
+        error.envelope.phase === 'publication-precommit' &&
+        error.envelope.secondaryCleanup === null,
+    );
+    await assertAcceptedPathAbsent(session.destinationPath);
+    await assertAcceptedPathAbsent(session.lockPath);
+    assert.deepEqual(await readdir(session.parentPath), []);
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
+
+void test('classifies staging sync, final lock rebind, and postcommit parent sync exactly', async () => {
+  const stagingRoot = await mkdtemp(path.join(tmpdir(), 'routelab-accepted-sync-'));
+  const stagingDefaults = acceptedPublicationDependencies();
+  const stagingDependencies = acceptedPublicationDependencies({
+    open: (async (target: string, flags: string | number, modeValue?: number) => {
+      const handle = await stagingDefaults.open(target, flags, modeValue);
+      if (
+        target.includes('.staging-') && typeof flags === 'number' &&
+        (flags & constants.O_DIRECTORY) !== 0
+      ) {
+        return fileHandleProxy(handle, {
+          sync: () => Promise.reject(new Error('forced staging sync failure')),
+        });
+      }
+      return handle;
+    }) as unknown as typeof stagingDefaults.open,
+    suffix: () => '6'.repeat(32),
+  });
+  try {
+    const session = await admitAcceptedPublication(stagingRoot, stagingDependencies);
+    await assert.rejects(
+      publishAcceptedArtifacts(session, syntheticAcceptedArtifacts()),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'artifact-sync-failure' &&
+        error.envelope.committed === false &&
+        error.envelope.secondaryCleanup === null,
+    );
+    await assertAcceptedPathAbsent(session.lockPath);
+    assert.deepEqual(await readdir(session.parentPath), []);
+  } finally {
+    await rm(stagingRoot, { recursive: true, force: true });
+  }
+
+  const lockRoot = await mkdtemp(path.join(tmpdir(), 'routelab-accepted-lock-rebind-'));
+  const lockDefaults = acceptedPublicationDependencies();
+  let watchedLock = '';
+  let publicationLockStats = 0;
+  const lockDependencies = acceptedPublicationDependencies({
+    lstat: (async (target: string, options: { bigint: true }) => {
+      const admitted = await lockDefaults.lstat(target, options);
+      if (target === watchedLock) {
+        publicationLockStats += 1;
+        if (publicationLockStats === 2) {
+          return new Proxy(admitted, {
+            get: (statTarget, property): unknown =>
+              property === 'ino'
+                ? statTarget.ino + 1n
+                : boundObjectProperty(statTarget, property),
+          });
+        }
+      }
+      return admitted;
+    }) as unknown as typeof lockDefaults.lstat,
+    suffix: () => '7'.repeat(32),
+  });
+  try {
+    const session = await admitAcceptedPublication(lockRoot, lockDependencies);
+    watchedLock = session.lockPath;
+    await assert.rejects(
+      publishAcceptedArtifacts(session, syntheticAcceptedArtifacts()),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'filesystem-not-admitted' &&
+        error.envelope.phase === 'publication-precommit' &&
+        error.envelope.secondaryCleanup === null,
+    );
+    assert.equal(publicationLockStats >= 3, true);
+    await assertAcceptedPathAbsent(session.lockPath);
+    await assertAcceptedPathAbsent(session.destinationPath);
+    assert.deepEqual(await readdir(session.parentPath), []);
+  } finally {
+    await rm(lockRoot, { recursive: true, force: true });
+  }
+
+  const parentRoot = await mkdtemp(path.join(tmpdir(), 'routelab-accepted-parent-sync-'));
+  try {
+    const session = await admitAcceptedPublication(
+      parentRoot,
+      acceptedPublicationDependencies({ suffix: () => '8'.repeat(32) }),
+    );
+    const realSync = session.parentHandle.sync.bind(session.parentHandle);
+    let parentSyncCalls = 0;
+    session.parentHandle.sync = () => {
+      parentSyncCalls += 1;
+      return parentSyncCalls === 1
+        ? Promise.reject(new Error('forced postcommit parent sync failure'))
+        : realSync();
+    };
+    await assert.rejects(
+      publishAcceptedArtifacts(session, syntheticAcceptedArtifacts()),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'postcommit-parent-sync-failure' &&
+        error.envelope.phase === 'publication-postcommit' &&
+        error.envelope.committed === true &&
+        error.envelope.secondaryCleanup === null,
+    );
+    assert.equal(parentSyncCalls, 2);
+    assert.deepEqual(
+      (await readdir(session.destinationPath)).sort(),
+      acceptedRetainedFileContracts().map((file) => file.name).sort(),
+    );
+    await assertAcceptedPathAbsent(session.lockPath);
+  } finally {
+    await rm(parentRoot, { recursive: true, force: true });
+  }
+});
+
+void test('preserves lock-sync cleanup precedence before and after commit', async () => {
+  const precommitRoot = await mkdtemp(path.join(tmpdir(), 'routelab-accepted-lock-sync-'));
+  try {
+    const session = await admitAcceptedPublication(
+      precommitRoot,
+      acceptedPublicationDependencies({ suffix: () => 'd'.repeat(32) }),
+    );
+    session.parentHandle.sync = () =>
+      Promise.reject(new Error('forced precommit lock cleanup sync failure'));
+    const invalidArtifacts = syntheticAcceptedArtifacts().map((artifact, index) =>
+      index === 0 ? Object.freeze({ ...artifact, sha256: `sha256:${'0'.repeat(64)}` }) : artifact);
+    await assert.rejects(
+      publishAcceptedArtifacts(session, invalidArtifacts),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'artifact-write-failure' &&
+        error.envelope.phase === 'publication-precommit' &&
+        error.envelope.committed === false &&
+        error.envelope.secondaryCleanup?.cause === 'owned-lock-cleanup-failure',
+    );
+    await assertAcceptedPathAbsent(session.destinationPath);
+    await assertAcceptedPathAbsent(session.lockPath);
+    await session.parentHandle.close();
+  } finally {
+    await rm(precommitRoot, { recursive: true, force: true });
+  }
+
+  const cleanupRoot = await mkdtemp(path.join(tmpdir(), 'routelab-accepted-post-lock-sync-'));
+  try {
+    const session = await admitAcceptedPublication(
+      cleanupRoot,
+      acceptedPublicationDependencies({ suffix: () => 'e'.repeat(32) }),
+    );
+    const realSync = session.parentHandle.sync.bind(session.parentHandle);
+    let syncCalls = 0;
+    session.parentHandle.sync = () => {
+      syncCalls += 1;
+      return syncCalls === 1
+        ? realSync()
+        : Promise.reject(new Error('forced committed lock cleanup sync failure'));
+    };
+    await assert.rejects(
+      publishAcceptedArtifacts(session, syntheticAcceptedArtifacts()),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'owned-lock-cleanup-failure' &&
+        error.envelope.phase === 'cleanup' &&
+        error.envelope.committed === true &&
+        error.envelope.secondaryCleanup === null,
+    );
+    assert.equal(syncCalls, 2);
+    await assertAcceptedPathAbsent(session.lockPath);
+    assert.equal((await readdir(session.destinationPath)).length, 8);
+    await session.parentHandle.close();
+  } finally {
+    await rm(cleanupRoot, { recursive: true, force: true });
+  }
+
+  const secondaryRoot = await mkdtemp(path.join(tmpdir(), 'routelab-accepted-post-secondary-'));
+  try {
+    const session = await admitAcceptedPublication(
+      secondaryRoot,
+      acceptedPublicationDependencies({ suffix: () => 'f'.repeat(32) }),
+    );
+    let syncCalls = 0;
+    session.parentHandle.sync = () => {
+      syncCalls += 1;
+      return Promise.reject(new Error('forced parent and lock cleanup sync failure'));
+    };
+    await assert.rejects(
+      publishAcceptedArtifacts(session, syntheticAcceptedArtifacts()),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'postcommit-parent-sync-failure' &&
+        error.envelope.phase === 'publication-postcommit' &&
+        error.envelope.committed === true &&
+        error.envelope.secondaryCleanup?.cause === 'owned-lock-cleanup-failure',
+    );
+    assert.equal(syncCalls, 2);
+    await assertAcceptedPathAbsent(session.lockPath);
+    assert.equal((await readdir(session.destinationPath)).length, 8);
+    await session.parentHandle.close();
+  } finally {
+    await rm(secondaryRoot, { recursive: true, force: true });
+  }
+});
+
+void test('preserves the primary publication failure when owned staging cleanup fails', async () => {
+  const temporary = await mkdtemp(path.join(tmpdir(), 'routelab-accepted-cleanup-'));
+  const dependencies = acceptedPublicationDependencies({
+    rename: (() => Promise.reject(new Error('forced rename failure'))) as
+      unknown as AcceptedPublicationDependencies['rename'],
+    rm: (() => Promise.reject(new Error('forced staging cleanup failure'))) as
+      unknown as AcceptedPublicationDependencies['rm'],
+    suffix: () => '9'.repeat(32),
+  });
+  try {
+    const session = await admitAcceptedPublication(temporary, dependencies);
+    await assert.rejects(
+      publishAcceptedArtifacts(session, syntheticAcceptedArtifacts()),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'publication-rename-failure' &&
+        error.envelope.secondaryCleanup?.cause === 'owned-staging-cleanup-failure',
+    );
+    await assertAcceptedPathAbsent(session.destinationPath);
+    assert.equal((await readdir(session.parentPath)).includes(
+      path.basename(session.lockPath),
+    ), true);
+    await assert.rejects(
+      abortAcceptedPublication(
+        session,
+        acceptedRunFailure('precommit-rename'),
+      ),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'publication-rename-failure',
+    );
+    await assertAcceptedPathAbsent(session.lockPath);
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
+
+void test('admits only the accepted CLI exact process-access path and counts', async () => {
+  const acceptedCliPath = 'cli/run-service-fast-numerical-experiment.ts';
+  const exactAccess = [
+    'void process.argv.length;',
+    "process.stderr.write('');",
+    'process.exitCode = 1;',
+  ].join('\n');
+  await runtimeAuditProbe(exactAccess, { relativePath: acceptedCliPath });
+  for (const [relativePath, hostile, expectedCode] of [
+    ['cli/wrong-accepted-run.ts', exactAccess, 'process-capability-mismatch'],
+    [acceptedCliPath, exactAccess.replace(
+      'void process.argv.length;',
+      'void process.argv.length; void process.argv.length;',
+    ), 'process-capability-mismatch'],
+    [acceptedCliPath, exactAccess.replace(
+      'process.argv.length',
+      "process['argv'].length",
+    ), 'computed-capability-forbidden'],
+  ] as const) {
+    await assert.rejects(
+      runtimeAuditProbe(hostile, { relativePath }),
+      (error: unknown) =>
+        error instanceof ServiceFastRuntimeImportAuditError &&
+        error.code === expectedCode,
+    );
+  }
+});
+
+void test('audits the exact accepted runtime graph and excludes durable verifier imports', async () => {
+  const descriptors = await Promise.all(ACCEPTED_RUN_RUNTIME_PATHS.map(async (sourcePath) => {
+    const bytes = await readFile(sourcePath);
+    return Object.freeze({
+      path: sourcePath,
+      bytes: bytes.byteLength,
+      sha256: sha256Bytes(bytes),
+    });
+  }));
+  const result = await auditServiceFastRuntimeImports({
+    repositoryRoot: process.cwd(),
+    profile: acceptedRunRuntimeAuditProfile(descriptors),
+    trackedPaths: new Set(ACCEPTED_RUN_RUNTIME_PATHS),
+    ignoredPaths: new Set(),
+  });
+  assert.deepEqual(result.projectSources, [...ACCEPTED_RUN_RUNTIME_PATHS].sort());
+  assert.deepEqual(result.nodeBuiltins, [
+    'node:child_process',
+    'node:crypto',
+    'node:fs',
+    'node:fs/promises',
+    'node:os',
+    'node:path',
+    'node:url',
+    'node:util',
+    'node:worker_threads',
+  ]);
+  for (const sourcePath of [
+    ...ACCEPTED_RUN_RUNTIME_PATHS.filter((value) => value.includes('/accepted-run/')),
+    'cli/run-service-fast-numerical-experiment.ts',
+  ]) {
+    const source = await readFile(sourcePath, 'utf8');
+    assert.equal(
+      /(?:import|export)[\s\S]*?from\s+['"][^'"]*artifact-verifier\//u.test(source),
+      false,
+      sourcePath,
     );
   }
 });

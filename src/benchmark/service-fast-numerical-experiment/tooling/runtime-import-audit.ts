@@ -40,6 +40,7 @@ const SOURCE_CLOSURE_GENERATION_ENTRY_SOURCE =
 const SOURCE_CLOSURE_PUBLICATION_SOURCE =
   'src/benchmark/service-fast-numerical-experiment/source-closure/publication.ts';
 const VERIFIER_CLI_SOURCE = 'cli/verify-service-fast-numerical-experiment.ts';
+const ACCEPTED_RUN_CLI_SOURCE = 'cli/run-service-fast-numerical-experiment.ts';
 const ACCEPTED_RUN_CLOCK_SOURCE =
   'src/benchmark/service-fast-numerical-experiment/accepted-run/clock.ts';
 const ACCEPTED_RUN_ENVIRONMENT_SOURCE =
@@ -1700,8 +1701,12 @@ const PROCESS_ACCESS_PROFILE: Readonly<
     'process.execArgv': 1,
     'process.platform': 1,
     'process.version': 1,
-    'process.versions.uv': 1,
-    'process.versions.v8': 1,
+    'process.versions': 1,
+  }),
+  [ACCEPTED_RUN_CLI_SOURCE]: Object.freeze({
+    'process.argv.length': 1,
+    'process.stderr.write': 1,
+    'process.exitCode': 1,
   }),
 });
 
@@ -1735,6 +1740,9 @@ function auditProcessAccess(source: string, artifact: string): void {
     (expected['process.argv.slice'] !== undefined &&
       countMatches(executable, /\bprocess\.argv\.slice\s*\(/gu) !==
         expected['process.argv.slice']) ||
+    (expected['process.argv.length'] !== undefined &&
+      countMatches(executable, /\bprocess\.argv\.length\b/gu) !==
+        expected['process.argv.length']) ||
     (expected['process.cwd'] !== undefined &&
       countMatches(executable, /\bprocess\.cwd\s*\(/gu) !==
         expected['process.cwd']) ||
@@ -1997,7 +2005,7 @@ function auditFixedCapabilitySource(
         '{ availableParallelism, cpus, endianness, release, totalmem, type }' &&
       workerThreadImports[0]?.importClause?.replace(/\s+/gu, ' ') ===
         '{ isMainThread }' &&
-      countMatches(executable, /\bprocess\b/gu) === 7 &&
+      countMatches(executable, /\bprocess\b/gu) === 6 &&
       environmentFunctions.every((identifier) =>
         countMatches(
           executable,

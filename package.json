@@ -32,6 +32,10 @@
     "verify:synthetic-requests": "node cli/verify-synthetic-request-corpus.ts",
     "demo": "node cli/demo.ts",
     "quote": "node cli/quote.ts",
+    "benchmark": "node cli/benchmark.ts",
+    "benchmark:verify": "node cli/verify-benchmark.ts",
+    "benchmark:extended": "node cli/benchmark-extended.ts",
+    "test:benchmark": "node --test tests/portfolio-benchmark.test.ts",
     "test:core": "node --test tests/constant-product.test.ts tests/route-replay.test.ts tests/exact-input-split-replay.test.ts tests/simple-paths.test.ts tests/pool-disjoint-route-sets.test.ts tests/path-shadow-price-allocation.test.ts tests/anytime-exact-input-split-router.test.ts tests/numerical-exact-input-split-router.test.ts tests/public-facade.test.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm verify:historical-data && pnpm verify:synthetic-requests && pnpm demo"
   },

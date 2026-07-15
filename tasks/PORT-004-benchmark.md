@@ -20,6 +20,12 @@
 9. Add `benchmark:verify`.
 10. Add an optional `benchmark:extended` for the retained corpus.
 
+## Implementation note
+
+The `reference` profile is benchmark-internal, frozen above `thorough`, and still ends in fresh
+exact replay; it is not added to the public quote API. Historical portfolio requests are bounded
+to two hops and two routes so all four deterministic profiles remain practical on a laptop.
+
 ## Required metrics
 
 - exact output;

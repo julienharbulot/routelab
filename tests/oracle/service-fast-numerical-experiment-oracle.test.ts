@@ -32,13 +32,50 @@ import {
   prepareRoutingContext,
   type PreparedRoutingContext,
 } from '../../src/runtime/prepared-routing-context/index.ts';
+import {
+  ACCEPTED_POLICY_IDS,
+  acceptedRetainedFileContracts,
+  type AcceptedInputRecord,
+  type AcceptedJsonObject,
+} from '../../src/benchmark/service-fast-numerical-experiment/accepted-run/contract.ts';
+import {
+  AcceptedAnalysisAccumulator,
+  buildAcceptedAnalysis,
+  compareAcceptedPolicyResults,
+  decideAcceptedPolicy,
+  qualifyAcceptedPolicy,
+} from '../../src/benchmark/service-fast-numerical-experiment/accepted-run/analysis.ts';
+import {
+  projectAcceptedDeadlineOutcome,
+  projectAcceptedOperationalOutcome,
+  projectAcceptedSemanticRecord,
+} from '../../src/benchmark/service-fast-numerical-experiment/accepted-run/projection.ts';
+import {
+  acceptedCallProtocolSchedule,
+  acceptedDeadlineProtocolSchedule,
+  acceptedSemanticSchedule,
+  acceptedTimelineSchedule,
+  type AcceptedScheduleItem,
+} from '../../src/benchmark/service-fast-numerical-experiment/accepted-run/schedule.ts';
+import {
+  ACCEPTED_MAXIMUM_CLOCK_NANOSECONDS,
+  acceptedAbsoluteDeadline,
+  admitAcceptedClockSample,
+  measureAcceptedInvocation,
+  runAcceptedExperiment,
+  type AcceptedRunOrchestrationDependencies,
+} from '../../src/benchmark/service-fast-numerical-experiment/accepted-run/run.ts';
+import type {
+  AcceptedPreflightResult,
+} from '../../src/benchmark/service-fast-numerical-experiment/accepted-run/preflight.ts';
 
 /*
- * This file deliberately does not import any proposer, reconstruction, repair,
- * replay, objective, or evidence implementation. prepareRoutingContext creates
- * only the opaque capability required by the black-box evaluator. Everything
- * used to construct an expected value below is derived locally from the frozen
- * contracts.
+ * Evaluator expectations in this file deliberately import no proposer,
+ * reconstruction, repair, replay, or objective implementation.
+ * prepareRoutingContext creates only the opaque capability required by that
+ * black-box evaluator. The accepted-run APIs above are likewise invoked only as
+ * black-box actuals: every expected value and order is derived locally from the
+ * frozen contracts.
  */
 
 interface OraclePool {
@@ -1540,4 +1577,1103 @@ void test('audits the production closure for test-only forcing seams', () => {
       `Experiment leaked through package ${field}.`,
     );
   }
+});
+
+const ORACLE_ACCEPTED_POLICY_IDS = Object.freeze([
+  'bisection-o64-i64--strict-reject--current',
+  'bisection-o64-i64--strict-reject--bounded-exact-neighborhood-v1',
+  'bisection-o64-i64--final-finite-replay--current',
+  'bisection-o64-i64--final-finite-replay--bounded-exact-neighborhood-v1',
+  'bisection-o64-i24--strict-reject--current',
+  'bisection-o64-i24--strict-reject--bounded-exact-neighborhood-v1',
+  'bisection-o64-i24--final-finite-replay--current',
+  'bisection-o64-i24--final-finite-replay--bounded-exact-neighborhood-v1',
+  'bisection-o32-i16--strict-reject--current',
+  'bisection-o32-i16--strict-reject--bounded-exact-neighborhood-v1',
+  'bisection-o32-i16--final-finite-replay--current',
+  'bisection-o32-i16--final-finite-replay--bounded-exact-neighborhood-v1',
+  'bisection-o16-i12--strict-reject--current',
+  'bisection-o16-i12--strict-reject--bounded-exact-neighborhood-v1',
+  'bisection-o16-i12--final-finite-replay--current',
+  'bisection-o16-i12--final-finite-replay--bounded-exact-neighborhood-v1',
+  'pinned-sqrt-o64--strict-reject--current',
+  'pinned-sqrt-o64--strict-reject--bounded-exact-neighborhood-v1',
+  'pinned-sqrt-o64--final-finite-replay--current',
+  'pinned-sqrt-o64--final-finite-replay--bounded-exact-neighborhood-v1',
+  'fixed-newton-sqrt-o64-n8--strict-reject--current',
+  'fixed-newton-sqrt-o64-n8--strict-reject--bounded-exact-neighborhood-v1',
+  'fixed-newton-sqrt-o64-n8--final-finite-replay--current',
+  'fixed-newton-sqrt-o64-n8--final-finite-replay--bounded-exact-neighborhood-v1',
+] as const);
+
+const ORACLE_ACCEPTED_CASES = Object.freeze([
+  Object.freeze({ caseId: 'historical-anchor', records: 396, timing: 72 }),
+  Object.freeze({ caseId: 'synthetic-dual-spanning-tree', records: 396, timing: 108 }),
+  Object.freeze({ caseId: 'synthetic-reserve-compressed-1e12', records: 396, timing: 72 }),
+  Object.freeze({ caseId: 'synthetic-reserve-amplified-1e60', records: 396, timing: 0 }),
+] as const);
+
+const ORACLE_OPERATIONAL_CASES = Object.freeze(
+  ORACLE_ACCEPTED_CASES.slice(0, 3).map(({ caseId }) => caseId),
+);
+const ORACLE_HOTSPOT_CASES = Object.freeze([
+  'historical-anchor',
+  'synthetic-reserve-compressed-1e12',
+] as const);
+const ORACLE_DEADLINES = Object.freeze([1, 5, 10, 25, 50, 100] as const);
+
+function oracleAcceptedScheduleRecords(): readonly AcceptedInputRecord[] {
+  const records: AcceptedInputRecord[] = [];
+  let timingCohortIndex = 0;
+  for (const suiteCase of ORACLE_ACCEPTED_CASES) {
+    for (let requestIndex = 0; requestIndex < suiteCase.records; requestIndex += 1) {
+      const serviceDecisionMember = suiteCase.timing > 0;
+      records.push(Object.freeze({
+        value: Object.freeze({}),
+        sourceIndex: records.length,
+        caseId: suiteCase.caseId,
+        requestId: `${suiteCase.caseId}:${requestIndex}`,
+        timingCohortIndex: requestIndex < suiteCase.timing
+          ? timingCohortIndex++
+          : null,
+        serviceDecisionMember,
+        amplifiedStressMember: !serviceDecisionMember,
+      }));
+    }
+  }
+  assert.equal(records.length, 1_584);
+  assert.equal(timingCohortIndex, 252);
+  return Object.freeze(records);
+}
+
+function oracleScheduleIdentity(item: AcceptedScheduleItem): Readonly<{
+  readonly sourceIndex: number;
+  readonly timingCohortIndex: number | null;
+  readonly policyMatrixIndex: number;
+  readonly sweepIndex: number;
+  readonly deadlineIndex: number | null;
+}> {
+  return Object.freeze({
+    sourceIndex: item.cell.sourceIndex,
+    timingCohortIndex: item.cell.timingCohortIndex,
+    policyMatrixIndex: item.policyMatrixIndex,
+    sweepIndex: item.sweepIndex,
+    deadlineIndex: item.deadlineIndex,
+  });
+}
+
+const ORACLE_OPERATIONAL_LAYOUT = Object.freeze([
+  Object.freeze({
+    caseId: 'historical-anchor',
+    sourceIndexStart: 0,
+    timingCohortIndexStart: 0,
+    requestCount: 72,
+  }),
+  Object.freeze({
+    caseId: 'synthetic-dual-spanning-tree',
+    sourceIndexStart: 396,
+    timingCohortIndexStart: 72,
+    requestCount: 108,
+  }),
+  Object.freeze({
+    caseId: 'synthetic-reserve-compressed-1e12',
+    sourceIndexStart: 792,
+    timingCohortIndexStart: 180,
+    requestCount: 72,
+  }),
+] as const);
+
+interface OracleProtocolIdentity {
+  readonly phase: 'call-warmup' | 'call-retained' |
+    'deadline-warmup' | 'deadline-retained';
+  readonly sourceIndex: number;
+  readonly caseId: string;
+  readonly requestId: string;
+  readonly timingCohortIndex: number;
+  readonly policyMatrixIndex: number;
+  readonly policyId: string;
+  readonly observationIndex: number | null;
+  readonly sweepIndex: number;
+  readonly deadlineIndex: number | null;
+  readonly deadlineMilliseconds: number | null;
+}
+
+interface OracleProtocolTransition {
+  readonly yieldIndex: number;
+  readonly phase: OracleProtocolIdentity['phase'];
+  readonly caseId: string;
+  readonly deadlineIndex: number | null;
+  readonly observationIndex: number | null;
+}
+
+function oracleRotatedPolicy(
+  offset: number,
+  position: number,
+  reverse: boolean,
+): number {
+  assert.ok(offset >= 0 && offset < ORACLE_ACCEPTED_POLICY_IDS.length);
+  assert.ok(position >= 0 && position < ORACLE_ACCEPTED_POLICY_IDS.length);
+  const forwardPosition = reverse
+    ? ORACLE_ACCEPTED_POLICY_IDS.length - 1 - position
+    : position;
+  return (offset + forwardPosition) % ORACLE_ACCEPTED_POLICY_IDS.length;
+}
+
+function oracleExpectedIdentity(
+  phase: OracleProtocolIdentity['phase'],
+  layout: typeof ORACLE_OPERATIONAL_LAYOUT[number],
+  localRequestIndex: number,
+  policyMatrixIndex: number,
+  observationIndex: number | null,
+  sweepIndex: number,
+  deadlineIndex: number | null,
+): OracleProtocolIdentity {
+  const policyId = ORACLE_ACCEPTED_POLICY_IDS[policyMatrixIndex];
+  if (policyId === undefined) throw new Error('Oracle policy identity is absent.');
+  const deadlineMilliseconds = deadlineIndex === null
+    ? null
+    : ORACLE_DEADLINES[deadlineIndex];
+  if (deadlineMilliseconds === undefined) {
+    throw new Error('Oracle deadline identity is absent.');
+  }
+  return Object.freeze({
+    phase,
+    sourceIndex: layout.sourceIndexStart + localRequestIndex,
+    caseId: layout.caseId,
+    requestId: `${layout.caseId}:${localRequestIndex}`,
+    timingCohortIndex: layout.timingCohortIndexStart + localRequestIndex,
+    policyMatrixIndex,
+    policyId,
+    observationIndex,
+    sweepIndex,
+    deadlineIndex,
+    deadlineMilliseconds,
+  });
+}
+
+function* oracleExpectedCallProtocol(): Generator<OracleProtocolIdentity> {
+  let observationIndex = 0;
+  for (const layout of ORACLE_OPERATIONAL_LAYOUT) {
+    for (let localRequestIndex = 0;
+      localRequestIndex < layout.requestCount;
+      localRequestIndex += 1) {
+      const timingIndex = layout.timingCohortIndexStart + localRequestIndex;
+      const offset = timingIndex % ORACLE_ACCEPTED_POLICY_IDS.length;
+      for (let position = 0;
+        position < ORACLE_ACCEPTED_POLICY_IDS.length;
+        position += 1) {
+        yield oracleExpectedIdentity(
+          'call-warmup',
+          layout,
+          localRequestIndex,
+          oracleRotatedPolicy(offset, position, false),
+          null,
+          0,
+          null,
+        );
+      }
+    }
+    for (let sweepIndex = 0; sweepIndex < 5; sweepIndex += 1) {
+      const reverse = sweepIndex % 2 === 1;
+      for (let traversalIndex = 0;
+        traversalIndex < layout.requestCount;
+        traversalIndex += 1) {
+        const localRequestIndex = reverse
+          ? layout.requestCount - 1 - traversalIndex
+          : traversalIndex;
+        const timingIndex = layout.timingCohortIndexStart + localRequestIndex;
+        const offset = (timingIndex + sweepIndex) % ORACLE_ACCEPTED_POLICY_IDS.length;
+        for (let position = 0;
+          position < ORACLE_ACCEPTED_POLICY_IDS.length;
+          position += 1) {
+          yield oracleExpectedIdentity(
+            'call-retained',
+            layout,
+            localRequestIndex,
+            oracleRotatedPolicy(offset, position, reverse),
+            observationIndex,
+            sweepIndex,
+            null,
+          );
+          observationIndex += 1;
+        }
+      }
+    }
+  }
+  assert.equal(observationIndex, 30_240);
+}
+
+function* oracleExpectedDeadlineProtocol(): Generator<OracleProtocolIdentity> {
+  let observationIndex = 0;
+  for (const layout of ORACLE_OPERATIONAL_LAYOUT) {
+    for (let deadlineIndex = 0;
+      deadlineIndex < ORACLE_DEADLINES.length;
+      deadlineIndex += 1) {
+      for (let localRequestIndex = 0;
+        localRequestIndex < layout.requestCount;
+        localRequestIndex += 1) {
+        const timingIndex = layout.timingCohortIndexStart + localRequestIndex;
+        const offset = (timingIndex + deadlineIndex) % ORACLE_ACCEPTED_POLICY_IDS.length;
+        for (let position = 0;
+          position < ORACLE_ACCEPTED_POLICY_IDS.length;
+          position += 1) {
+          yield oracleExpectedIdentity(
+            'deadline-warmup',
+            layout,
+            localRequestIndex,
+            oracleRotatedPolicy(offset, position, false),
+            null,
+            0,
+            deadlineIndex,
+          );
+        }
+      }
+      for (let sweepIndex = 0; sweepIndex < 3; sweepIndex += 1) {
+        const reverse = sweepIndex % 2 === 1;
+        for (let traversalIndex = 0;
+          traversalIndex < layout.requestCount;
+          traversalIndex += 1) {
+          const localRequestIndex = reverse
+            ? layout.requestCount - 1 - traversalIndex
+            : traversalIndex;
+          const timingIndex = layout.timingCohortIndexStart + localRequestIndex;
+          const offset = (
+            timingIndex + deadlineIndex + sweepIndex
+          ) % ORACLE_ACCEPTED_POLICY_IDS.length;
+          for (let position = 0;
+            position < ORACLE_ACCEPTED_POLICY_IDS.length;
+            position += 1) {
+            yield oracleExpectedIdentity(
+              'deadline-retained',
+              layout,
+              localRequestIndex,
+              oracleRotatedPolicy(offset, position, reverse),
+              observationIndex,
+              sweepIndex,
+              deadlineIndex,
+            );
+            observationIndex += 1;
+          }
+        }
+      }
+    }
+  }
+  assert.equal(observationIndex, 108_864);
+}
+
+function oracleActualProtocolIdentity(item: AcceptedScheduleItem): OracleProtocolIdentity {
+  if (
+    item.phase !== 'call-warmup' && item.phase !== 'call-retained' &&
+    item.phase !== 'deadline-warmup' && item.phase !== 'deadline-retained' ||
+    item.cell.timingCohortIndex === null
+  ) throw new Error('Actual protocol item is outside the operational schedule.');
+  const policyId = ACCEPTED_POLICY_IDS[item.policyMatrixIndex];
+  if (policyId === undefined) throw new Error('Actual protocol policy is absent.');
+  return Object.freeze({
+    phase: item.phase,
+    sourceIndex: item.cell.sourceIndex,
+    caseId: item.cell.caseId,
+    requestId: item.cell.requestId,
+    timingCohortIndex: item.cell.timingCohortIndex,
+    policyMatrixIndex: item.policyMatrixIndex,
+    policyId,
+    observationIndex: item.observationIndex,
+    sweepIndex: item.sweepIndex,
+    deadlineIndex: item.deadlineIndex,
+    deadlineMilliseconds: item.deadlineMilliseconds,
+  });
+}
+
+function assertEveryOracleProtocolIdentity(
+  actual: Iterable<AcceptedScheduleItem>,
+  expected: Generator<OracleProtocolIdentity>,
+): Readonly<{
+  readonly count: number;
+  readonly transitions: readonly OracleProtocolTransition[];
+}> {
+  const transitions: OracleProtocolTransition[] = [];
+  let count = 0;
+  let priorTransitionKey: string | null = null;
+  for (const item of actual) {
+    const expectedItem = expected.next();
+    assert.equal(expectedItem.done, false, `Unexpected protocol item ${count}.`);
+    const actualIdentity = oracleActualProtocolIdentity(item);
+    assert.deepEqual(actualIdentity, expectedItem.value, `Protocol item ${count}.`);
+    const transitionKey = JSON.stringify([
+      actualIdentity.phase,
+      actualIdentity.caseId,
+      actualIdentity.deadlineIndex,
+    ]);
+    if (transitionKey !== priorTransitionKey) {
+      transitions.push(Object.freeze({
+        yieldIndex: count,
+        phase: actualIdentity.phase,
+        caseId: actualIdentity.caseId,
+        deadlineIndex: actualIdentity.deadlineIndex,
+        observationIndex: actualIdentity.observationIndex,
+      }));
+      priorTransitionKey = transitionKey;
+    }
+    count += 1;
+  }
+  assert.equal(expected.next().done, true, 'Expected protocol item is missing.');
+  return Object.freeze({ count, transitions: Object.freeze(transitions) });
+}
+
+function oracleExpectedDeadlineTransitions(): readonly OracleProtocolTransition[] {
+  const transitions: OracleProtocolTransition[] = [];
+  let yieldIndex = 0;
+  let observationIndex = 0;
+  for (const layout of ORACLE_OPERATIONAL_LAYOUT) {
+    for (let deadlineIndex = 0;
+      deadlineIndex < ORACLE_DEADLINES.length;
+      deadlineIndex += 1) {
+      transitions.push(Object.freeze({
+        yieldIndex,
+        phase: 'deadline-warmup',
+        caseId: layout.caseId,
+        deadlineIndex,
+        observationIndex: null,
+      }));
+      yieldIndex += layout.requestCount * ORACLE_ACCEPTED_POLICY_IDS.length;
+      transitions.push(Object.freeze({
+        yieldIndex,
+        phase: 'deadline-retained',
+        caseId: layout.caseId,
+        deadlineIndex,
+        observationIndex,
+      }));
+      const retained = 3 * layout.requestCount * ORACLE_ACCEPTED_POLICY_IDS.length;
+      yieldIndex += retained;
+      observationIndex += retained;
+    }
+  }
+  assert.equal(yieldIndex, 145_152);
+  assert.equal(observationIndex, 108_864);
+  return Object.freeze(transitions);
+}
+
+void test('pins every accepted warmup and retained protocol identity in frozen order', () => {
+  assert.deepEqual(ACCEPTED_POLICY_IDS, ORACLE_ACCEPTED_POLICY_IDS);
+  const records = oracleAcceptedScheduleRecords();
+  const call = assertEveryOracleProtocolIdentity(
+    acceptedCallProtocolSchedule(records),
+    oracleExpectedCallProtocol(),
+  );
+  assert.equal(call.count, 36_288);
+  assert.deepEqual(call.transitions, [
+    { yieldIndex: 0, phase: 'call-warmup', caseId: 'historical-anchor', deadlineIndex: null, observationIndex: null },
+    { yieldIndex: 1_728, phase: 'call-retained', caseId: 'historical-anchor', deadlineIndex: null, observationIndex: 0 },
+    { yieldIndex: 10_368, phase: 'call-warmup', caseId: 'synthetic-dual-spanning-tree', deadlineIndex: null, observationIndex: null },
+    { yieldIndex: 12_960, phase: 'call-retained', caseId: 'synthetic-dual-spanning-tree', deadlineIndex: null, observationIndex: 8_640 },
+    { yieldIndex: 25_920, phase: 'call-warmup', caseId: 'synthetic-reserve-compressed-1e12', deadlineIndex: null, observationIndex: null },
+    { yieldIndex: 27_648, phase: 'call-retained', caseId: 'synthetic-reserve-compressed-1e12', deadlineIndex: null, observationIndex: 21_600 },
+  ]);
+
+  const deadline = assertEveryOracleProtocolIdentity(
+    acceptedDeadlineProtocolSchedule(records),
+    oracleExpectedDeadlineProtocol(),
+  );
+  assert.equal(deadline.count, 145_152);
+  assert.deepEqual(deadline.transitions, oracleExpectedDeadlineTransitions());
+  assert.equal(
+    38_016 + 36_288 + 18_144 + 145_152,
+    237_600,
+  );
+});
+
+void test('independently enumerates every accepted schedule identity and boundary', () => {
+  assert.deepEqual(ACCEPTED_POLICY_IDS, ORACLE_ACCEPTED_POLICY_IDS);
+  const records = oracleAcceptedScheduleRecords();
+
+  const semanticTargets = new Set([0, 23, 24, 38_015]);
+  const semanticBoundaries = new Map<number, ReturnType<typeof oracleScheduleIdentity>>();
+  let semanticCalls = 0;
+  for (const item of acceptedSemanticSchedule(records)) {
+    assert.equal(item.observationIndex, semanticCalls);
+    if (semanticTargets.has(semanticCalls)) {
+      semanticBoundaries.set(semanticCalls, oracleScheduleIdentity(item));
+    }
+    semanticCalls += 1;
+  }
+  assert.equal(semanticCalls, 38_016);
+  assert.deepEqual([...semanticBoundaries], [
+    [0, { sourceIndex: 0, timingCohortIndex: 0, policyMatrixIndex: 0, sweepIndex: 0, deadlineIndex: null }],
+    [23, { sourceIndex: 0, timingCohortIndex: 0, policyMatrixIndex: 23, sweepIndex: 0, deadlineIndex: null }],
+    [24, { sourceIndex: 1, timingCohortIndex: 1, policyMatrixIndex: 0, sweepIndex: 0, deadlineIndex: null }],
+    [38_015, { sourceIndex: 1_583, timingCohortIndex: null, policyMatrixIndex: 23, sweepIndex: 0, deadlineIndex: null }],
+  ]);
+
+  const callTargets = new Set([0, 1_728, 8_639, 8_640, 21_599, 21_600, 30_239]);
+  const callBoundaries = new Map<number, ReturnType<typeof oracleScheduleIdentity>>();
+  let callWarmups = 0;
+  let callRetained = 0;
+  for (const item of acceptedCallProtocolSchedule(records)) {
+    if (item.phase === 'call-warmup') {
+      callWarmups += 1;
+      continue;
+    }
+    assert.equal(item.observationIndex, callRetained);
+    if (callTargets.has(callRetained)) {
+      callBoundaries.set(callRetained, oracleScheduleIdentity(item));
+    }
+    callRetained += 1;
+  }
+  assert.equal(callWarmups, 6_048);
+  assert.equal(callRetained, 30_240);
+  assert.deepEqual([...callBoundaries], [
+    [0, { sourceIndex: 0, timingCohortIndex: 0, policyMatrixIndex: 0, sweepIndex: 0, deadlineIndex: null }],
+    [1_728, { sourceIndex: 71, timingCohortIndex: 71, policyMatrixIndex: 23, sweepIndex: 1, deadlineIndex: null }],
+    [8_639, { sourceIndex: 71, timingCohortIndex: 71, policyMatrixIndex: 2, sweepIndex: 4, deadlineIndex: null }],
+    [8_640, { sourceIndex: 396, timingCohortIndex: 72, policyMatrixIndex: 0, sweepIndex: 0, deadlineIndex: null }],
+    [21_599, { sourceIndex: 503, timingCohortIndex: 179, policyMatrixIndex: 14, sweepIndex: 4, deadlineIndex: null }],
+    [21_600, { sourceIndex: 792, timingCohortIndex: 180, policyMatrixIndex: 12, sweepIndex: 0, deadlineIndex: null }],
+    [30_239, { sourceIndex: 863, timingCohortIndex: 251, policyMatrixIndex: 14, sweepIndex: 4, deadlineIndex: null }],
+  ]);
+
+  const timelineTargets = new Set([0, 5_183, 5_184, 12_959, 12_960, 18_143]);
+  const timelineBoundaries = new Map<number, ReturnType<typeof oracleScheduleIdentity>>();
+  let timelineRetained = 0;
+  for (const item of acceptedTimelineSchedule(records)) {
+    assert.equal(item.observationIndex, timelineRetained);
+    if (timelineTargets.has(timelineRetained)) {
+      timelineBoundaries.set(timelineRetained, oracleScheduleIdentity(item));
+    }
+    timelineRetained += 1;
+  }
+  assert.equal(timelineRetained, 18_144);
+  assert.deepEqual([...timelineBoundaries], [
+    [0, { sourceIndex: 0, timingCohortIndex: 0, policyMatrixIndex: 0, sweepIndex: 0, deadlineIndex: null }],
+    [5_183, { sourceIndex: 71, timingCohortIndex: 71, policyMatrixIndex: 0, sweepIndex: 2, deadlineIndex: null }],
+    [5_184, { sourceIndex: 396, timingCohortIndex: 72, policyMatrixIndex: 0, sweepIndex: 0, deadlineIndex: null }],
+    [12_959, { sourceIndex: 503, timingCohortIndex: 179, policyMatrixIndex: 12, sweepIndex: 2, deadlineIndex: null }],
+    [12_960, { sourceIndex: 792, timingCohortIndex: 180, policyMatrixIndex: 12, sweepIndex: 0, deadlineIndex: null }],
+    [18_143, { sourceIndex: 863, timingCohortIndex: 251, policyMatrixIndex: 12, sweepIndex: 2, deadlineIndex: null }],
+  ]);
+
+  const deadlineTargets = new Set([0, 5_184, 31_103, 31_104, 77_759, 77_760, 108_863]);
+  const deadlineBoundaries = new Map<number, ReturnType<typeof oracleScheduleIdentity>>();
+  let deadlineWarmups = 0;
+  let deadlineRetained = 0;
+  for (const item of acceptedDeadlineProtocolSchedule(records)) {
+    if (item.phase === 'deadline-warmup') {
+      deadlineWarmups += 1;
+      continue;
+    }
+    assert.equal(item.observationIndex, deadlineRetained);
+    if (deadlineTargets.has(deadlineRetained)) {
+      deadlineBoundaries.set(deadlineRetained, oracleScheduleIdentity(item));
+    }
+    deadlineRetained += 1;
+  }
+  assert.equal(deadlineWarmups, 36_288);
+  assert.equal(deadlineRetained, 108_864);
+  assert.deepEqual([...deadlineBoundaries], [
+    [0, { sourceIndex: 0, timingCohortIndex: 0, policyMatrixIndex: 0, sweepIndex: 0, deadlineIndex: 0 }],
+    [5_184, { sourceIndex: 0, timingCohortIndex: 0, policyMatrixIndex: 1, sweepIndex: 0, deadlineIndex: 1 }],
+    [31_103, { sourceIndex: 71, timingCohortIndex: 71, policyMatrixIndex: 5, sweepIndex: 2, deadlineIndex: 5 }],
+    [31_104, { sourceIndex: 396, timingCohortIndex: 72, policyMatrixIndex: 0, sweepIndex: 0, deadlineIndex: 0 }],
+    [77_759, { sourceIndex: 503, timingCohortIndex: 179, policyMatrixIndex: 17, sweepIndex: 2, deadlineIndex: 5 }],
+    [77_760, { sourceIndex: 792, timingCohortIndex: 180, policyMatrixIndex: 12, sweepIndex: 0, deadlineIndex: 0 }],
+    [108_863, { sourceIndex: 863, timingCohortIndex: 251, policyMatrixIndex: 17, sweepIndex: 2, deadlineIndex: 5 }],
+  ]);
+  assert.equal(
+    semanticCalls + callWarmups + callRetained + timelineRetained +
+      deadlineWarmups + deadlineRetained,
+    237_600,
+  );
+});
+
+function oracleAcceptedNoPlanInput(): AcceptedInputRecord {
+  const noPlanObjective = Object.freeze({
+    hasPlan: false,
+    amountOut: null,
+    legCount: null,
+    totalHops: null,
+    routeKeys: Object.freeze([]),
+    allocations: Object.freeze([]),
+  });
+  const incumbent = Object.freeze({
+    status: 'no-plan',
+    reason: 'synthetic-no-plan',
+    receipt: null,
+    objective: noPlanObjective,
+    receiptHash: null,
+  });
+  return Object.freeze({
+    value: Object.freeze({
+      entryBaseline: Object.freeze({ incumbent }),
+      candidateDiscovery: Object.freeze({
+        candidateSets: Object.freeze([Object.freeze({ resolutionStatus: 'failed' })]),
+      }),
+    }),
+    sourceIndex: 0,
+    caseId: 'historical-anchor',
+    requestId: 'oracle-no-plan',
+    timingCohortIndex: 0,
+    serviceDecisionMember: true,
+    amplifiedStressMember: false,
+  });
+}
+
+void test('reconstructs accepted semantic, operational, deadline, and manifest hashes locally', () => {
+  const emptyTranscriptHash =
+    'sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945';
+  const noPlanObjectiveHash =
+    'sha256:4677e41476fc6572a2259534fccbcbea1970c5c8326195ac236e6a871f8bbb10';
+  const entryIncumbentHash =
+    'sha256:7ca22372a4cfb16c98f79ace35fbe9051c85cacf4f6d631c8919bf2b62309387';
+  const input = oracleAcceptedNoPlanInput();
+  const noPlanObjective = (
+    input.value['entryBaseline'] as AcceptedJsonObject
+  )['incumbent'] as AcceptedJsonObject;
+  assert.equal(sha256Json([]), emptyTranscriptHash);
+  assert.equal(
+    sha256Json(noPlanObjective['objective']),
+    noPlanObjectiveHash,
+  );
+  assert.equal(sha256Json(noPlanObjective), entryIncumbentHash);
+
+  const fixture = makeFixture(2);
+  const cell = prepareCell(fixture, 101n, [candidateSet(fixture.routes, null)]);
+  const outcome = completeSemantic(cell, 0);
+  const counters = Object.freeze([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+  const diagnostic = Object.freeze({
+    setIndex: 0,
+    resolutionStatus: 'failed',
+    terminalStatus: 'model-resolution-failed',
+    failureCode: 'invalid-route-model',
+    proposal: null,
+    currentScore: Object.freeze({
+      status: 'not-run',
+      failureCode: null,
+      selectedAttemptIndex: null,
+      receiptHash: null,
+      scoreTranscriptHash: emptyTranscriptHash,
+    }),
+    repair: null,
+    selectedScoreSource: 'none',
+    reconstructionDisposition: 'current',
+    authorization: Object.freeze({
+      status: 'not-attempted',
+      receiptHash: null,
+      failureCode: null,
+    }),
+    counters,
+  });
+  const incumbentReference = Object.freeze({
+    origin: 'entry-baseline',
+    candidateSetIndex: null,
+    selectedScoreSource: null,
+    selectedAttemptIndex: null,
+    objectiveHash: noPlanObjectiveHash,
+    receiptHash: null,
+  });
+  const expectedOperational = Object.freeze({
+    entryIncumbentHash,
+    candidateSetDiagnostics: Object.freeze([diagnostic]),
+    finalIncumbent: incumbentReference,
+    counters,
+  });
+  const actualOperational = projectAcceptedOperationalOutcome(input, outcome);
+  assert.deepEqual(actualOperational, expectedOperational);
+  assert.equal(
+    sha256Json(actualOperational),
+    'sha256:718182a779a40a76bc0bf80b61f7d35661dd43470141e2ab06246807b5b75a51',
+  );
+
+  const expectedSemanticWithoutHash = Object.freeze({
+    schemaVersion: 'routelab.service-fast-numerical-semantic-result.v1',
+    semanticIndex: 0,
+    sourceIndex: 0,
+    policyMatrixIndex: 0,
+    entryIncumbentHash,
+    candidateSetDiagnostics: Object.freeze([diagnostic]),
+    finalIncumbent: incumbentReference,
+    anchorComparison: Object.freeze({
+      relation: 'both-no-plan',
+      comparison: 'equal',
+      anchorHasPlan: false,
+      policyHasPlan: false,
+    }),
+    exactRegret: Object.freeze({
+      outputDelta: null,
+      bpsNumerator: null,
+      bpsDenominator: null,
+      integerBps: null,
+    }),
+    counters,
+  });
+  const expectedSemanticHash =
+    'sha256:1d1fa0e1b36123a3c4d3d775f13e019f935bf56419b3e8ba4342df73a602ab06';
+  assert.equal(sha256Json(expectedSemanticWithoutHash), expectedSemanticHash);
+  assert.deepEqual(projectAcceptedSemanticRecord(input, 0, outcome, outcome), {
+    ...expectedSemanticWithoutHash,
+    semanticHash: expectedSemanticHash,
+  });
+
+  const terminalState = Object.freeze({
+    setIndex: 0,
+    stage: 'terminal',
+    terminalStatus: 'model-resolution-failed',
+    failureCode: 'invalid-route-model',
+    currentScoreTranscriptHash: emptyTranscriptHash,
+    repairScoreTranscriptHash: emptyTranscriptHash,
+    authorizationTranscriptHash: emptyTranscriptHash,
+    counters,
+  });
+  const diagnosticStateHash =
+    'sha256:15c86d096cf704a0bcaa61dc3d8a2a3d1ae2a2e082f1c45f9ab21231d3385399';
+  assert.equal(sha256Json([terminalState]), diagnosticStateHash);
+  const expectedDeadline = Object.freeze({
+    termination: 'complete',
+    entryPlan: false,
+    anyValidScore: false,
+    anyImprovement: false,
+    anchorQuality: true,
+    completeStage: true,
+    incumbent: incumbentReference,
+    diagnosticStateHash,
+    counters,
+  });
+  const actualDeadline = projectAcceptedDeadlineOutcome(
+    input,
+    outcome,
+    'complete',
+    outcome,
+  );
+  assert.deepEqual(actualDeadline, expectedDeadline);
+  assert.equal(
+    sha256Json(actualDeadline),
+    'sha256:9d637d4cd6fb0246f50f77c4ff51950866e7f404734775ed6f1c193a255247c0',
+  );
+
+  const operationalEntries = Object.freeze([
+    Object.freeze({
+      name: 'call-timing-observations.ndjson',
+      contentRole: 'call-timing',
+      schemaVersion: 'routelab.service-fast-numerical-call-timing-observation.v1',
+      recordCount: 30_240,
+      bytes: 123,
+      sha256: `sha256:${'1'.repeat(64)}`,
+    }),
+    Object.freeze({
+      name: 'incumbent-timeline-observations.ndjson',
+      contentRole: 'incumbent-timeline',
+      schemaVersion: 'routelab.service-fast-numerical-incumbent-timeline-observation.v1',
+      recordCount: 18_144,
+      bytes: 456,
+      sha256: `sha256:${'2'.repeat(64)}`,
+    }),
+    Object.freeze({
+      name: 'deadline-observations.ndjson',
+      contentRole: 'deadline',
+      schemaVersion: 'routelab.service-fast-numerical-deadline-observation.v1',
+      recordCount: 108_864,
+      bytes: 789,
+      sha256: `sha256:${'3'.repeat(64)}`,
+    }),
+  ]);
+  assert.equal(
+    sha256Json(operationalEntries),
+    'sha256:516a5bca6d8fff9b998f8802e494c8483a0eee0e71821109cb956d80a27dfb80',
+  );
+  assert.notEqual(
+    sha256Json([...operationalEntries].reverse()),
+    sha256Json(operationalEntries),
+  );
+});
+
+void test('samples accepted calls exactly at entry and return and derives deadlines exactly', () => {
+  const trace: string[] = [];
+  const samples = [90_000_000n, 90_000_017n];
+  const measured = measureAcceptedInvocation(
+    () => {
+      trace.push('clock');
+      return samples.shift() ?? assert.fail('unexpected accepted clock sample');
+    },
+    (entrySample) => {
+      trace.push('work');
+      assert.equal(entrySample, 90_000_000n);
+      return Object.freeze({ status: 'complete' });
+    },
+  );
+  assert.deepEqual(trace, ['clock', 'work', 'clock']);
+  assert.deepEqual(measured, {
+    value: { status: 'complete' },
+    entrySample: 90_000_000n,
+    returnSample: 90_000_017n,
+  });
+  assert.equal(acceptedAbsoluteDeadline(9_000n, 25), 25_009_000n);
+  assert.equal(
+    acceptedAbsoluteDeadline(ACCEPTED_MAXIMUM_CLOCK_NANOSECONDS - 1_000_000n, 1),
+    ACCEPTED_MAXIMUM_CLOCK_NANOSECONDS,
+  );
+  assert.equal(
+    admitAcceptedClockSample(ACCEPTED_MAXIMUM_CLOCK_NANOSECONDS),
+    ACCEPTED_MAXIMUM_CLOCK_NANOSECONDS,
+  );
+  assert.throws(() => acceptedAbsoluteDeadline(
+    ACCEPTED_MAXIMUM_CLOCK_NANOSECONDS - 999_999n,
+    1,
+  ));
+  assert.throws(() => admitAcceptedClockSample(-1n));
+  assert.throws(() => measureAcceptedInvocation(
+    (() => {
+      const regressing = [2n, 1n];
+      return () => regressing.shift() ?? 0n;
+    })(),
+    () => 'complete',
+  ));
+});
+
+const ORACLE_DRIVER_CEILINGS = Object.freeze([
+  Object.freeze({ driverId: 'bisection-o64-i64', maximumShareActions: 68_640 }),
+  Object.freeze({ driverId: 'bisection-o64-i24', maximumShareActions: 27_040 }),
+  Object.freeze({ driverId: 'bisection-o32-i16', maximumShareActions: 9_504 }),
+  Object.freeze({ driverId: 'bisection-o16-i12', maximumShareActions: 3_808 }),
+  Object.freeze({ driverId: 'pinned-sqrt-o64', maximumShareActions: 2_080 }),
+  Object.freeze({ driverId: 'fixed-newton-sqrt-o64-n8', maximumShareActions: 11_440 }),
+]);
+
+function populateOracleAcceptedObservations(accumulator: AcceptedAnalysisAccumulator): void {
+  for (let policyMatrixIndex = 0;
+    policyMatrixIndex < ORACLE_ACCEPTED_POLICY_IDS.length;
+    policyMatrixIndex += 1) {
+    for (const caseId of ORACLE_OPERATIONAL_CASES) {
+      const callSweeps = policyMatrixIndex === 0
+        ? [[9, 100, 7, 8, 6], [30, 28, 32, 31, 29]]
+        : [[4, 100, 6, 5, 7], [26, 24, 90, 25, 27]];
+      for (const [timingCohortIndex, sweeps] of callSweeps.entries()) {
+        for (const [sweepIndex, elapsedNanoseconds] of sweeps.entries()) {
+          accumulator.acceptCall(Object.freeze({
+            policyMatrixIndex,
+            caseId,
+            timingCohortIndex,
+            sweepIndex,
+            elapsedNanoseconds: String(elapsedNanoseconds),
+          }));
+        }
+      }
+      for (const deadlineMilliseconds of ORACLE_DEADLINES) {
+        for (let sweepIndex = 0; sweepIndex < 3; sweepIndex += 1) {
+          accumulator.acceptDeadline(Object.freeze({
+            policyMatrixIndex,
+            caseId,
+            deadlineMilliseconds,
+            sweepIndex,
+            entryPlan: sweepIndex < 2,
+            anyValidScore: sweepIndex < 2,
+            anyImprovement: policyMatrixIndex > 0 && sweepIndex === 0,
+            anchorQuality: policyMatrixIndex === 0
+              ? sweepIndex === 0
+              : sweepIndex < 2,
+            completeStage: sweepIndex === 0,
+          }));
+        }
+      }
+    }
+    for (const caseId of ORACLE_HOTSPOT_CASES) {
+      const first = policyMatrixIndex === 0
+        ? [[10, 12, null], [9, null, null]]
+        : [[7, 8, null], [5, 6, 7]];
+      const final = policyMatrixIndex === 0
+        ? [[20, 22, null], [19, null, null]]
+        : [[17, 18, null], [15, 16, 17]];
+      for (let timingCohortIndex = 0; timingCohortIndex < 2; timingCohortIndex += 1) {
+        const firstSweeps = first[timingCohortIndex];
+        const finalSweeps = final[timingCohortIndex];
+        assert.notEqual(firstSweeps, undefined);
+        assert.notEqual(finalSweeps, undefined);
+        for (let sweepIndex = 0; sweepIndex < 3; sweepIndex += 1) {
+          const firstValue = firstSweeps?.[sweepIndex];
+          const finalValue = finalSweeps?.[sweepIndex];
+          assert.notEqual(firstValue, undefined);
+          assert.notEqual(finalValue, undefined);
+          accumulator.acceptTimeline(Object.freeze({
+            policyMatrixIndex,
+            caseId,
+            timingCohortIndex,
+            sweepIndex,
+            firstStrictImprovementNanoseconds: firstValue === null
+              ? null
+              : String(firstValue),
+            finalBestInstallNanoseconds: finalValue === null
+              ? null
+              : String(finalValue),
+          }));
+        }
+      }
+    }
+  }
+}
+
+void test('derives bigint medians and a trustworthy no-qualifier fallback independently', () => {
+  const accumulator = new AcceptedAnalysisAccumulator();
+  populateOracleAcceptedObservations(accumulator);
+  const descriptor = Object.freeze({
+    path: 'oracle/literal',
+    bytes: 1,
+    sha256: `sha256:${'a'.repeat(64)}`,
+  });
+  const analysis = buildAcceptedAnalysis(
+    accumulator,
+    Object.freeze({
+      acceptedBaseRevision: 'b'.repeat(40),
+      policyMatrix: Object.freeze({ drivers: ORACLE_DRIVER_CEILINGS }),
+    }),
+    Object.freeze({ implementationInputRevision: 'c'.repeat(40) }),
+    Object.freeze({
+      config: descriptor,
+      artifactSchema: descriptor,
+      sourceClosure: descriptor,
+      inputArtifact: descriptor,
+    }),
+    Object.freeze({ timezone: 'Pacific/Fiji' }),
+  );
+  const policyResults = analysis['policyResults'];
+  assert.ok(Array.isArray(policyResults));
+  const candidateValue: unknown = policyResults[1];
+  assert.ok(isJsonRecord(candidateValue));
+  const candidate = candidateValue;
+  const callCases = candidate['callCases'];
+  assert.ok(Array.isArray(callCases));
+  for (const callCase of callCases) {
+    assert.ok(isJsonRecord(callCase));
+    assert.deepEqual(callCase['pairedDeltaMedian'], {
+      numerator: '-6',
+      denominator: '2',
+    });
+    assert.deepEqual(callCase['elapsedRatio'], {
+      numerator: '32',
+      denominator: '38',
+    });
+  }
+  const events = candidate['instrumentedEvents'];
+  assert.ok(Array.isArray(events));
+  for (const event of events) {
+    assert.ok(isJsonRecord(event));
+    assert.equal(event['anchorAvailabilityCount'], 1);
+    assert.equal(event['candidateAvailabilityCount'], 2);
+    assert.equal(event['pairedFiniteCount'], 1);
+    assert.deepEqual(event['pairedFiniteMedianDelta'], {
+      numerator: '-4',
+      denominator: '1',
+    });
+  }
+  assert.deepEqual(analysis['decision'], {
+    status: 'strict-reference-fallback',
+    policyId: null,
+    fallbackDecisionId: 'strict-reference-fallback',
+    rankedQualifyingPolicyIds: [],
+    reason: 'trustworthy-complete-no-policy-qualified',
+  });
+});
+
+function oracleQualificationCandidate(
+  policyId: string,
+  forcedFailureIncumbentMismatchCount = 0,
+): AcceptedJsonObject {
+  const hugeNine = '900000000000000000000000000000000000000';
+  const hugeTen = '1000000000000000000000000000000000000000';
+  return Object.freeze({
+    policyId,
+    semantic: Object.freeze({
+      invalidFreshReplayCount: 0,
+      forcedFailureIncumbentMismatchCount,
+      finalObjectivesNeverWorse: true,
+      anchorPlanLostCount: 0,
+      unterminatedDiagnosticCount: 0,
+      anchorServiceFailures: Object.freeze({
+        nonConvergence: 7,
+        residualOptionsExhausted: 5,
+      }),
+      candidateServiceFailures: Object.freeze({
+        nonConvergence: 6,
+        residualOptionsExhausted: 5,
+      }),
+      amplifiedFailures: Object.freeze({
+        untypedFailures: 0,
+        exactSafetyFailures: 0,
+      }),
+    }),
+    callCases: Object.freeze(ORACLE_OPERATIONAL_CASES.map((caseId) => Object.freeze({
+      caseId,
+      pairedDeltaMedian: Object.freeze({
+        numerator: '-999999999999999999999999999999999999999',
+        denominator: '2',
+      }),
+      elapsedRatio: ORACLE_HOTSPOT_CASES.includes(
+        caseId as typeof ORACLE_HOTSPOT_CASES[number]
+      ) ? Object.freeze({ numerator: hugeNine, denominator: hugeTen })
+        : Object.freeze({ numerator: hugeTen, denominator: hugeTen }),
+    }))),
+    deadlineCases: Object.freeze(ORACLE_OPERATIONAL_CASES.flatMap((caseId) =>
+      ORACLE_DEADLINES.map((deadlineMilliseconds) => Object.freeze({
+        caseId,
+        deadlineMilliseconds,
+        anchor: Object.freeze({ entryPlan: 2, anchorQuality: 1 }),
+        candidate: Object.freeze({ entryPlan: 2, anchorQuality: 2 }),
+      })))),
+    instrumentedEvents: Object.freeze(ORACLE_HOTSPOT_CASES.flatMap((caseId) => [
+      'first-exact-authorization-strictly-improving-entry-incumbent',
+      'final-best-incumbent-first-installed',
+    ].map((event) => Object.freeze({
+      caseId,
+      event,
+      anchorAvailabilityCount: 1,
+      candidateAvailabilityCount: 2,
+      pairedFiniteCount: 1,
+      pairedFiniteMedianDelta: Object.freeze({ numerator: '-1', denominator: '2' }),
+    })))),
+  });
+}
+
+function oracleRankingResult(
+  policyId: string,
+  policyMatrixIndex: number,
+  ratioNumerator: string,
+  ratioDenominator: string,
+  vector: readonly number[],
+  mappedShareActionCeiling: number,
+): AcceptedJsonObject {
+  return Object.freeze({
+    policyId,
+    rankingValues: Object.freeze({
+      worstHotspotElapsedRatio: Object.freeze({
+        numerator: ratioNumerator,
+        denominator: ratioDenominator,
+      }),
+      anchorQualityVector: Object.freeze([...vector]),
+      mappedShareActionCeiling,
+      policyMatrixIndex,
+    }),
+  });
+}
+
+void test('qualifies, rejects failed preservation, and ranks by exact rational ties', () => {
+  const qualifyingInput = oracleQualificationCandidate(ORACLE_ACCEPTED_POLICY_IDS[1]);
+  const qualification = qualifyAcceptedPolicy(qualifyingInput);
+  assert.equal(qualification['qualifies'], true);
+  const clauses = qualification['clauseResults'];
+  assert.ok(Array.isArray(clauses));
+  assert.deepEqual(clauses.map((clause) => {
+    assert.ok(isJsonRecord(clause));
+    return [clause['clauseId'], clause['passed'], clause['policyEvidenceHash']];
+  }), [
+    ['fresh-exact-safety', true, sha256Json(qualifyingInput)],
+    ['full-semantic-nonregression', true, sha256Json(qualifyingInput)],
+    ['service-failure-reduction', true, sha256Json(qualifyingInput)],
+    ['service-timing-nonregression', true, sha256Json(qualifyingInput)],
+    ['hotspot-speedup', true, sha256Json(qualifyingInput)],
+    ['deadline-and-event-quality', true, sha256Json(qualifyingInput)],
+  ]);
+
+  const failedPreservation = qualifyAcceptedPolicy(
+    oracleQualificationCandidate(ORACLE_ACCEPTED_POLICY_IDS[1], 1),
+  );
+  assert.equal(failedPreservation['qualifies'], false);
+  const failedClauses = failedPreservation['clauseResults'];
+  assert.ok(Array.isArray(failedClauses));
+  assert.equal((failedClauses[0] as AcceptedJsonObject)['passed'], false);
+
+  const eight = '800000000000000000000000000000000000000';
+  const ten = '1000000000000000000000000000000000000000';
+  const results = Object.freeze([
+    oracleRankingResult(ORACLE_ACCEPTED_POLICY_IDS[1], 1, '8', '10', [1, 9], 10),
+    oracleRankingResult(ORACLE_ACCEPTED_POLICY_IDS[2], 2, '8', '10', [2, 0], 20),
+    oracleRankingResult(ORACLE_ACCEPTED_POLICY_IDS[3], 3, eight, ten, [2, 0], 10),
+    oracleRankingResult(ORACLE_ACCEPTED_POLICY_IDS[4], 4, '80', '100', [2, 0], 10),
+    oracleRankingResult(ORACLE_ACCEPTED_POLICY_IDS[5], 5, '81', '100', [99, 99], 1),
+  ]);
+  const [vectorLoser, ceilingLoser, ceilingWinner, , ratioLoser] = results;
+  if (
+    vectorLoser === undefined || ceilingLoser === undefined ||
+    ceilingWinner === undefined || ratioLoser === undefined
+  ) throw new Error('Oracle ranking fixture is incomplete.');
+  assert.ok(compareAcceptedPolicyResults(ceilingWinner, ceilingLoser) < 0);
+  assert.ok(compareAcceptedPolicyResults(ceilingLoser, vectorLoser) < 0);
+  assert.ok(compareAcceptedPolicyResults(vectorLoser, ratioLoser) < 0);
+  const qualifiers = Object.freeze(results.map((result) => Object.freeze({
+    policyId: result['policyId'] as string,
+    qualifies: true,
+  })));
+  assert.deepEqual(decideAcceptedPolicy(results, qualifiers), {
+    status: 'selected-policy',
+    policyId: ORACLE_ACCEPTED_POLICY_IDS[3],
+    fallbackDecisionId: null,
+    rankedQualifyingPolicyIds: [
+      ORACLE_ACCEPTED_POLICY_IDS[3],
+      ORACLE_ACCEPTED_POLICY_IDS[4],
+      ORACLE_ACCEPTED_POLICY_IDS[2],
+      ORACLE_ACCEPTED_POLICY_IDS[1],
+      ORACLE_ACCEPTED_POLICY_IDS[5],
+    ],
+    reason: 'highest-ranked-qualifying-policy',
+  });
+  assert.deepEqual(
+    decideAcceptedPolicy(results, qualifiers.map((value) => Object.freeze({
+      ...value,
+      qualifies: false,
+    }))),
+    {
+      status: 'strict-reference-fallback',
+      policyId: null,
+      fallbackDecisionId: 'strict-reference-fallback',
+      rankedQualifyingPolicyIds: [],
+      reason: 'trustworthy-complete-no-policy-qualified',
+    },
+  );
+});
+
+void test('publishes in frozen order only after trustworthy execution returns', async () => {
+  assert.deepEqual(
+    acceptedRetainedFileContracts().map((file) => Object.freeze({
+      name: file.name,
+      contentRole: file.contentRole,
+      recordCount: file.recordCount,
+    })),
+    [
+      { name: 'inputs.ndjson', contentRole: 'input', recordCount: 1_584 },
+      { name: 'semantic-results.ndjson', contentRole: 'semantic', recordCount: 38_016 },
+      { name: 'call-timing-observations.ndjson', contentRole: 'call-timing', recordCount: 30_240 },
+      { name: 'incumbent-timeline-observations.ndjson', contentRole: 'incumbent-timeline', recordCount: 18_144 },
+      { name: 'deadline-observations.ndjson', contentRole: 'deadline', recordCount: 108_864 },
+      { name: 'analysis.json', contentRole: 'analysis', recordCount: null },
+      { name: 'manifest.json', contentRole: null, recordCount: null },
+      { name: 'README.md', contentRole: 'readme', recordCount: null },
+    ],
+  );
+
+  const events: string[] = [];
+  const rejected = new Error('untrustworthy accepted evidence');
+  const aborted = new Error('publication aborted');
+  const preflight = Object.freeze({
+    publication: Object.freeze({ released: false, committed: false }),
+  }) as unknown as AcceptedPreflightResult;
+  const abort: AcceptedRunOrchestrationDependencies['abort'] = (_session, failure) => {
+    events.push('abort');
+    assert.equal(failure, rejected);
+    return Promise.reject(aborted);
+  };
+  const dependencies: AcceptedRunOrchestrationDependencies = Object.freeze({
+    preflight: () => {
+      events.push('preflight');
+      return Promise.resolve(preflight);
+    },
+    execute: () => {
+      events.push('execute');
+      throw rejected;
+    },
+    publish: () => {
+      events.push('publish');
+      return Promise.resolve();
+    },
+    abort,
+  });
+  await assert.rejects(
+    runAcceptedExperiment('/synthetic/oracle', dependencies),
+    (error: unknown) => error === aborted,
+  );
+  assert.deepEqual(events, ['preflight', 'execute', 'abort']);
 });

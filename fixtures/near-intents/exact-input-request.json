@@ -1,0 +1,6 @@
+{
+  "defuse_asset_identifier_in": "nep141:asset-a.fixture.invalid",
+  "defuse_asset_identifier_out": "nep141:asset-b.fixture.invalid",
+  "exact_amount_in": "100",
+  "min_deadline_ms": 60000
+}

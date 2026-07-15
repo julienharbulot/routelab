@@ -211,7 +211,12 @@ The server stays local/offline for v0.1. A network adapter may be added later wi
 
 ## NEAR Intents boundary
 
-At implementation time, verify the current official NEAR Intents Market Maker/Message Bus documentation. The adapter maps the verified exact-input quote-shaped fields to `QuoteRequest`. It returns an unsigned quote candidate.
+The official NEAR Intents Market Maker/Message Bus documentation was checked on 2026-07-15. The
+fixture adapter accepts `defuse_asset_identifier_in`, `defuse_asset_identifier_out`,
+`exact_amount_in`, and `min_deadline_ms`. An explicit fictional asset map produces a bounded
+`QuoteRequest`; `min_deadline_ms` remains candidate-validity metadata and is not repurposed as a
+router work deadline. The adapter returns an unsigned quote candidate and is available only as
+the `routelab-ts/near-intents-fixture` package subpath.
 
 It does not:
 
@@ -221,6 +226,9 @@ It does not:
 - inspect solver balances;
 - submit intents;
 - settle trades.
+
+See the [fixture adapter boundary](../src/adapters/near-intents/README.md) for the checked official
+documentation and exact exclusions.
 
 This keeps the adapter useful as an integration seam and honest about its limits.
 

@@ -103,12 +103,12 @@
     ]
   },
   "environment": {
-    "observedAt": "2026-07-15T11:09:37.024Z",
+    "observedAt": "2026-07-15T11:37:35.850Z",
     "node": "v24.18.0",
     "platform": "linux",
     "arch": "x64",
     "cpu": "13th Gen Intel(R) Core(TM) i9-13900H",
-    "commit": "015ec1e"
+    "commit": "80d6eee"
   },
   "cases": [
     {
@@ -13220,12 +13220,12 @@
       "samples": 100,
       "successful": 96,
       "expectedNoRoute": 4,
-      "p50Micros": 117,
-      "p95Micros": 552,
-      "p99Micros": 681,
-      "minMicros": 34,
-      "maxMicros": 694,
-      "throughputPerSecond": 4660.841
+      "p50Micros": 65,
+      "p95Micros": 279,
+      "p99Micros": 490,
+      "minMicros": 22,
+      "maxMicros": 1650,
+      "throughputPerSecond": 7539.456
     },
     {
       "strategy": "greedy-split",
@@ -13234,12 +13234,12 @@
       "samples": 100,
       "successful": 96,
       "expectedNoRoute": 4,
-      "p50Micros": 486,
-      "p95Micros": 16449,
-      "p99Micros": 23147,
+      "p50Micros": 274,
+      "p95Micros": 14703,
+      "p99Micros": 21522,
       "minMicros": 19,
-      "maxMicros": 24835,
-      "throughputPerSecond": 318.83
+      "maxMicros": 22387,
+      "throughputPerSecond": 388.763
     },
     {
       "strategy": "numerical-split",
@@ -13248,12 +13248,12 @@
       "samples": 100,
       "successful": 96,
       "expectedNoRoute": 4,
-      "p50Micros": 394,
-      "p95Micros": 25951,
-      "p99Micros": 26934,
+      "p50Micros": 529,
+      "p95Micros": 25586,
+      "p99Micros": 30007,
       "minMicros": 25,
-      "maxMicros": 32401,
-      "throughputPerSecond": 236.892
+      "maxMicros": 31471,
+      "throughputPerSecond": 235.533
     }
   ]
 }

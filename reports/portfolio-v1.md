@@ -21,17 +21,17 @@ On this retained 24-case set, every published success passed fresh exact replay.
 
 | Strategy | Profile | Samples | p50 µs | p95 µs | p99 µs | calls/s |
 |---|---:|---:|---:|---:|---:|---:|
-| best-single | fast | 100 | 117 | 552 | 681 | 4660.8 |
-| greedy-split | fast | 100 | 486 | 16449 | 23147 | 318.8 |
-| numerical-split | fast | 100 | 394 | 25951 | 26934 | 236.9 |
+| best-single | fast | 100 | 65 | 279 | 490 | 7539.5 |
+| greedy-split | fast | 100 | 274 | 14703 | 21522 | 388.8 |
+| numerical-split | fast | 100 | 529 | 25586 | 30007 | 235.5 |
 
 ## HTTP load
 
 | Service profile | Concurrency | Requests | p50 | p95 | p99 | Throughput |
 |---|---:|---:|---:|---:|---:|---:|
-| greedy-split/fast | 1 | 120 | 13.64 ms | 26.07 ms | 28.81 ms | 67.4 req/s |
-| greedy-split/fast | 4 | 120 | 51.54 ms | 79.93 ms | 88.53 ms | 72.1 req/s |
-| greedy-split/fast | 16 | 120 | 187.43 ms | 358.44 ms | 783.22 ms | 81.6 req/s |
+| greedy-split/fast | 1 | 120 | 12.63 ms | 21.41 ms | 25.92 ms | 73.9 req/s |
+| greedy-split/fast | 4 | 120 | 43.65 ms | 73.22 ms | 89.78 ms | 82.6 req/s |
+| greedy-split/fast | 16 | 120 | 183.02 ms | 398.68 ms | 817.45 ms | 78.0 req/s |
 
 ![Quality versus budget](quality-vs-budget.svg)
 
@@ -46,4 +46,4 @@ On this retained 24-case set, every published success passed fresh exact replay.
 
 Quality covers 24 named cases and uses deterministic work caps only. Exact values remain decimal strings in the JSON report. Latency uses process.hrtime.bigint(), 10 warmups, and 100 measured calls per reported combination while rotating cases. Raw observations are ignored by Git.
 
-Environment: v24.18.0; linux/x64; 13th Gen Intel(R) Core(TM) i9-13900H; revision 015ec1e; observed 2026-07-15T11:09:37.024Z.
+Environment: v24.18.0; linux/x64; 13th Gen Intel(R) Core(TM) i9-13900H; revision 80d6eee; observed 2026-07-15T11:37:35.850Z.

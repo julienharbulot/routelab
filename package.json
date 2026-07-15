@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./near-intents-fixture": {
+      "types": "./dist/adapters/near-intents/index.d.ts",
+      "import": "./dist/adapters/near-intents/index.js"
     }
   },
   "files": [
@@ -35,12 +39,14 @@
     "benchmark": "node cli/benchmark.ts",
     "benchmark:verify": "node cli/verify-benchmark.ts",
     "benchmark:extended": "node cli/benchmark-extended.ts",
+    "benchmark:smoke": "node cli/benchmark-extended.ts --smoke",
     "test:benchmark": "node --test tests/portfolio-benchmark.test.ts",
     "serve": "node cli/serve.ts",
     "serve:smoke": "node cli/serve.ts --smoke",
     "test:api": "node --test tests/http-service.test.ts tests/http-load.test.ts",
     "load": "node cli/load.ts",
     "load:smoke": "node cli/load.ts --smoke",
+    "test:intents": "node --test tests/near-intents-adapter.test.ts",
     "test:core": "node --test tests/constant-product.test.ts tests/route-replay.test.ts tests/exact-input-split-replay.test.ts tests/simple-paths.test.ts tests/pool-disjoint-route-sets.test.ts tests/path-shadow-price-allocation.test.ts tests/anytime-exact-input-split-router.test.ts tests/numerical-exact-input-split-router.test.ts tests/public-facade.test.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm verify:historical-data && pnpm verify:synthetic-requests && pnpm demo"
   },

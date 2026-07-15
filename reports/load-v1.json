@@ -1,12 +1,12 @@
 {
   "schemaVersion": "routelab.http-load.v1",
-  "observedAt": "2026-07-15T11:24:48.824Z",
+  "observedAt": "2026-07-15T11:37:52.026Z",
   "environment": {
     "node": "v24.18.0",
     "platform": "linux",
     "arch": "x64",
     "cpu": "13th Gen Intel(R) Core(TM) i9-13900H",
-    "commit": "20867d8"
+    "commit": "80d6eee"
   },
   "configuration": {
     "host": "127.0.0.1",
@@ -26,16 +26,16 @@
       "completed": 120,
       "failed": 0,
       "timedOut": 0,
-      "p50Micros": 13637,
-      "p95Micros": 26069,
-      "p99Micros": 28809,
-      "throughputPerSecond": 67.365,
+      "p50Micros": 12633,
+      "p95Micros": 21406,
+      "p99Micros": 25924,
+      "throughputPerSecond": 73.879,
       "deadlineCompletionRate": 1,
-      "eventLoopDelayMeanMicros": 16208,
-      "eventLoopDelayMaxMicros": 33456,
-      "initialRssBytes": 113614848,
-      "peakRssBytes": 143761408,
-      "rssDeltaBytes": 30146560
+      "eventLoopDelayMeanMicros": 15645,
+      "eventLoopDelayMaxMicros": 28082,
+      "initialRssBytes": 114655232,
+      "peakRssBytes": 146931712,
+      "rssDeltaBytes": 32276480
     },
     {
       "concurrency": 4,
@@ -43,16 +43,16 @@
       "completed": 120,
       "failed": 0,
       "timedOut": 0,
-      "p50Micros": 51542,
-      "p95Micros": 79934,
-      "p99Micros": 88529,
-      "throughputPerSecond": 72.133,
+      "p50Micros": 43650,
+      "p95Micros": 73221,
+      "p99Micros": 89782,
+      "throughputPerSecond": 82.586,
       "deadlineCompletionRate": 1,
-      "eventLoopDelayMeanMicros": 27798,
-      "eventLoopDelayMaxMicros": 65339,
-      "initialRssBytes": 143925248,
-      "peakRssBytes": 183738368,
-      "rssDeltaBytes": 39813120
+      "eventLoopDelayMeanMicros": 24272,
+      "eventLoopDelayMaxMicros": 67895,
+      "initialRssBytes": 147095552,
+      "peakRssBytes": 184942592,
+      "rssDeltaBytes": 37847040
     },
     {
       "concurrency": 16,
@@ -60,16 +60,16 @@
       "completed": 120,
       "failed": 0,
       "timedOut": 0,
-      "p50Micros": 187425,
-      "p95Micros": 358444,
-      "p99Micros": 783216,
-      "throughputPerSecond": 81.577,
+      "p50Micros": 183016,
+      "p95Micros": 398684,
+      "p99Micros": 817446,
+      "throughputPerSecond": 77.982,
       "deadlineCompletionRate": 1,
-      "eventLoopDelayMeanMicros": 64060,
-      "eventLoopDelayMaxMicros": 122356,
-      "initialRssBytes": 183738368,
-      "peakRssBytes": 183902208,
-      "rssDeltaBytes": 163840
+      "eventLoopDelayMeanMicros": 64331,
+      "eventLoopDelayMaxMicros": 122814,
+      "initialRssBytes": 184942592,
+      "peakRssBytes": 190840832,
+      "rssDeltaBytes": 5898240
     }
   ]
 }

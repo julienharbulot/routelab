@@ -65,6 +65,35 @@ pnpm quote -- \
 
 Add `--json` for decimal-string JSON. Run `pnpm quote -- --help` for all options. The readable output shows allocations, route hops, exact output, best-single improvement, fallback/termination, elapsed time, exact validation, and the semantic fingerprint.
 
+## Local quote service
+
+```bash
+pnpm serve
+```
+
+The loopback service prepares the retained snapshot at startup and exposes `GET /health`,
+`GET /v1/snapshots`, and `POST /v1/quote`. Its boundary limits the body to 32 KiB, requires
+canonical decimal amount strings, bounds all identifiers and route controls, and never accepts
+internal work caps. Run `pnpm serve:smoke`, `pnpm test:api`, or `pnpm load:smoke` for local checks.
+
+## Benchmark evidence
+
+`pnpm benchmark` regenerates deterministic quality and 100-sample in-process latency evidence;
+`pnpm benchmark:verify` independently replays every reported success. `pnpm load --
+--concurrency 1,4,16` measures the actual same-thread HTTP service. Raw observations are ignored.
+
+See the concise [portfolio report](reports/portfolio-v1.md), [load report](reports/load-v1.md),
+and [benchmark methodology](docs/benchmark.md). The curated inputs and one local machine are not
+representative demand or a production-capacity claim.
+
+## NEAR Intents fixture boundary
+
+The `routelab-ts/near-intents-fixture` package subpath maps the four documented exact-input quote
+fields through an explicit fictional asset map and returns an unsigned quote candidate. The
+[adapter boundary](src/adapters/near-intents/README.md) records the official documentation access
+date and exclusions. There is no Message Bus or 1Click connection, authentication, key handling,
+signing, balance/deposit check, execution, or settlement.
+
 ## Exact authorization
 
 Approximate numbers are proposal-only. A published plan is rebuilt and replayed against the prepared snapshot with exact `bigint` arithmetic. Snapshot ID and checksum must match; allocations sum exactly to the input; later hops observe earlier reserve transitions; an invalid proposal cannot replace the incumbent.
@@ -80,6 +109,9 @@ pnpm test
 pnpm build
 pnpm verify:historical-data
 pnpm verify:synthetic-requests
+pnpm benchmark:verify
+pnpm test:api
+pnpm load:smoke
 pnpm pack --dry-run
 ```
 
@@ -90,7 +122,8 @@ The package archive allowlist contains only `dist/`, this README, the MIT licens
 - Pools use the documented two-asset constant-product model; concentrated liquidity and gas-aware optimization are out of scope.
 - Route discovery, split cardinality, allocation work, and numerical work are bounded. RouteLab does not claim unrestricted global optimality.
 - The retained dataset is one 54-pool allowlist snapshot at Ethereum block 19,000,000. Its synthetic request corpus is not historical or representative demand.
-- The project currently runs offline and does not submit transactions, sign messages, hold funds, connect to a relay, or settle trades.
+- The project uses snapshots and localhost only; it does not submit transactions, sign messages, hold funds, connect to a relay, or settle trades.
+- The HTTP service is synchronous and same-thread. The retained concurrency report shows event-loop queueing; worker isolation is not included.
 - Timing is observational and excluded from semantic fingerprints; no production-latency claim is made.
 
 See [architecture](docs/architecture.md), [benchmark design](docs/benchmark.md), [accepted invariants](docs/invariants.md), and [current status](STATUS.md).

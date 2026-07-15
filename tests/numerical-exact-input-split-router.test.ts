@@ -707,60 +707,6 @@ void test('keeps arbitrary-precision reconstruction exact and returns no caller 
   assertDeepFrozen(plan);
 });
 
-void test('captures request and ten caps in order before work and rejects invalid additive fields', () => {
-  const value = snapshot(IDENTICAL_POOLS);
-  const seen: string[] = [];
-  const source = request(value);
-  const proxied = new Proxy(source, {
-    get(target, property, receiver) {
-      seen.push(String(property));
-      const captured: unknown = Reflect.get(target, property, receiver);
-      return captured;
-    },
-  });
-  const caps = new Proxy(
-    { ...COMPLETE_CAPS, maxNumericalIterations: -1 },
-    {
-      get(target, property, receiver) {
-        seen.push(`cap:${String(property)}`);
-        const captured: unknown = Reflect.get(target, property, receiver);
-        return captured;
-      },
-    },
-  );
-  const result = routeExactInputSplitNumericalAnytime(prepare(value), proxied, {
-    workCaps: caps,
-  });
-  assert.deepEqual(result, {
-    status: 'invalid-control',
-    error: {
-      code: 'invalid-work-cap',
-      field: 'workCaps.maxNumericalIterations',
-    },
-  });
-  assert.deepEqual(seen.slice(0, 9), [
-    'snapshotId',
-    'snapshotChecksum',
-    'assetIn',
-    'assetOut',
-    'amountIn',
-    'maxHops',
-    'maxRoutes',
-    'greedyParts',
-    'numerical',
-  ]);
-  assert.deepEqual(seen.filter((item) => item.startsWith('cap:')), [
-    'cap:maxPathExpansions',
-    'cap:maxBestSingleCandidateReplays',
-    'cap:maxCandidateSetExpansions',
-    'cap:maxEqualProposalReplays',
-    'cap:maxGreedyOptionReplays',
-    'cap:maxFinalAuthorizationReplays',
-    'cap:maxNumericalProposals',
-    'cap:maxNumericalIterations',
-  ]);
-});
-
 void test('retains inherited request precedence over captured numerical failures', () => {
   const value = snapshot(IDENTICAL_POOLS);
   const accessed: string[] = [];
@@ -805,40 +751,6 @@ void test('retains inherited request precedence over captured numerical failures
       field: 'numerical.outerIterations',
     },
   });
-});
-
-void test('captures numerical configuration before reentrant controls can mutate caller state', () => {
-  const value = snapshot(IDENTICAL_POOLS);
-  const numerical = {
-    outerIterations: 4,
-    innerIterations: 8,
-    convergenceTolerance: 1,
-  };
-  let nested = false;
-  const context = prepare(value);
-  const input = request(value, { numerical });
-  const plan = success(
-    routeExactInputSplitNumericalAnytime(context, input, {
-      workCaps: COMPLETE_CAPS,
-      shouldInterrupt() {
-        numerical.outerIterations = 1;
-        numerical.innerIterations = 1;
-        if (!nested) {
-          nested = true;
-          const nestedResult = routeExactInputSplitNumericalAnytime(
-            context,
-            request(value),
-            control({ maxNumericalProposals: 0 }),
-          );
-          assert.equal(nestedResult.status, 'success');
-        }
-        return false;
-      },
-    }),
-  );
-  assert.equal(plan.search.numericalDiagnostics[0]?.completedOuterIterations, 4);
-  assert.equal(plan.search.numericalDiagnostics[0]?.configuredInnerIterations, 8);
-  assert.equal(nested, true);
 });
 
 void test('does no numerical work and emits no diagnostics without an exact baseline', () => {

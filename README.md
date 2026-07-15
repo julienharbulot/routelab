@@ -4,6 +4,8 @@ RouteLab is a small, exact TypeScript liquidity router. Given an immutable snaps
 
 It includes checksum-verified prepared contexts, a curated historical snapshot, a result-blind synthetic request corpus, bounded anytime split routing, and a path-shadow-price numerical allocator whose proposals require fresh exact authorization. See [current status](STATUS.md) for the active release task.
 
+The supported library surface is `prepareSnapshot`, `quote`, `serializeQuote`, and `formatQuote` from `src/index.ts`. Quotes support `best-single`, `greedy-split`, and `numerical-split` with frozen `fast`, `balanced`, and `thorough` effort profiles. The default is `greedy-split` with `balanced` effort; internal iteration and replay caps are not public request fields.
+
 ## A 30-second executable example
 
 The repository pins Node.js 24.18.0 and pnpm 11.12.0. From a clean clone:
@@ -14,16 +16,10 @@ corepack install --global pnpm@11.12.0
 pnpm install --frozen-lockfile
 pnpm verify:historical-data
 pnpm verify:synthetic-requests
-pnpm replay:cases
-pnpm replay:split-cases
 pnpm demo
 ```
 
-`pnpm replay:cases` reads three fixed offline cases, freshly replays their bounded router runs, verifies the canonical results and determinism hashes, and emits one JSON verification report. The success case routes `100` atomic units from asset `A` to `B` and reproduces an exact output of `90`; the other cases demonstrate typed `no-route` and work-limited `no-plan` outcomes.
-
-The emitted JSON still uses the versioned `routelab.benchmark-report.v1` schema identifier. That identifier does not give its timing fields statistical meaning: they remain single observations, not benchmark results.
-
-`pnpm replay:split-cases` freshly verifies two deterministic cap-driven split records. On the fixed two-pool fixture, full work reproduces exact input `100`, best single output `50`, allocations `50/50`, and split output `66`; zero discretionary caps preserve the exact direct fallback `50`. `pnpm demo` executes both composed-runtime requests against one verified prepared context and reports the exact improvement `16`. These are fixture facts, not performance or unrestricted-optimality claims.
+`pnpm demo` executes a fixed two-pool request: exact input `100`, best-single output `50`, allocations `50/50`, and split output `66`. These are fixture facts, not performance or unrestricted-optimality claims.
 
 `pnpm verify:historical-data` verifies the first curated historical import entirely offline. It checks the closed manifest and six declared companion artifacts, exact Infura/SQD normalized-source agreement, canonical pool ordering and financial-content checksum, and the untrusted parse-before-prepare boundary before returning a prepared context summary. The imported snapshot is a frozen 54-pool subset at one block, not a request corpus or benchmark.
 
@@ -62,11 +58,8 @@ The core layers are immutable domain validation, exact constant-product transiti
 The repository combines hand-auditable fixtures, focused unit tests, independent oracle and differential tests, and deterministic replay cases. Tests are evidence for the accepted contracts in [docs/invariants.md](docs/invariants.md); they do not override those contracts.
 
 ```bash
-pnpm replay:cases       # Verify fixed offline router cases and emit JSON evidence.
-pnpm replay:split-cases # Verify deterministic exact split records with no timing state.
 pnpm verify:historical-data # Verify the curated historical import and preparation boundary offline.
 pnpm verify:synthetic-requests # Verify the result-blind synthetic request corpus offline.
-pnpm measure:anytime    # Emit separate quality/work and repeated raw latency observations.
 pnpm lint               # Run typed ESLint rules.
 pnpm typecheck          # Run strict TypeScript checks without emitting files.
 pnpm test               # Run production and independent-oracle tests.
@@ -83,9 +76,7 @@ CI uses the same pinned pnpm version, performs a frozen install, and runs `pnpm 
 - Checkpoints are process-local and non-serializable. Current reusable checkpoints are single-path; the composed split runtime has no resume surface. Deadline adapters require an injected monotonic clock and provide no hard-latency guarantee.
 - Immediate establishment is limited to exact-replayable one-hop candidates. With no eligible direct route, a zero search cap or already-reached deadline can still return typed no-plan.
 - Non-interruptible routing and canonical router-run/case v1 retain their existing zero-expansion behavior and hashes; immediate establishment is exposed by the interruptible, resumable, and deadline runtime APIs.
-- `pnpm replay:cases` remains a single-observation verification harness. `pnpm measure:anytime` uses one fixed offline input, warmups, alternating repeated samples, environment metadata, and raw observations, but performs no statistical inference and supports no speedup, threshold, scaling, or production-latency claim.
-- The executable split demo and `pnpm replay:split-cases` cover one fixed offline two-pool fixture. They support no scaling, latency, throughput, production, or unrestricted-optimality conclusion.
-- Legacy Milestone 2–5 routers remain standalone compatibility and component-test surfaces. The additive high-level split runtime is the composed path with a verified context, one request-local discovery frontier, and one non-recharged typed ledger.
+- The executable split demo covers one fixed offline two-pool fixture. It supports no scaling, latency, throughput, production, or unrestricted-optimality conclusion.
 - `prepareRoutingContext` is a lower-level typed compatibility surface and assumes its `LiquiditySnapshot` is already domain-validated; untrusted JavaScript or imported data must use `parseAndPrepareRoutingContext`. The first curated historical dataset is imported and verified through that boundary. Its separate synthetic corpus exhaustively covers the frozen allowlist pair grid at three maximum-reserve-relative input scales, but it is not historical order flow or a representative market distribution.
 
 ## Roadmap

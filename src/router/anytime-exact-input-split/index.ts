@@ -18,7 +18,7 @@ import {
   hasSharedCandidateSetExpansion,
   materializeSharedCandidateSets,
 } from '../../search/shared-route-discovery/index.ts';
-import { isStrictlyBetterSplitReceipt } from '../split-exact-input/objective.ts';
+import { isStrictlyBetterSplitReceipt } from '../shared/objective.ts';
 
 export interface ExactInputSplitRuntimeRequest {
   readonly snapshotId: string;

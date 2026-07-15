@@ -3465,7 +3465,7 @@ void test('audits disjoint exact parent and generation-child runtime closures an
     "import { constants } from 'node:fs';",
     "import { open } from 'node:fs/promises';",
     "const absolutePath = '/tmp/read-only';",
-    'const handle = await open(absolutePath, constants.O_RDONLY | constants.O_NOFOLLOW);',
+    'const handle = await open(absolutePath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);',
     'await handle.stat();',
     'await handle.close();',
     '',
@@ -3475,8 +3475,21 @@ void test('audits disjoint exact parent and generation-child runtime closures an
     builtins: ['node:fs', 'node:fs/promises'],
     capabilities: ['read-only-filesystem'],
   });
+  const boundedOpenRegexDecoy = `${boundedFileSource
+    .replaceAll(/\bhandle\b/gu, 'otherHandle')
+    .replace(
+      'const otherHandle = await open(absolutePath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);',
+      'const otherHandle = await other(absolutePath);',
+    )}void /const handle = await open(absolutePath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);/;\n`;
   for (const hostileBoundedFile of [
+    boundedOpenRegexDecoy,
     boundedFileSource.replace('constants.O_RDONLY', 'constants.O_RDWR'),
+    boundedFileSource.replace(' | constants.O_NONBLOCK', ''),
+    boundedFileSource.replace('constants.O_NONBLOCK', 'constants.O_SYNC'),
+    boundedFileSource.replace(
+      'constants.O_NONBLOCK',
+      'constants.O_NONBLOCK | constants.O_SYNC',
+    ),
     boundedFileSource.replace('await handle.stat();', "void handle['write'];"),
     boundedFileSource.replace('await handle.stat();', 'void [handle];'),
     boundedFileSource.replace('await handle.stat();', 'void { handle };'),

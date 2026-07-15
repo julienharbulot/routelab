@@ -18,6 +18,18 @@ const BOUNDED_GIT_SOURCE =
   'src/benchmark/service-fast-numerical-experiment/source-closure/git.ts';
 const SOURCE_CLOSURE_CODEC_SOURCE =
   'src/benchmark/service-fast-numerical-experiment/source-closure/codec.ts';
+const INPUT_CLOSURE_AUDIT_SOURCE =
+  'src/benchmark/service-fast-numerical-experiment/input/closure-audit.ts';
+const ANYTIME_EXACT_INPUT_SPLIT_SOURCE =
+  'src/router/anytime-exact-input-split/index.ts';
+const EXACT_INPUT_SPLIT_SESSION_SOURCE =
+  'src/router/exact-input-split-session/index.ts';
+const NUMERICAL_EXACT_INPUT_SPLIT_SOURCE =
+  'src/router/numerical-exact-input-split/index.ts';
+const PREPARED_ROUTING_CONTEXT_SOURCE =
+  'src/runtime/prepared-routing-context/index.ts';
+const BOUNDED_SNAPSHOT_JSON_SOURCE =
+  'src/runtime/prepared-service-routing-context/bounded-snapshot-json.ts';
 const DURABLE_BOUNDED_FILE_SOURCE =
   'src/benchmark/service-fast-numerical-experiment/artifact-verifier/io/bounded-file.ts';
 const DURABLE_ENTRY_SOURCE = SERVICE_FAST_ARTIFACT_VERIFIER_HELPER;
@@ -34,6 +46,15 @@ const ACCEPTED_RUN_ENVIRONMENT_SOURCE =
   'src/benchmark/service-fast-numerical-experiment/accepted-run/environment.ts';
 const ACCEPTED_RUN_PUBLICATION_SOURCE =
   'src/benchmark/service-fast-numerical-experiment/accepted-run/publication.ts';
+
+const INPUT_CLOSURE_AUDIT_CONSTRUCTOR_CONTEXTS = Object.freeze([
+  "['constructor', 'runtime-codegen-forbidden']",
+  "first === 'constructor'",
+  "capabilityFailure('runtime-codegen-forbidden', artifact, 'constructor')",
+]);
+const INPUT_CLOSURE_AUDIT_REVIEWED_BYTES = 35_956;
+const INPUT_CLOSURE_AUDIT_REVIEWED_SHA256 =
+  'a9edcbae67ce58a4d45c252b3729eea90b2e409ae4f565656f5abfae733c7120';
 
 const FORBIDDEN_BUILTINS = new Set([
   'node:cluster',
@@ -183,119 +204,687 @@ function canonicalRuntimePath(value: string): string {
   return value;
 }
 
-function maskComments(source: string, artifact: string): string {
-  let result = '';
-  let index = 0;
-  let quote: '"' | "'" | '`' | null = null;
+type RuntimeSlashMode = 'ambiguous' | 'division' | 'regex';
+
+interface RuntimeLexicalState {
+  slashMode: RuntimeSlashMode;
+  pendingControlParenthesis: string | null;
+  readonly parenthesisContexts: (string | null)[];
+  propertyIdentifierExpected: boolean;
+  restrictedStatement: 'break' | 'continue' | 'debugger' | null;
+  forBindingExpected: boolean;
+}
+
+const RUNTIME_REGEX_PREFIX_KEYWORDS = new Set([
+  'await',
+  'case',
+  'delete',
+  'default',
+  'do',
+  'else',
+  'extends',
+  'in',
+  'instanceof',
+  'new',
+  'return',
+  'throw',
+  'typeof',
+  'void',
+  'yield',
+]);
+const RUNTIME_CONTROL_PARENTHESIS_KEYWORDS = new Set([
+  'catch',
+  'for',
+  'if',
+  'switch',
+  'while',
+  'with',
+]);
+const RUNTIME_MULTI_CHARACTER_PUNCTUATORS = Object.freeze([
+  '>>>=',
+  '===',
+  '!==',
+  '>>>',
+  '**=',
+  '&&=',
+  '||=',
+  '??=',
+  '<<=',
+  '>>=',
+  '...',
+  '=>',
+  '==',
+  '!=',
+  '<=',
+  '>=',
+  '++',
+  '--',
+  '&&',
+  '||',
+  '??',
+  '**',
+  '<<',
+  '>>',
+  '+=',
+  '-=',
+  '*=',
+  '%=',
+  '&=',
+  '|=',
+  '^=',
+  '?.',
+]);
+
+function createRuntimeLexicalState(): RuntimeLexicalState {
+  return {
+    slashMode: 'regex',
+    pendingControlParenthesis: null,
+    parenthesisContexts: [],
+    propertyIdentifierExpected: false,
+    restrictedStatement: null,
+    forBindingExpected: false,
+  };
+}
+
+function isRuntimeIdentifierStart(character: string | undefined): boolean {
+  return character !== undefined && /[A-Za-z_$]/u.test(character);
+}
+
+function isRuntimeIdentifierPart(character: string | undefined): boolean {
+  return character !== undefined && /[A-Za-z0-9_$]/u.test(character);
+}
+
+function runtimeIdentifierEnd(source: string, start: number): number {
+  let end = start + 1;
+  while (isRuntimeIdentifierPart(source[end])) end += 1;
+  return end;
+}
+
+function runtimePunctuatorAt(source: string, index: number): string | null {
+  for (const punctuator of RUNTIME_MULTI_CHARACTER_PUNCTUATORS) {
+    if (source.startsWith(punctuator, index)) return punctuator;
+  }
+  const character = source[index];
+  return character !== undefined && /[()[\]{};,.?:~!%^&*+\-=|<>]/u.test(character)
+    ? character
+    : null;
+}
+
+function noteRuntimeExpressionEnd(state: RuntimeLexicalState): void {
+  state.slashMode = 'division';
+  state.pendingControlParenthesis = null;
+  state.propertyIdentifierExpected = false;
+  state.restrictedStatement = null;
+  state.forBindingExpected = false;
+}
+
+function noteRuntimeExpressionPrefix(state: RuntimeLexicalState): void {
+  state.slashMode = 'regex';
+  state.pendingControlParenthesis = null;
+  state.propertyIdentifierExpected = false;
+  state.restrictedStatement = null;
+  state.forBindingExpected = false;
+}
+
+function noteRuntimeLineTerminator(state: RuntimeLexicalState): void {
+  if (state.restrictedStatement !== null) {
+    state.slashMode = 'regex';
+    state.restrictedStatement = null;
+    state.forBindingExpected = false;
+  }
+}
+
+function noteRuntimeIdentifier(
+  state: RuntimeLexicalState,
+  identifier: string,
+): void {
+  const priorMode = state.slashMode;
+  const restrictedStatement = state.restrictedStatement;
+  if (state.propertyIdentifierExpected) {
+    noteRuntimeExpressionEnd(state);
+    return;
+  }
+  if (restrictedStatement === 'break' || restrictedStatement === 'continue') {
+    state.slashMode = 'ambiguous';
+    state.pendingControlParenthesis = null;
+    state.propertyIdentifierExpected = false;
+    state.forBindingExpected = false;
+    return;
+  }
+  if (
+    identifier === 'break' ||
+    identifier === 'continue' ||
+    identifier === 'debugger'
+  ) {
+    state.slashMode = 'ambiguous';
+    state.pendingControlParenthesis = null;
+    state.propertyIdentifierExpected = false;
+    state.restrictedStatement = identifier;
+    state.forBindingExpected = false;
+    return;
+  }
+  if (
+    state.pendingControlParenthesis === 'for' &&
+    identifier === 'await'
+  ) {
+    state.slashMode = 'regex';
+    state.propertyIdentifierExpected = false;
+    return;
+  }
+  if (RUNTIME_CONTROL_PARENTHESIS_KEYWORDS.has(identifier)) {
+    state.slashMode = 'regex';
+    state.pendingControlParenthesis = identifier;
+    state.propertyIdentifierExpected = false;
+    return;
+  }
+  const forContext = state.parenthesisContexts.at(-1) === 'for';
+  if (
+    forContext &&
+    (identifier === 'const' || identifier === 'let' || identifier === 'var')
+  ) {
+    state.slashMode = 'regex';
+    state.pendingControlParenthesis = null;
+    state.propertyIdentifierExpected = false;
+    state.restrictedStatement = null;
+    state.forBindingExpected = true;
+    return;
+  }
+  if (forContext && state.forBindingExpected) {
+    state.slashMode = 'division';
+    state.pendingControlParenthesis = null;
+    state.propertyIdentifierExpected = false;
+    state.restrictedStatement = null;
+    state.forBindingExpected = false;
+    return;
+  }
+  if (identifier === 'of' && forContext) {
+    state.slashMode = priorMode === 'division'
+      ? 'regex'
+      : priorMode === 'regex'
+        ? 'division'
+        : 'ambiguous';
+  } else {
+    state.slashMode = RUNTIME_REGEX_PREFIX_KEYWORDS.has(identifier)
+      ? 'regex'
+      : 'division';
+  }
+  state.pendingControlParenthesis = null;
+  state.propertyIdentifierExpected = false;
+  state.restrictedStatement = null;
+  state.forBindingExpected = false;
+}
+
+function noteRuntimePunctuator(
+  state: RuntimeLexicalState,
+  punctuator: string,
+): void {
+  const priorMode = state.slashMode;
+  const controlParenthesis = state.pendingControlParenthesis;
+  state.pendingControlParenthesis = null;
+  state.propertyIdentifierExpected = false;
+  state.restrictedStatement = null;
+  state.forBindingExpected = false;
+  if (punctuator === '(') {
+    state.parenthesisContexts.push(controlParenthesis);
+    state.slashMode = 'regex';
+    return;
+  }
+  if (punctuator === ')') {
+    const context = state.parenthesisContexts.pop();
+    state.slashMode = context !== undefined && context !== null
+      ? 'regex'
+      : context === null
+        ? 'division'
+        : 'ambiguous';
+    return;
+  }
+  if (punctuator === '.' || punctuator === '?.') {
+    state.slashMode = 'ambiguous';
+    state.propertyIdentifierExpected = true;
+    return;
+  }
+  if (punctuator === ']') {
+    state.slashMode = 'division';
+    return;
+  }
+  if (punctuator === '}') {
+    state.slashMode = 'ambiguous';
+    return;
+  }
+  if (punctuator === '>' || punctuator === '>>' || punctuator === '>>>') {
+    state.slashMode = 'ambiguous';
+    return;
+  }
+  if (punctuator === '++' || punctuator === '--') {
+    state.slashMode = priorMode;
+    return;
+  }
+  if (punctuator === '!') {
+    state.slashMode = priorMode === 'division' ? 'division' : priorMode;
+    return;
+  }
+  if (punctuator === '...') {
+    state.slashMode = 'regex';
+    return;
+  }
+  state.slashMode = 'regex';
+}
+
+function runtimeRegularExpressionEnd(
+  source: string,
+  start: number,
+  artifact: string,
+): number {
+  let index = start + 1;
+  let inClass = false;
+  while (index < source.length) {
+    const character = source[index];
+    if (character === '\\') {
+      if (source[index + 1] === undefined) {
+        return auditFailure('invalid-source-syntax', artifact, 'Unterminated regular expression.');
+      }
+      index += 2;
+      continue;
+    }
+    if (character === '[') inClass = true;
+    else if (character === ']' && inClass) inClass = false;
+    else if (character === '/' && !inClass) {
+      index += 1;
+      while (/[A-Za-z]/u.test(source[index] ?? '')) index += 1;
+      return index;
+    }
+    if (character === '\n' || character === '\r') {
+      return auditFailure('invalid-source-syntax', artifact, 'Unterminated regular expression.');
+    }
+    index += 1;
+  }
+  return auditFailure('invalid-source-syntax', artifact, 'Unterminated regular expression.');
+}
+
+function requireUnambiguousSlash(
+  state: RuntimeLexicalState,
+  artifact: string,
+): void {
+  if (state.slashMode === 'ambiguous') {
+    auditFailure(
+      'invalid-source-syntax',
+      artifact,
+      `Ambiguous regular-expression or division slash in ${artifact}.`,
+    );
+  }
+}
+
+interface RuntimeRegexSourceEvidence {
+  readonly start: number;
+  readonly end: number;
+  readonly value: string | null;
+}
+
+interface RuntimeLiteralEvidence {
+  readonly staticTemplateValues: string[];
+  readonly regexSources: RuntimeRegexSourceEvidence[];
+}
+
+interface StaticTemplateDecodeResult {
+  readonly end: number;
+  readonly value: string | null;
+}
+
+function quotedLiteralEnd(source: string, start: number): number | null {
+  const quote = source[start];
+  if (quote !== '"' && quote !== "'") return null;
+  let index = start + 1;
+  while (index < source.length) {
+    const character = source[index];
+    if (character === '\\') {
+      if (source[index + 1] === undefined) return null;
+      index += 2;
+      continue;
+    }
+    index += 1;
+    if (character === quote) return index;
+    if (character === '\n' || character === '\r') return null;
+  }
+  return null;
+}
+
+function templateInterpolationEnd(source: string, start: number): number | null {
+  let depth = 1;
+  let index = start;
   while (index < source.length) {
     const character = source[index];
     const next = source[index + 1];
-    if (quote !== null) {
-      result += character;
-      if (character === '\\') {
-        if (next === undefined) return auditFailure('invalid-source-syntax', artifact, 'Unterminated escape sequence.');
-        result += next;
-        if (next === '\r' && source[index + 2] === '\n') {
-          result += '\n';
-          index += 3;
-        } else {
-          index += 2;
-        }
-        continue;
-      }
-      if (character === quote) quote = null;
-      index += 1;
-      continue;
-    }
-    if (character === '"' || character === "'" || character === '`') {
-      quote = character;
-      result += character;
-      index += 1;
-      continue;
-    }
     if (character === '/' && next === '/') {
-      result += '  ';
       index += 2;
-      while (index < source.length && source[index] !== '\n') {
-        result += ' ';
+      while (
+        index < source.length &&
+        source[index] !== '\n' &&
+        source[index] !== '\r'
+      ) {
         index += 1;
       }
       continue;
     }
     if (character === '/' && next === '*') {
-      result += '  ';
       index += 2;
-      let closed = false;
-      while (index < source.length) {
-        if (source[index] === '*' && source[index + 1] === '/') {
-          result += '  ';
-          index += 2;
-          closed = true;
-          break;
-        }
-        result += source[index] === '\n' ? '\n' : ' ';
+      while (
+        index < source.length &&
+        !(source[index] === '*' && source[index + 1] === '/')
+      ) {
         index += 1;
       }
-      if (!closed) return auditFailure('invalid-source-syntax', artifact, 'Unterminated block comment.');
+      if (index >= source.length) return null;
+      index += 2;
       continue;
     }
-    if (character === '/') {
-      const previous = result.trimEnd().at(-1);
-      if (
-        previous === undefined ||
-        '=(:,[!&|?{;'.includes(previous)
+    if (character === '"' || character === "'") {
+      const end = quotedLiteralEnd(source, index);
+      if (end === null) return null;
+      index = end;
+      continue;
+    }
+    if (character === '`') {
+      const nested = decodeStaticTemplateAt(source, index);
+      if (nested.end <= index) return null;
+      index = nested.end;
+      continue;
+    }
+    if (character === '{') depth += 1;
+    if (character === '}') {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+    index += 1;
+  }
+  return null;
+}
+
+function removeStaticExpressionComments(source: string): string | null {
+  let result = '';
+  let index = 0;
+  while (index < source.length) {
+    const character = source[index];
+    const next = source[index + 1];
+    if (character === '"' || character === "'") {
+      const end = quotedLiteralEnd(source, index);
+      if (end === null) return null;
+      result += source.slice(index, end);
+      index = end;
+      continue;
+    }
+    if (character === '`') {
+      const template = decodeStaticTemplateAt(source, index);
+      if (template.end <= index) return null;
+      result += source.slice(index, template.end);
+      index = template.end;
+      continue;
+    }
+    if (character === '/' && next === '/') {
+      index += 2;
+      while (
+        index < source.length &&
+        source[index] !== '\n' &&
+        source[index] !== '\r'
       ) {
-        result += ' ';
         index += 1;
-        let inClass = false;
-        let closed = false;
-        while (index < source.length) {
-          const regexCharacter = source[index];
-          if (regexCharacter === '\\') {
-            result += '  ';
-            index += 2;
-            continue;
-          }
-          if (regexCharacter === '[') inClass = true;
-          else if (regexCharacter === ']' && inClass) inClass = false;
-          else if (regexCharacter === '/' && !inClass) {
-            result += ' ';
-            index += 1;
-            while (/[A-Za-z]/u.test(source[index] ?? '')) {
-              result += ' ';
-              index += 1;
-            }
-            closed = true;
-            break;
-          }
-          if (regexCharacter === '\n' || regexCharacter === '\r' || regexCharacter === undefined) {
-            return auditFailure('invalid-source-syntax', artifact, 'Unterminated regular expression.');
-          }
-          result += ' ';
-          index += 1;
-        }
-        if (!closed) return auditFailure('invalid-source-syntax', artifact, 'Unterminated regular expression.');
-        continue;
       }
+      result += ' ';
+      continue;
+    }
+    if (character === '/' && next === '*') {
+      index += 2;
+      while (
+        index < source.length &&
+        !(source[index] === '*' && source[index + 1] === '/')
+      ) {
+        index += 1;
+      }
+      if (index >= source.length) return null;
+      index += 2;
+      result += ' ';
+      continue;
     }
     result += character;
     index += 1;
   }
-  if (quote !== null) return auditFailure('invalid-source-syntax', artifact, 'Unterminated string or template literal.');
   return result;
 }
 
-function maskNonExecutableSource(source: string, artifact: string): string {
-  const output: string[] = source.split('').map((character) =>
-    character === '\n' || character === '\r' ? character : ' ');
+function staticRegexLiteralEnd(source: string, start: number): number | null {
+  if (source[start] !== '/') return null;
+  let index = start + 1;
+  let inClass = false;
+  while (index < source.length) {
+    const character = source[index];
+    if (character === '\\') {
+      if (source[index + 1] === undefined) return null;
+      index += 2;
+      continue;
+    }
+    if (character === '[') inClass = true;
+    else if (character === ']' && inClass) inClass = false;
+    else if (character === '/' && !inClass) {
+      index += 1;
+      while (/[A-Za-z]/u.test(source[index] ?? '')) index += 1;
+      return index;
+    }
+    if (character === '\n' || character === '\r') return null;
+    index += 1;
+  }
+  return null;
+}
+
+function matchingStaticOuterParenthesis(source: string): number | null {
+  if (source[0] !== '(') return null;
+  let depth = 0;
+  let index = 0;
+  while (index < source.length) {
+    const character = source[index];
+    if (character === '"' || character === "'") {
+      const end = quotedLiteralEnd(source, index);
+      if (end === null) return null;
+      index = end;
+      continue;
+    }
+    if (character === '`') {
+      const template = decodeStaticTemplateAt(source, index);
+      if (template.end <= index) return null;
+      index = template.end;
+      continue;
+    }
+    if (character === '/') {
+      const regexEnd = staticRegexLiteralEnd(source, index);
+      if (regexEnd !== null) {
+        index = regexEnd;
+        continue;
+      }
+    }
+    if (character === '(') depth += 1;
+    if (character === ')') {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+    index += 1;
+  }
+  return null;
+}
+
+function splitTopLevelStaticAddition(source: string): readonly string[] | null {
+  const parts: string[] = [];
+  let depth = 0;
+  let start = 0;
+  let index = 0;
+  while (index < source.length) {
+    const character = source[index];
+    if (character === '"' || character === "'") {
+      const end = quotedLiteralEnd(source, index);
+      if (end === null) return null;
+      index = end;
+      continue;
+    }
+    if (character === '`') {
+      const template = decodeStaticTemplateAt(source, index);
+      if (template.end <= index) return null;
+      index = template.end;
+      continue;
+    }
+    if (character === '/') {
+      const regexEnd = staticRegexLiteralEnd(source, index);
+      if (regexEnd !== null) {
+        index = regexEnd;
+        continue;
+      }
+    }
+    if (character === '(') depth += 1;
+    if (character === ')') {
+      depth -= 1;
+      if (depth < 0) return null;
+    }
+    if (
+      character === '+' &&
+      depth === 0 &&
+      source[index - 1] !== '+' &&
+      source[index + 1] !== '+' &&
+      source[index + 1] !== '='
+    ) {
+      parts.push(source.slice(start, index));
+      start = index + 1;
+      if (parts.length > 16) return null;
+    }
+    index += 1;
+  }
+  if (depth !== 0 || parts.length === 0) return null;
+  parts.push(source.slice(start));
+  return Object.freeze(parts);
+}
+
+function decodeExactRegexSourceExpression(source: string): string | null {
+  const regexEnd = staticRegexLiteralEnd(source, 0);
+  if (regexEnd === null) return null;
+  let propertyStart = regexEnd;
+  while (/\s/u.test(source[propertyStart] ?? '')) propertyStart += 1;
+  if (source.slice(propertyStart) !== '.source') return null;
+  const pattern = runtimeRegexPattern(source, 0);
+  return pattern === null ? null : decodeStaticLiteralEscapes(pattern);
+}
+
+function decodeExactStaticExpression(source: string): string | null {
+  const commentFree = removeStaticExpressionComments(source);
+  if (commentFree === null) return null;
+  let expression = commentFree.trim();
+  let outerClose = matchingStaticOuterParenthesis(expression);
+  while (outerClose === expression.length - 1) {
+    expression = expression.slice(1, -1).trim();
+    outerClose = matchingStaticOuterParenthesis(expression);
+  }
+  const addition = splitTopLevelStaticAddition(expression);
+  if (addition !== null) {
+    let joined = '';
+    for (const part of addition) {
+      const value = decodeExactStaticExpression(part);
+      if (value === null) return null;
+      joined += value;
+    }
+    return joined;
+  }
+  if (expression.startsWith('`')) {
+    const decoded = decodeStaticTemplateAt(expression, 0);
+    return decoded.end === expression.length ? decoded.value : null;
+  }
+  if (expression.startsWith('/')) {
+    return decodeExactRegexSourceExpression(expression);
+  }
+  const end = quotedLiteralEnd(expression, 0);
+  if (end !== expression.length) return null;
+  return decodeStaticLiteralEscapes(expression.slice(1, -1));
+}
+
+function decodeStaticTemplateAt(
+  source: string,
+  start: number,
+): StaticTemplateDecodeResult {
+  if (source[start] !== '`') return { end: start, value: null };
+  let index = start + 1;
+  let rawSegment = '';
+  let value: string | null = '';
+  while (index < source.length) {
+    const character = source[index];
+    if (character === '\\') {
+      if (source[index + 1] === undefined) return { end: source.length, value: null };
+      rawSegment += source.slice(index, index + 2);
+      index += 2;
+      continue;
+    }
+    if (character === '`') {
+      const decodedSegment = decodeStaticLiteralEscapes(rawSegment);
+      value = value === null || decodedSegment === null
+        ? null
+        : value + decodedSegment;
+      return { end: index + 1, value };
+    }
+    if (character === '$' && source[index + 1] === '{') {
+      const decodedSegment = decodeStaticLiteralEscapes(rawSegment);
+      value = value === null || decodedSegment === null
+        ? null
+        : value + decodedSegment;
+      const expressionStart = index + 2;
+      const expressionEnd = templateInterpolationEnd(source, expressionStart);
+      if (expressionEnd === null) return { end: source.length, value: null };
+      const expressionValue = decodeExactStaticExpression(
+        source.slice(expressionStart, expressionEnd),
+      );
+      value = value === null || expressionValue === null
+        ? null
+        : value + expressionValue;
+      index = expressionEnd + 1;
+      rawSegment = '';
+      continue;
+    }
+    rawSegment += character;
+    index += 1;
+  }
+  return { end: source.length, value: null };
+}
+
+function runtimeRegexPattern(
+  source: string,
+  start: number,
+): string | null {
+  let index = start + 1;
+  let inClass = false;
+  while (index < source.length) {
+    const character = source[index];
+    if (character === '\\') {
+      if (source[index + 1] === undefined) return null;
+      index += 2;
+      continue;
+    }
+    if (character === '[') inClass = true;
+    else if (character === ']' && inClass) inClass = false;
+    else if (character === '/' && !inClass) {
+      return source.slice(start + 1, index);
+    }
+    index += 1;
+  }
+  return null;
+}
+
+function maskComments(
+  source: string,
+  artifact: string,
+  evidence?: RuntimeLiteralEvidence,
+): string {
+  const state = createRuntimeLexicalState();
+  const output = source.split('');
   let index = 0;
 
-  function previousExecutableCharacter(): string | undefined {
-    for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
-      const character = output[cursor];
-      if (character !== undefined && !/\s/u.test(character)) return character;
+  function maskRange(start: number, end: number): void {
+    for (let cursor = start; cursor < end; cursor += 1) {
+      const character = source[cursor];
+      output[cursor] = character === '\n' || character === '\r'
+        ? character
+        : ' ';
     }
-    return undefined;
   }
 
   function skipQuoted(quote: '"' | "'"): void {
@@ -320,31 +909,187 @@ function maskNonExecutableSource(source: string, artifact: string): string {
     return auditFailure('invalid-source-syntax', artifact, 'Unterminated string literal.');
   }
 
-  function skipRegex(): void {
+  function scanTemplate(): void {
+    const templateStart = index;
+    const staticTemplate = decodeStaticTemplateAt(source, templateStart);
+    if (staticTemplate.value !== null) {
+      evidence?.staticTemplateValues.push(staticTemplate.value);
+    }
+    let rawStart = index;
+    let interpolated = false;
     index += 1;
-    let inClass = false;
     while (index < source.length) {
       const character = source[index];
       if (character === '\\') {
         if (source[index + 1] === undefined) {
-          return auditFailure('invalid-source-syntax', artifact, 'Unterminated regular expression.');
+          return auditFailure('invalid-source-syntax', artifact, 'Unterminated template escape sequence.');
         }
         index += 2;
         continue;
       }
-      if (character === '[') inClass = true;
-      else if (character === ']' && inClass) inClass = false;
-      else if (character === '/' && !inClass) {
+      if (character === '`') {
         index += 1;
-        while (/[A-Za-z]/u.test(source[index] ?? '')) index += 1;
+        if (interpolated) maskRange(rawStart, index);
         return;
       }
-      if (character === '\n' || character === '\r') {
-        return auditFailure('invalid-source-syntax', artifact, 'Unterminated regular expression.');
+      if (character === '$' && source[index + 1] === '{') {
+        interpolated = true;
+        maskRange(rawStart, index + 2);
+        index += 2;
+        noteRuntimeExpressionPrefix(state);
+        scanCode(true);
+        rawStart = index;
+        continue;
       }
       index += 1;
     }
-    return auditFailure('invalid-source-syntax', artifact, 'Unterminated regular expression.');
+    maskRange(templateStart, index);
+    return auditFailure('invalid-source-syntax', artifact, 'Unterminated template literal.');
+  }
+
+  function scanCode(templateExpression: boolean): void {
+    let braceDepth = templateExpression ? 1 : 0;
+    while (index < source.length) {
+      const character = source[index];
+      const next = source[index + 1];
+      if (character === '\n' || character === '\r') {
+        index += 1;
+        noteRuntimeLineTerminator(state);
+        continue;
+      }
+      if (character === '/' && next === '/') {
+        const start = index;
+        index += 2;
+        while (index < source.length && source[index] !== '\n') index += 1;
+        maskRange(start, index);
+        continue;
+      }
+      if (character === '/' && next === '*') {
+        const start = index;
+        index += 2;
+        while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) {
+          if (source[index] === '\n' || source[index] === '\r') {
+            noteRuntimeLineTerminator(state);
+          }
+          index += 1;
+        }
+        if (index >= source.length) {
+          return auditFailure('invalid-source-syntax', artifact, 'Unterminated block comment.');
+        }
+        index += 2;
+        maskRange(start, index);
+        continue;
+      }
+      if (character === '"' || character === "'") {
+        skipQuoted(character);
+        noteRuntimeExpressionEnd(state);
+        continue;
+      }
+      if (character === '`') {
+        scanTemplate();
+        noteRuntimeExpressionEnd(state);
+        continue;
+      }
+      if (character === '/') {
+        requireUnambiguousSlash(state, artifact);
+        if (state.slashMode === 'regex') {
+          const start = index;
+          index = runtimeRegularExpressionEnd(source, index, artifact);
+          let sourcePropertyEnd = index;
+          while (/\s/u.test(source[sourcePropertyEnd] ?? '')) {
+            sourcePropertyEnd += 1;
+          }
+          if (
+            source.startsWith('.source', sourcePropertyEnd) &&
+            !isRuntimeIdentifierPart(source[sourcePropertyEnd + 7])
+          ) {
+            const pattern = runtimeRegexPattern(source, start);
+            evidence?.regexSources.push(Object.freeze({
+              start,
+              end: sourcePropertyEnd + 7,
+              value: pattern === null
+                ? null
+                : decodeStaticLiteralEscapes(pattern),
+            }));
+          }
+          maskRange(start, index);
+          noteRuntimeExpressionEnd(state);
+          continue;
+        }
+        index += 1;
+        noteRuntimeExpressionPrefix(state);
+        continue;
+      }
+      if (templateExpression && character === '{') braceDepth += 1;
+      if (templateExpression && character === '}') {
+        braceDepth -= 1;
+        if (braceDepth === 0) {
+          maskRange(index, index + 1);
+          index += 1;
+          return;
+        }
+      }
+      if (isRuntimeIdentifierStart(character)) {
+        const end = runtimeIdentifierEnd(source, index);
+        noteRuntimeIdentifier(state, source.slice(index, end));
+        index = end;
+        continue;
+      }
+      if (character !== undefined && /[0-9]/u.test(character)) {
+        index += 1;
+        noteRuntimeExpressionEnd(state);
+        continue;
+      }
+      const punctuator = runtimePunctuatorAt(source, index);
+      if (punctuator !== null) {
+        index += punctuator.length;
+        noteRuntimePunctuator(state, punctuator);
+        continue;
+      }
+      index += 1;
+      if (character !== undefined && !/\s/u.test(character)) {
+        state.slashMode = 'ambiguous';
+        state.pendingControlParenthesis = null;
+        state.propertyIdentifierExpected = false;
+        state.restrictedStatement = null;
+        state.forBindingExpected = false;
+      }
+    }
+    if (templateExpression) {
+      return auditFailure('invalid-source-syntax', artifact, 'Unterminated template interpolation.');
+    }
+  }
+
+  scanCode(false);
+  return output.join('');
+}
+
+function maskNonExecutableSource(source: string, artifact: string): string {
+  const state = createRuntimeLexicalState();
+  const output: string[] = source.split('').map((character) =>
+    character === '\n' || character === '\r' ? character : ' ');
+  let index = 0;
+
+  function skipQuoted(quote: '"' | "'"): void {
+    index += 1;
+    while (index < source.length) {
+      const character = source[index];
+      if (character === '\\') {
+        if (source[index + 1] === undefined) {
+          return auditFailure('invalid-source-syntax', artifact, 'Unterminated escape sequence.');
+        }
+        index += source[index + 1] === '\r' && source[index + 2] === '\n'
+          ? 3
+          : 2;
+        continue;
+      }
+      index += 1;
+      if (character === quote) return;
+      if (character === '\n' || character === '\r') {
+        return auditFailure('invalid-source-syntax', artifact, 'Unterminated string literal.');
+      }
+    }
+    return auditFailure('invalid-source-syntax', artifact, 'Unterminated string literal.');
   }
 
   function skipTemplate(): void {
@@ -364,6 +1109,7 @@ function maskNonExecutableSource(source: string, artifact: string): string {
       }
       if (character === '$' && source[index + 1] === '{') {
         index += 2;
+        noteRuntimeExpressionPrefix(state);
         scanCode(true);
         continue;
       }
@@ -377,6 +1123,11 @@ function maskNonExecutableSource(source: string, artifact: string): string {
     while (index < source.length) {
       const character = source[index];
       const next = source[index + 1];
+      if (character === '\n' || character === '\r') {
+        index += 1;
+        noteRuntimeLineTerminator(state);
+        continue;
+      }
       if (character === '/' && next === '/') {
         index += 2;
         while (index < source.length && source[index] !== '\n') index += 1;
@@ -385,6 +1136,9 @@ function maskNonExecutableSource(source: string, artifact: string): string {
       if (character === '/' && next === '*') {
         index += 2;
         while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) {
+          if (source[index] === '\n' || source[index] === '\r') {
+            noteRuntimeLineTerminator(state);
+          }
           index += 1;
         }
         if (index >= source.length) {
@@ -395,18 +1149,25 @@ function maskNonExecutableSource(source: string, artifact: string): string {
       }
       if (character === '"' || character === "'") {
         skipQuoted(character);
+        noteRuntimeExpressionEnd(state);
         continue;
       }
       if (character === '`') {
         skipTemplate();
+        noteRuntimeExpressionEnd(state);
         continue;
       }
       if (character === '/') {
-        const previous = previousExecutableCharacter();
-        if (previous === undefined || '=(:,[!&|?{;'.includes(previous)) {
-          skipRegex();
+        requireUnambiguousSlash(state, artifact);
+        if (state.slashMode === 'regex') {
+          index = runtimeRegularExpressionEnd(source, index, artifact);
+          noteRuntimeExpressionEnd(state);
           continue;
         }
+        output[index] = character;
+        index += 1;
+        noteRuntimeExpressionPrefix(state);
+        continue;
       }
       if (templateExpression && character === '{') braceDepth += 1;
       if (templateExpression && character === '}') {
@@ -416,8 +1177,40 @@ function maskNonExecutableSource(source: string, artifact: string): string {
           return;
         }
       }
+      if (isRuntimeIdentifierStart(character)) {
+        const end = runtimeIdentifierEnd(source, index);
+        const identifier = source.slice(index, end);
+        for (let cursor = index; cursor < end; cursor += 1) {
+          output[cursor] = source[cursor] ?? ' ';
+        }
+        index = end;
+        noteRuntimeIdentifier(state, identifier);
+        continue;
+      }
+      if (character !== undefined && /[0-9]/u.test(character)) {
+        output[index] = character;
+        index += 1;
+        noteRuntimeExpressionEnd(state);
+        continue;
+      }
+      const punctuator = runtimePunctuatorAt(source, index);
+      if (punctuator !== null) {
+        for (let cursor = index; cursor < index + punctuator.length; cursor += 1) {
+          output[cursor] = source[cursor] ?? ' ';
+        }
+        index += punctuator.length;
+        noteRuntimePunctuator(state, punctuator);
+        continue;
+      }
       output[index] = character ?? ' ';
       index += 1;
+      if (character !== undefined && !/\s/u.test(character)) {
+        state.slashMode = 'ambiguous';
+        state.pendingControlParenthesis = null;
+        state.propertyIdentifierExpected = false;
+        state.restrictedStatement = null;
+        state.forBindingExpected = false;
+      }
     }
     if (templateExpression) {
       return auditFailure('invalid-source-syntax', artifact, 'Unterminated template interpolation.');
@@ -496,19 +1289,60 @@ function auditForbiddenCapabilities(
 ): void {
   const masked = maskNonExecutableSource(source, artifact);
   const reflectReferences = countMatches(masked, /\bReflect\b/gu);
+  const commentMasked = maskComments(source, artifact);
+  const sourceClosureCodecReflectIsExact =
+    artifact === SOURCE_CLOSURE_CODEC_SOURCE &&
+    reflectReferences === 2 &&
+    countMatches(masked, /\bReflect\.ownKeys\(value\)/gu) === 1 &&
+    countMatches(masked, /\bReflect\.get\(value, key\)/gu) === 1;
+  const anytimeExactInputSplitReflectIsExact =
+    artifact === ANYTIME_EXACT_INPUT_SPLIT_SOURCE &&
+    executableReflectCallsMatchProfile(masked, commentMasked, [
+      /(?<![\w$.])Reflect\.get\(workCaps, field\)/gu,
+      /(?<![\w$.])Reflect\.get\(deadline, 'deadlineNanoseconds'\)/gu,
+      /(?<![\w$.])Reflect\.get\(deadline, 'nowNanoseconds'\)/gu,
+    ]);
+  const exactInputSplitSessionReflectIsExact =
+    artifact === EXACT_INPUT_SPLIT_SESSION_SOURCE &&
+    executableReflectCallsMatchProfile(masked, commentMasked, [
+      /(?<![\w$.])Reflect\.apply\(state\.control\.shouldCancel, undefined, \[checkpoint\]\)/gu,
+      /(?<![\w$.])Reflect\.apply\(state\.nowNanoseconds, undefined, \[\]\)/gu,
+    ]);
+  const numericalExactInputSplitReflectIsExact =
+    artifact === NUMERICAL_EXACT_INPUT_SPLIT_SOURCE &&
+    executableReflectCallsMatchProfile(masked, commentMasked, [
+      /(?<![\w$.])Reflect\.get\(numerical, 'outerIterations'\)/gu,
+      /(?<![\w$.])Reflect\.get\(numerical, 'innerIterations'\)/gu,
+      /(?<![\w$.])Reflect\.get\(numerical, 'convergenceTolerance'\)/gu,
+      /(?<![\w$.])Reflect\.get\(workCaps, field\)/gu,
+      /(?<![\w$.])Reflect\.get\(deadline, 'deadlineNanoseconds'\)/gu,
+      /(?<![\w$.])Reflect\.get\(deadline, 'nowNanoseconds'\)/gu,
+    ]);
+  const preparedRoutingContextReflectIsExact =
+    artifact === PREPARED_ROUTING_CONTEXT_SOURCE &&
+    executableReflectCallsMatchProfile(masked, commentMasked, [
+      /(?<![\w$.])Reflect\.get\(value, 'assetIn'\)/gu,
+      /(?<![\w$.])Reflect\.get\(value, 'poolId'\)/gu,
+      /(?<![\w$.])Reflect\.get\(value, 'assetOut'\)/gu,
+    ]);
+  const boundedSnapshotJsonReflectIsExact =
+    artifact === BOUNDED_SNAPSHOT_JSON_SOURCE &&
+    executableReflectCallsMatchProfile(masked, commentMasked, [
+      /(?<![\w$.])Reflect\.apply\(getter, value, \[\]\)/gu,
+    ]);
   if (
     reflectReferences !== 0 &&
-    (
-      artifact !== SOURCE_CLOSURE_CODEC_SOURCE ||
-      reflectReferences !== 2 ||
-      countMatches(masked, /\bReflect\.ownKeys\(value\)/gu) !== 1 ||
-      countMatches(masked, /\bReflect\.get\(value, key\)/gu) !== 1
-    )
+    !sourceClosureCodecReflectIsExact &&
+    !anytimeExactInputSplitReflectIsExact &&
+    !exactInputSplitSessionReflectIsExact &&
+    !numericalExactInputSplitReflectIsExact &&
+    !preparedRoutingContextReflectIsExact &&
+    !boundedSnapshotJsonReflectIsExact
   ) {
     return auditFailure(
       'computed-capability-forbidden',
       artifact,
-      `Reflect access outside the exact source-closure codec calls is forbidden in ${artifact}.`,
+      `Reflect access differs from its exact path-scoped call profile in ${artifact}.`,
     );
   }
   const forbiddenPatterns: readonly [RegExp, string][] = [
@@ -546,6 +1380,21 @@ function auditForbiddenCapabilities(
 
 function countMatches(value: string, pattern: RegExp): number {
   return [...value.matchAll(pattern)].length;
+}
+
+function executableReflectCallsMatchProfile(
+  executable: string,
+  literalPreserving: string,
+  patterns: readonly RegExp[],
+): boolean {
+  const executableOffsets = new Set(
+    [...executable.matchAll(/\bReflect\b/gu)]
+      .map((match) => match.index),
+  );
+  return executableOffsets.size === patterns.length &&
+    patterns.every((pattern) =>
+      [...literalPreserving.matchAll(pattern)].filter((match) =>
+        executableOffsets.has(match.index)).length === 1);
 }
 
 function decodeStaticLiteralEscapes(value: string): string | null {
@@ -648,12 +1497,111 @@ function containsConstructorLiteral(source: string): boolean {
     literal.value === null || /^constructor$/u.test(literal.value));
 }
 
-function auditConstructorCodegen(source: string, artifact: string): void {
+function regexSourceReconstructsConstructor(
+  commentMasked: string,
+  regexSources: readonly RuntimeRegexSourceEvidence[],
+): boolean {
+  for (let start = 0; start < regexSources.length; start += 1) {
+    const first = regexSources[start];
+    if (first?.value === null || first?.value === undefined) continue;
+    let joined = first.value;
+    if (/^constructor$/u.test(joined)) return true;
+    let prior = first;
+    for (let end = start + 1; end < regexSources.length; end += 1) {
+      const next = regexSources[end];
+      if (
+        next?.value === null ||
+        next?.value === undefined ||
+        !/^\s*\+\s*$/u.test(commentMasked.slice(prior.end, next.start))
+      ) {
+        break;
+      }
+      joined += next.value;
+      if (/^constructor$/u.test(joined)) return true;
+      prior = next;
+    }
+  }
+  return false;
+}
+
+function nestedAuditConstructorResidual(
+  sourceBytes: Uint8Array,
+  commentMasked: string,
+  executable: string,
+  artifact: string,
+): string {
+  if (artifact !== INPUT_CLOSURE_AUDIT_SOURCE) return commentMasked;
+  const sourceSha256 = createHash('sha256').update(sourceBytes).digest('hex');
+  if (
+    sourceBytes.byteLength !== INPUT_CLOSURE_AUDIT_REVIEWED_BYTES ||
+    sourceSha256 !== INPUT_CLOSURE_AUDIT_REVIEWED_SHA256
+  ) {
+    return auditFailure(
+      'codegen-forbidden',
+      artifact,
+      `Nested constructor-audit source identity differs in ${artifact}.`,
+    );
+  }
+  const residual = [...commentMasked];
+  const literal = "'constructor'";
+  for (const context of INPUT_CLOSURE_AUDIT_CONSTRUCTOR_CONTEXTS) {
+    const executableContext = maskNonExecutableSource(context, artifact);
+    const offsets: number[] = [];
+    let offset = commentMasked.indexOf(context);
+    while (offset >= 0) {
+      if (
+        executable.slice(offset, offset + context.length) === executableContext
+      ) {
+        offsets.push(offset);
+      }
+      offset = commentMasked.indexOf(context, offset + 1);
+    }
+    const contextOffset = offsets[0];
+    const literalOffset = context.indexOf(literal);
+    if (
+      offsets.length !== 1 ||
+      contextOffset === undefined ||
+      literalOffset < 0 ||
+      context.indexOf(literal, literalOffset + 1) >= 0
+    ) {
+      return auditFailure(
+        'codegen-forbidden',
+        artifact,
+        `Nested constructor-audit context differs in ${artifact}.`,
+      );
+    }
+    for (let index = 0; index < literal.length; index += 1) {
+      residual[contextOffset + literalOffset + index] = ' ';
+    }
+  }
+  return residual.join('');
+}
+
+function auditConstructorCodegen(
+  source: string,
+  artifact: string,
+  sourceBytes: Uint8Array,
+): void {
+  const literalEvidence: RuntimeLiteralEvidence = {
+    staticTemplateValues: [],
+    regexSources: [],
+  };
   const executable = maskNonExecutableSource(source, artifact);
-  const commentMasked = maskComments(source, artifact);
+  const commentMasked = nestedAuditConstructorResidual(
+    sourceBytes,
+    maskComments(source, artifact, literalEvidence),
+    executable,
+    artifact,
+  );
   // Revision-bound source bytes are primary; this lexical gate closes direct and
   // common one-expression constructor recovery without claiming general dataflow.
   if (
+    literalEvidence.staticTemplateValues.some((value) =>
+      /^constructor$/u.test(value)) ||
+    regexSourceReconstructsConstructor(
+      commentMasked,
+      literalEvidence.regexSources,
+    ) ||
     containsConstructorLiteral(commentMasked) ||
     /\.\s*constructor\b/u.test(executable) ||
     /\[\s*(['"])constructor\1\s*\]/u.test(commentMasked)
@@ -1184,7 +2132,7 @@ function auditFixedCapabilitySource(
       const importsOpen = filesystemImports.some((entry) =>
         /\bopen\b/u.test(entry.importClause ?? ''));
       const boundedHandleDeclaration =
-        /const\s+handle\s*=\s*await\s+open\s*\(\s*absolutePath\s*,\s*constants\.O_RDONLY\s*\|\s*constants\.O_NOFOLLOW\s*\)\s*;/gu;
+        /const\s+handle\s*=\s*await\s+open\s*\(\s*absolutePath\s*,\s*constants\.O_RDONLY\s*\|\s*constants\.O_NOFOLLOW\s*\|\s*constants\.O_NONBLOCK\s*,?\s*\)\s*;/gu;
       const boundedHandleDeclarationCount = countMatches(
         executable,
         boundedHandleDeclaration,
@@ -1204,7 +2152,7 @@ function auditFixedCapabilitySource(
           .filter((member) => /\bopen\b/u.test(member))
           .every((member) => member === 'open') &&
         [...executable.matchAll(/\bopen\b/gu)].length === 2 &&
-        [...executable.matchAll(/\bconstants\b/gu)].length === 3 &&
+        [...executable.matchAll(/\bconstants\b/gu)].length === 4 &&
         boundedHandleDeclarationCount === 1 &&
         !/\bhandle\b/u.test(boundedHandleResidual) &&
         !/\b(?:open|constants|handle)\s*\[/u.test(executable) &&
@@ -1483,7 +2431,7 @@ export async function auditServiceFastRuntimeImports(
     }
     const imports = staticImports(source, sourcePath);
     const capability = expectedCapability(options.profile, sourcePath);
-    auditConstructorCodegen(source, sourcePath);
+    auditConstructorCodegen(source, sourcePath, bytes);
     auditForbiddenCapabilities(source, sourcePath, capability);
     auditProcessAccess(source, sourcePath);
     const declaredBuiltins = new Set(capability.builtins);

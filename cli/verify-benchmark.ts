@@ -5,5 +5,5 @@ if (issues.length !== 0) {
   for (const issue of issues) process.stderr.write(`benchmark verification: ${issue}\n`);
   process.exitCode = 1;
 } else {
-  process.stdout.write('portfolio-v1 benchmark verification passed\n');
+  process.stdout.write('portfolio-v2 benchmark verification passed\n');
 }

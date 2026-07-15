@@ -1,9 +1,13 @@
 # RouteLab status
 
-**State:** v0.1 release-candidate hardening
+**State:** PORT-008 complete; PORT-009 active
 
-Implemented: exact `bigint` pool/replay semantics, bounded multi-hop and pool-disjoint split routing, greedy and numerical allocation, a root package API, readable CLI, benchmark, localhost HTTP service, and unsigned NEAR-shaped fixture boundary.
+Implemented: the full 396-request historical-snapshot-derived benchmark now measures eight fixed quality modes, five latency lanes, grouped exact metrics, canonical digests, and deterministic reports.
 
-Before release: replace the mixed benchmark with the full historical-snapshot-derived corpus, isolate service/load processes, make the worker decision from measurements, tighten the NEAR protocol shape, and complete clean-clone release proof.
+Evidence: 3,168/3,168 returned plans freshly replayed; numerical beat/tied/lost greedy at fast effort on 19/377/0 requests; all PORT-008 acceptance commands pass.
+
+Known limitation: the bounded reference is not dominant because allocation grids are not nested; regret uses the best observed declared fixed mode and does not claim a global optimum.
+
+Next: isolate service/load processes, measure concurrency 1/4/16, and make the worker decision in PORT-009.
 
 Out of scope: live data, signing, custody, settlement, PRIME, ML, gas-aware routing, and concentrated liquidity.

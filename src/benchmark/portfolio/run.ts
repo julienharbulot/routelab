@@ -1,48 +1,84 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+
 import {
-  BENCHMARK_CASE_SET_ID,
   BENCHMARK_SAMPLES,
   BENCHMARK_WARMUPS,
   benchmarkProfileConfiguration,
   LATENCY_COMBINATIONS,
+  QUALITY_MODES,
 } from './config.ts';
-import { loadPortfolioCases } from './cases.ts';
+import { loadHistoricalPortfolioCases } from './cases.ts';
 import { runLatency } from './latency.ts';
-import { aggregateQuality, compareNumerical, runQuality } from './quality.ts';
+import {
+  aggregateQuality,
+  canonicalDigest,
+  compareNumerical,
+  runQuality,
+} from './quality.ts';
 import { writeReport } from './report.ts';
-import type { BenchmarkReport } from './types.ts';
+import type { BenchmarkSummary } from './types.ts';
 
-export async function runPortfolioBenchmark(root = process.cwd()): Promise<BenchmarkReport> {
-  const cases = await loadPortfolioCases(root);
-  const quality = runQuality(cases);
-  const latency = await runLatency(cases, root);
-  const report: BenchmarkReport = Object.freeze({
-    schemaVersion: 'routelab.portfolio-benchmark.v1',
-    caseSetId: BENCHMARK_CASE_SET_ID,
+export async function runPortfolioBenchmark(root = process.cwd()): Promise<BenchmarkSummary> {
+  const loaded = await loadHistoricalPortfolioCases(root);
+  const qualityRows = runQuality(loaded.cases);
+  const aggregates = aggregateQuality(qualityRows);
+  const numericalComparisons = compareNumerical(qualityRows);
+  const referenceBeatenRows = qualityRows.filter((value) => value.referenceBeaten);
+  const latency = await runLatency(loaded.cases, root);
+  const requestOrder = loaded.cases.map((value) => ({
+    caseId: value.caseId,
+    amountBucket: value.amountBucket,
+    topology: value.topology,
+    assetIn: value.request.assetIn,
+    assetOut: value.request.assetOut,
+    amountIn: value.request.amountIn.toString(10),
+  }));
+  const summary: BenchmarkSummary = Object.freeze({
+    schemaVersion: 'routelab.portfolio-benchmark-summary.v2',
+    corpus: loaded.corpus,
     configuration: Object.freeze({
-      caseCount: cases.length,
-      warmups: BENCHMARK_WARMUPS,
-      samples: BENCHMARK_SAMPLES,
+      maxHops: 2,
+      maxRoutes: 2,
+      warmupsPerLatencyLane: BENCHMARK_WARMUPS,
+      samplesPerLatencyLane: BENCHMARK_SAMPLES,
       profiles: benchmarkProfileConfiguration(),
+      qualityModes: QUALITY_MODES,
       latencyCombinations: LATENCY_COMBINATIONS,
+      comparisonRule: 'best-observed-across-fixed-modes-including-bounded-reference',
+    }),
+    digests: Object.freeze({
+      requestOrderSha256: canonicalDigest(requestOrder),
+      qualityRowsSha256: canonicalDigest(qualityRows),
+      qualityAggregatesSha256: canonicalDigest(aggregates),
+      numericalComparisonsSha256: canonicalDigest(numericalComparisons),
+    }),
+    quality: Object.freeze({
+      rowCount: qualityRows.length,
+      exactReplaySuccessCount: qualityRows.filter((value) => value.exactReplayPassed).length,
+      referenceBeatenCount: referenceBeatenRows.length,
+      referenceBeatenRequestCount: new Set(
+        referenceBeatenRows.map((value) => value.caseId),
+      ).size,
+      referenceBeatenByMode: Object.freeze(QUALITY_MODES.flatMap((mode) => {
+        const count = referenceBeatenRows.filter((value) =>
+          value.strategy === mode.strategy && value.profile === mode.profile
+        ).length;
+        return count === 0 ? [] : [Object.freeze({ ...mode, count })];
+      })),
+      aggregates,
+      numericalComparisons,
     }),
     environment: latency.environment,
-    cases: Object.freeze(cases.map((value) => Object.freeze({
-      caseId: value.caseId,
-      purpose: value.purpose,
-      snapshotId: value.snapshot.snapshotId,
-      snapshotChecksum: value.snapshot.snapshotChecksum,
-      assetIn: value.request.assetIn,
-      assetOut: value.request.assetOut,
-      amountIn: value.request.amountIn.toString(10),
-      maxHops: value.request.maxHops ?? 3,
-      maxRoutes: value.request.maxRoutes ?? 3,
-      expectedOutcome: value.expectedOutcome,
-    }))),
-    quality,
-    aggregates: aggregateQuality(quality),
-    numericalComparisons: compareNumerical(quality),
     latency: latency.rows,
   });
-  await writeReport(report, root);
-  return report;
+  const rawDirectory = path.join(root, 'reports', 'raw');
+  await mkdir(rawDirectory, { recursive: true });
+  await writeFile(path.join(rawDirectory, 'portfolio-v2-rows.json'), `${JSON.stringify({
+    schemaVersion: 'routelab.portfolio-benchmark-quality-rows.v2',
+    digest: summary.digests.qualityRowsSha256,
+    rows: qualityRows,
+  })}\n`);
+  await writeReport(summary, root);
+  return summary;
 }

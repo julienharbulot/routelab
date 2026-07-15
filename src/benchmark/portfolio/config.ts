@@ -3,12 +3,11 @@ import type {
   NumericalExactInputSplitConfiguration,
   NumericalExactInputSplitWorkCaps,
 } from '../../router/numerical-exact-input-split/index.ts';
-import type { QuoteEffort, QuoteStrategy } from '../../index.ts';
-import type { BenchmarkProfile } from './types.ts';
+import type { QuoteEffort } from '../../index.ts';
+import type { BenchmarkProfile, BenchmarkStrategy } from './types.ts';
 
-export const BENCHMARK_CASE_SET_ID = 'portfolio-v1' as const;
-export const BENCHMARK_WARMUPS = 10;
-export const BENCHMARK_SAMPLES = 100;
+export const BENCHMARK_WARMUPS = 50;
+export const BENCHMARK_SAMPLES = 1_000;
 
 export const PUBLIC_EFFORTS: readonly QuoteEffort[] = Object.freeze([
   'fast',
@@ -16,19 +15,26 @@ export const PUBLIC_EFFORTS: readonly QuoteEffort[] = Object.freeze([
   'thorough',
 ]);
 
-export const PUBLIC_STRATEGIES: readonly QuoteStrategy[] = Object.freeze([
-  'best-single',
-  'greedy-split',
-  'numerical-split',
+export const QUALITY_MODES: readonly {
+  readonly strategy: BenchmarkStrategy;
+  readonly profile: BenchmarkProfile;
+}[] = Object.freeze([
+  Object.freeze({ strategy: 'best-single', profile: 'fast' }),
+  ...PUBLIC_EFFORTS.map((profile) => Object.freeze({ strategy: 'greedy-split' as const, profile })),
+  ...PUBLIC_EFFORTS.map((profile) => Object.freeze({ strategy: 'numerical-split' as const, profile })),
+  Object.freeze({ strategy: 'bounded-reference', profile: 'reference' }),
 ]);
 
 export const LATENCY_COMBINATIONS: readonly {
-  readonly strategy: QuoteStrategy;
+  readonly strategy: 'best-single' | 'greedy-split' | 'numerical-split';
   readonly profile: QuoteEffort;
-}[] = Object.freeze(PUBLIC_STRATEGIES.map((strategy) => Object.freeze({
-  strategy,
-  profile: 'fast' as const,
-})));
+}[] = Object.freeze([
+  Object.freeze({ strategy: 'best-single', profile: 'fast' }),
+  Object.freeze({ strategy: 'greedy-split', profile: 'fast' }),
+  Object.freeze({ strategy: 'numerical-split', profile: 'fast' }),
+  Object.freeze({ strategy: 'greedy-split', profile: 'balanced' }),
+  Object.freeze({ strategy: 'numerical-split', profile: 'balanced' }),
+]);
 
 export interface ReferenceProfile {
   readonly greedyParts: number;
@@ -36,6 +42,9 @@ export interface ReferenceProfile {
   readonly numerical: NumericalExactInputSplitConfiguration;
 }
 
+// One fixed profile, selected before observing PORT-008 results. It is deliberately
+// larger than the public thorough profile but remains bounded and uses the same
+// maxHops/maxRoutes restrictions as every public mode.
 export const REFERENCE_PROFILE: ReferenceProfile = Object.freeze({
   greedyParts: 128,
   workCaps: Object.freeze({

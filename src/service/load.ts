@@ -6,8 +6,7 @@ import path from 'node:path';
 import { monitorEventLoopDelay } from 'node:perf_hooks';
 
 import { loadPortfolioCases } from '../benchmark/portfolio/cases.ts';
-import { renderMarkdown } from '../benchmark/portfolio/report.ts';
-import type { BenchmarkReport, HttpLoadRow } from '../benchmark/portfolio/types.ts';
+import type { HttpLoadRow } from '../benchmark/portfolio/types.ts';
 import { closeQuoteHttpService, createQuoteHttpService } from './server.ts';
 
 export interface LoadReport {
@@ -108,12 +107,6 @@ async function writeLoadReport(report: LoadReport, root: string): Promise<void> 
     writeFile(path.join(reports, 'load-v1.json'), `${JSON.stringify(report, null, 2)}\n`),
     writeFile(path.join(reports, 'load-v1.md'), markdown),
   ]);
-  try {
-    const portfolio = JSON.parse(await readFile(path.join(reports, 'portfolio-v1.json'), 'utf8')) as BenchmarkReport;
-    await writeFile(path.join(reports, 'portfolio-v1.md'), renderMarkdown(portfolio, report.rows));
-  } catch {
-    // The standalone load report remains complete when the portfolio report is absent.
-  }
 }
 
 export async function runHttpLoad(
@@ -131,7 +124,7 @@ export async function runHttpLoad(
   const smoke = options.smoke ?? false;
   const requestsPerConcurrency = smoke ? SMOKE_REQUESTS : FULL_REQUESTS;
   const portfolio = await loadPortfolioCases(root);
-  const cases = portfolio.filter(({ caseId }) => caseId.startsWith('historical-'));
+  const cases = portfolio;
   const snapshotRaw = JSON.parse(await readFile(path.join(
     root,
     'datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/snapshot.json',

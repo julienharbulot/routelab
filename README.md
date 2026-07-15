@@ -2,6 +2,16 @@
 
 RouteLab is an exact-input TypeScript liquidity router for immutable snapshots of two-asset constant-product pools. It discovers bounded multi-hop and pool-disjoint split routes, optionally proposes allocations with a path-shadow-price numerical method, and authorizes every returned quote through fresh exact `bigint` replay.
 
+## Measured result
+
+- The headline corpus has 396 synthetic exact-input requests derived from one historical pool-reserve snapshot; it is not historical order flow or representative demand.
+- All 3,168 returned mode/request plans passed fresh exact replay.
+- At fast effort, numerical split beat/tied/lost greedy split on 19/377/0 requests.
+- Thorough numerical split had p95 regret of 640 ppm (6.40 bps) against the best observed declared fixed mode.
+- On the recorded local run, fast greedy split had 1,550 µs p50 and 4,033 µs p99 in-process latency over 1,000 rotating requests.
+
+See the [full benchmark report](reports/portfolio-v2.md).
+
 ## Quickstart
 
 The repository pins Node.js 24.18.0 and pnpm 11.12.0.
@@ -80,11 +90,11 @@ internal work caps. Run `pnpm serve:smoke`, `pnpm test:api`, or `pnpm load:smoke
 
 ## Benchmark evidence
 
-`pnpm benchmark` regenerates deterministic quality and 100-sample in-process latency evidence;
+`pnpm benchmark` regenerates deterministic quality and 1,000-sample in-process latency evidence;
 `pnpm benchmark:verify` freshly replays every reported success. `pnpm load --
 --concurrency 1,4,16` measures the actual same-thread HTTP service. Raw observations are ignored.
 
-See the concise [portfolio report](reports/portfolio-v1.md), [load report](reports/load-v1.md),
+See the concise [portfolio report](reports/portfolio-v2.md), [load report](reports/load-v1.md),
 and [benchmark methodology](docs/benchmark.md). The curated inputs and one local machine are not
 representative demand or a production-capacity claim.
 

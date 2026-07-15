@@ -1,216 +1,57 @@
-# RouteLab TS portfolio benchmark specification
+# RouteLab benchmark methodology
 
-## Purpose
-
-The benchmark answers three separate questions:
-
-1. **Quality:** How much exact output does each strategy return on fixed inputs?
-2. **Cost:** How much deterministic work is required?
-3. **Operation:** What latency and throughput does the local service show?
-
-Do not merge these into one opaque experiment.
+The benchmark keeps deterministic routing quality separate from observational wall-clock latency.
 
 ## Inputs
 
-### Default portfolio set
+The headline lane uses all 396 synthetic exact-input requests derived from the retained Ethereum mainnet Uniswap v2 block-19,000,000 pool-reserve snapshot. The corpus contains 132 ordered distinct asset pairs, three deterministic reserve-fraction amount buckets, and result-blind ordering. It is not historical order flow, an equal-value trade set, or representative demand.
 
-Create a small, reviewed case set with approximately 20–30 requests. It should include:
+Hand-readable direct, multi-hop, split, fee, rounding, no-route, and huge-integer fixtures remain correctness tests and demo inputs. They are not aggregated into the historical-snapshot-derived headline.
 
-- direct route is best;
-- two-hop beats direct;
-- split beats single;
-- high-fee path loses;
-- shallow direct liquidity;
-- large input where price impact matters;
-- tiny integer/rounding case;
-- no-route case;
-- several requests from the retained historical snapshot.
+Every headline request uses `maxHops=2` and `maxRoutes=2`.
 
-Every case names its purpose.
+## Deterministic quality
 
-### Extended set
-
-The existing retained synthetic request corpus may be used by:
-
-```bash
-pnpm benchmark:extended
-```
-
-It is not the default CI benchmark and is not described as representative demand.
-
-## Strategies
-
-Benchmark:
+`pnpm benchmark` measures these fixed modes:
 
 ```text
 best-single
-greedy-split
-numerical-split
-long-budget numerical reference
+greedy-split / fast, balanced, thorough
+numerical-split / fast, balanced, thorough
+bounded numerical reference
 ```
 
-The long-budget result is a practical reference over the same discovered candidate restrictions. It is not a global optimum.
+The reference uses one frozen profile larger than public thorough effort with the same route restrictions. It is bounded and is not a global optimum. Its allocation grid is not nested with the public grids, so it is not assumed to dominate them. Regret is integer parts per million against the best exact output observed across every declared fixed mode; report-only bps are derived from ppm.
 
-## Work profiles
+For every mode, overall and by amount bucket and topology, the report records quote/no-route and fresh replay counts, equality with the reference, regret percentiles and thresholds, best-single and split improvement frequencies, median/maximum positive improvement ppm among improved requests, deterministic work, authorization rejections, numerical proposal failures and convergence, and reference-beaten counts. Numerical-versus-greedy comparisons add beats/ties/loses, positive improvement ppm, and additional work.
 
-Use frozen named profiles:
+Per-request exact rows are written only to ignored `reports/raw/portfolio-v2-rows.json`. The committed summary contains aggregates and canonical digests.
+
+## In-process latency
+
+Latency uses `process.hrtime.bigint()` and deterministic rotation through the complete corpus. Fast is measured for all strategies, and balanced is measured for greedy and numerical split. Each reported lane has 50 warmups and 1,000 measured invocations. Quote and expected-no-route distributions are separate; this connected diameter-two corpus has no expected no-route request, so those distributions are explicitly absent.
+
+All three efforts remain covered by deterministic quality. Raw observations are written to ignored `reports/raw/portfolio-v2-latency.json`.
+
+Timing is local observational evidence. It is not a semantic budget, production-capacity claim, or statistical-significance claim.
+
+## Charts and committed outputs
+
+`reports/quality-vs-work.svg` plots deterministic work on the x-axis and p95 regret ppm on the y-axis for greedy and numerical modes across all three effort profiles. `reports/historical-regret-distribution.svg` plots the share within exact, 1, 10, and 100 bps.
+
+Committed benchmark outputs are:
 
 ```text
-fast
-balanced
-thorough
-reference
+reports/portfolio-v2.md
+reports/portfolio-v2-summary.json
+reports/quality-vs-work.svg
+reports/historical-regret-distribution.svg
 ```
 
-For deterministic quality comparison, the exact work caps are authoritative.
-
-Wall-clock deadlines may be measured separately, but they must not change the input or semantic configuration being compared.
-
-## Lane A — deterministic quality
-
-For each case, strategy, and profile record:
-
-- exact input/output;
-- route count;
-- hop count;
-- improvement over best single;
-- regret in basis points against the long-budget reference;
-- termination reason;
-- deterministic work counters;
-- numerical proposal count;
-- numerical iteration count;
-- convergence status;
-- exact authorization rejection count;
-- plan fingerprint.
-
-Use integer or rational calculations for regret where practical. Do not route exact amounts through `number`.
-
-Required aggregate views:
-
-- median and worst regret;
-- frequency of split improvement;
-- frequency numerical beats/ties/loses greedy;
-- exact rejection rate;
-- work by profile.
-
-## Lane B — in-process latency
-
-Use `process.hrtime.bigint()`.
-
-For every reported strategy/profile combination:
-
-- perform at least 10 warmups;
-- perform at least 100 measured invocations;
-- rotate through the case set to avoid reporting one trivial request;
-- record p50, p95, p99, minimum, maximum, and throughput;
-- record Node version, OS, CPU description, and commit.
-
-Do not call 10 or 20 samples a p99.
-
-Raw per-invocation observations go to an ignored path such as:
-
-```text
-reports/raw/portfolio-v1-observations.json
-```
-
-The committed summary remains below 1 MB.
-
-## Lane C — HTTP load
-
-Start the actual local server and send requests over localhost.
-
-Test concurrency:
-
-```text
-1
-4
-16
-```
-
-For each level record:
-
-- total requests;
-- completed/failed/timed out;
-- p50/p95/p99 end-to-end latency;
-- requests per second;
-- deadline-completion rate;
-- event-loop delay;
-- peak RSS or memory delta.
-
-Use the same request mix and server configuration for all concurrency levels.
-
-## Quality-versus-time chart
-
-The chart uses:
-
-- x-axis: measured median elapsed time for a fixed deterministic profile;
-- y-axis: exact output quality or median regret;
-- one line/series per strategy.
-
-The semantic output comes from deterministic profile runs. Timing is an observation of those same profiles, not a control that changes them.
-
-## Output files
-
-Commit:
-
-```text
-reports/portfolio-v1.md
-reports/portfolio-v1.json
-reports/quality-vs-budget.svg
-reports/load-v1.md
-```
-
-Ignore:
-
-```text
-reports/raw/**
-reports/tmp/**
-```
-
-The Markdown report starts with:
-
-1. one paragraph conclusion;
-2. one quality table;
-3. one latency table;
-4. one load table;
-5. the chart;
-6. limitations;
-7. methodology.
+Each remains below 250 KiB. Raw rows, latency observations, and temporary output stay ignored.
 
 ## Verification
 
-`pnpm benchmark:verify` must check:
+`pnpm benchmark:verify` re-verifies corpus identity and count, reruns deterministic quality, freshly exact-replays every success, checks exact allocation conservation, reconciles all aggregates and digests, enforces the best-observed comparison rule, validates latency sample counts, rejects tracked raw data, and byte-compares deterministic Markdown and SVG rendering. It also checks chart titles, axes, series, and a non-degenerate quality metric.
 
-- every case uses the expected snapshot;
-- exact amounts are canonical decimal strings;
-- allocations sum to exact input;
-- success quotes replay exactly;
-- plan fingerprints match freshly replayed exact plans;
-- aggregate counts reconcile with per-case rows;
-- percentile sample counts are sufficient;
-- committed summary configuration matches the runner configuration;
-- no raw observation file is committed.
-
-## Interpretation rules
-
-Allowed:
-
-- “On this retained case set…”
-- “Under the documented machine and profile…”
-- “The numerical strategy improved/tied/lost in N cases…”
-- “At concurrency 16, measured p99 was…”
-
-Not allowed:
-
-- “Globally optimal.”
-- “Production ready.”
-- “Representative of market order flow.”
-- “Low latency at scale” without context.
-- “Statistically significant” without a suitable design.
-- “PRIME-accelerated” or “learning-augmented.”
-
-## Current evidence
-
-The committed [portfolio summary](../reports/portfolio-v1.md) and
-[same-thread HTTP load report](../reports/load-v1.md) are local v0.1 evidence generated by the
-commands in this document. Raw observations remain ignored.
+`pnpm benchmark:extended` is a lightweight full-corpus fast-strategy traversal. The current [portfolio report](../reports/portfolio-v2.md) and [same-thread HTTP load report](../reports/load-v1.md) are local v0.1 evidence.

@@ -11,6 +11,7 @@ import {
 } from './config.ts';
 import type {
   BenchmarkEnvironment,
+  LatencyDistribution,
   LatencyRow,
   PortfolioCase,
 } from './types.ts';
@@ -49,6 +50,19 @@ function percentile(sorted: readonly number[], fraction: number): number {
   return sorted[index] ?? 0;
 }
 
+function distribution(durations: readonly number[]): LatencyDistribution | null {
+  if (durations.length === 0) return null;
+  const sorted = [...durations].sort((left, right) => left - right);
+  return Object.freeze({
+    samples: sorted.length,
+    p50Micros: Math.round(percentile(sorted, 0.50)),
+    p95Micros: Math.round(percentile(sorted, 0.95)),
+    p99Micros: sorted.length >= 1_000 ? Math.round(percentile(sorted, 0.99)) : null,
+    minMicros: Math.round(sorted[0] ?? 0),
+    maxMicros: Math.round(sorted.at(-1) ?? 0),
+  });
+}
+
 function invoke(
   input: PortfolioCase,
   strategy: (typeof LATENCY_COMBINATIONS)[number]['strategy'],
@@ -73,23 +87,22 @@ export async function runLatency(
   readonly environment: BenchmarkEnvironment;
   readonly rows: readonly LatencyRow[];
 }> {
+  if (cases.length === 0) throw new Error('Latency benchmark requires at least one request.');
   const observations: RawLatencyObservation[] = [];
   const rows: LatencyRow[] = [];
   for (const { strategy, profile } of LATENCY_COMBINATIONS) {
     for (let index = 0; index < warmups; index += 1) {
       invoke(cases[index % cases.length] as PortfolioCase, strategy, profile);
     }
-    const durations: number[] = [];
-    let successful = 0;
-    let expectedNoRoute = 0;
+    const quoteDurations: number[] = [];
+    const noRouteDurations: number[] = [];
     const laneStarted = process.hrtime.bigint();
     for (let index = 0; index < samples; index += 1) {
       const input = cases[index % cases.length] as PortfolioCase;
       const result = invoke(input, strategy, profile);
       const elapsedMicros = Number(result.elapsed) / 1_000;
-      durations.push(elapsedMicros);
-      if (result.outcome === 'quote') successful += 1;
-      else expectedNoRoute += 1;
+      if (result.outcome === 'quote') quoteDurations.push(elapsedMicros);
+      else noRouteDurations.push(elapsedMicros);
       observations.push(Object.freeze({
         strategy,
         profile,
@@ -99,27 +112,24 @@ export async function runLatency(
       }));
     }
     const laneElapsed = process.hrtime.bigint() - laneStarted;
-    const sorted = [...durations].sort((left, right) => left - right);
     rows.push(Object.freeze({
       strategy,
       profile,
       warmups,
       samples,
-      successful,
-      expectedNoRoute,
-      p50Micros: Math.round(percentile(sorted, 0.50)),
-      p95Micros: Math.round(percentile(sorted, 0.95)),
-      p99Micros: Math.round(percentile(sorted, 0.99)),
-      minMicros: Math.round(sorted[0] ?? 0),
-      maxMicros: Math.round(sorted.at(-1) ?? 0),
-      throughputPerSecond: Number((BigInt(samples) * 1_000_000_000_000n) / laneElapsed) / 1_000,
+      quoteCount: quoteDurations.length,
+      noRouteCount: noRouteDurations.length,
+      quote: distribution(quoteDurations),
+      noRoute: distribution(noRouteDurations),
+      throughputPerSecond:
+        Number((BigInt(samples) * 1_000_000_000_000n) / laneElapsed) / 1_000,
     }));
   }
   const benchmarkEnvironment = environment(root);
   const rawDirectory = path.join(root, 'reports', 'raw');
   await mkdir(rawDirectory, { recursive: true });
-  await writeFile(path.join(rawDirectory, 'portfolio-v1-observations.json'), `${JSON.stringify({
-    schemaVersion: 'routelab.portfolio-benchmark-observations.v1',
+  await writeFile(path.join(rawDirectory, 'portfolio-v2-latency.json'), `${JSON.stringify({
+    schemaVersion: 'routelab.portfolio-benchmark-latency.v2',
     environment: benchmarkEnvironment,
     observations,
   }, null, 2)}\n`);

@@ -3,16 +3,26 @@ import type { PreparedRoutingContext } from '../../runtime/prepared-routing-cont
 import type {
   QuoteEffort,
   QuoteRequest,
-  QuoteStrategy,
   RoutingContext,
 } from '../../index.ts';
+import type {
+  SyntheticRequestAmountBucket,
+  SyntheticRequestTopology,
+} from '../../verification/synthetic-request-corpus/index.ts';
 
 export type BenchmarkProfile = QuoteEffort | 'reference';
-export type BenchmarkStrategy = QuoteStrategy | 'numerical-reference';
+export type BenchmarkStrategy =
+  | 'best-single'
+  | 'greedy-split'
+  | 'numerical-split'
+  | 'bounded-reference';
+export type AggregateDimension = 'overall' | 'amountBucket' | 'topology';
 
 export interface PortfolioCase {
   readonly caseId: string;
   readonly purpose: string;
+  readonly amountBucket: SyntheticRequestAmountBucket;
+  readonly topology: SyntheticRequestTopology;
   readonly snapshot: LiquiditySnapshot;
   readonly context: RoutingContext;
   readonly prepared: PreparedRoutingContext;
@@ -45,6 +55,7 @@ export interface ExactBenchmarkQuote {
   readonly work: Readonly<Record<string, number>>;
   readonly numericalProposals: number;
   readonly numericalIterations: number;
+  readonly numericalProposalFailures: number;
   readonly numericalConverged: boolean | null;
   readonly authorizationRejections: number;
   readonly planFingerprint: string;
@@ -56,57 +67,103 @@ export type ExactBenchmarkOutcome =
 
 export interface QualityRow {
   readonly caseId: string;
+  readonly amountBucket: SyntheticRequestAmountBucket;
+  readonly topology: SyntheticRequestTopology;
   readonly strategy: BenchmarkStrategy;
   readonly profile: BenchmarkProfile;
   readonly outcome: 'quote' | 'no-route';
   readonly amountIn: string;
   readonly amountOut: string | null;
-  readonly improvementOverBestSingle: string | null;
-  readonly regretBps: number | null;
+  readonly referenceAmountOut: string | null;
+  readonly comparisonAmountOut: string | null;
+  readonly exactReplayPassed: boolean;
+  readonly exactReferenceEquality: boolean;
+  readonly regretPpm: number | null;
+  readonly within1Bps: boolean;
+  readonly within10Bps: boolean;
+  readonly within100Bps: boolean;
+  readonly improvementOverBestSinglePpm: number | null;
+  readonly bestSingleImproved: boolean;
+  readonly splitSelected: boolean;
+  readonly splitImproved: boolean;
   readonly routeCount: number;
   readonly hopCount: number;
   readonly termination: string;
   readonly work: Readonly<Record<string, number>>;
   readonly numericalProposals: number;
   readonly numericalIterations: number;
+  readonly numericalProposalFailures: number;
   readonly numericalConverged: boolean | null;
   readonly authorizationRejections: number;
+  readonly referenceBeaten: boolean;
   readonly planFingerprint: string | null;
   readonly routes: readonly SerializedBenchmarkRoute[];
 }
 
 export interface QualityAggregate {
+  readonly dimension: AggregateDimension;
+  readonly group: string;
   readonly strategy: BenchmarkStrategy;
   readonly profile: BenchmarkProfile;
+  readonly requestCount: number;
   readonly quoteCount: number;
   readonly noRouteCount: number;
-  readonly medianRegretBps: number | null;
-  readonly worstRegretBps: number | null;
-  readonly splitImprovementCount: number;
-  readonly authorizationRejections: number;
-  readonly authorizationRejectionRate: number;
-  readonly totalWork: number;
+  readonly exactReplaySuccessCount: number;
+  readonly exactReferenceEqualityCount: number;
+  readonly regretP50Ppm: number | null;
+  readonly regretP90Ppm: number | null;
+  readonly regretP95Ppm: number | null;
+  readonly worstRegretPpm: number | null;
+  readonly withinExactRatePpm: number | null;
+  readonly within1BpsRatePpm: number | null;
+  readonly within10BpsRatePpm: number | null;
+  readonly within100BpsRatePpm: number | null;
+  readonly bestSingleImprovementRatePpm: number | null;
+  readonly splitSelectedRatePpm: number | null;
+  readonly splitImprovementRatePpm: number | null;
+  readonly medianImprovementPpm: number | null;
+  readonly maximumImprovementPpm: number | null;
+  readonly workP50: number | null;
+  readonly workP95: number | null;
+  readonly authorizationRejectionCount: number;
+  readonly numericalProposalFailureCount: number;
+  readonly numericalRequestCount: number;
+  readonly numericalConvergedCount: number;
+  readonly numericalConvergenceRatePpm: number | null;
+  readonly referenceBeatenCount: number;
 }
 
 export interface NumericalComparison {
+  readonly dimension: AggregateDimension;
+  readonly group: string;
   readonly profile: QuoteEffort;
+  readonly requestCount: number;
   readonly beatsGreedy: number;
   readonly tiesGreedy: number;
   readonly losesGreedy: number;
+  readonly medianPositiveImprovementPpm: number | null;
+  readonly maximumPositiveImprovementPpm: number | null;
+  readonly totalAdditionalWork: number;
+}
+
+export interface LatencyDistribution {
+  readonly samples: number;
+  readonly p50Micros: number;
+  readonly p95Micros: number;
+  readonly p99Micros: number | null;
+  readonly minMicros: number;
+  readonly maxMicros: number;
 }
 
 export interface LatencyRow {
-  readonly strategy: QuoteStrategy;
+  readonly strategy: 'best-single' | 'greedy-split' | 'numerical-split';
   readonly profile: QuoteEffort;
   readonly warmups: number;
   readonly samples: number;
-  readonly successful: number;
-  readonly expectedNoRoute: number;
-  readonly p50Micros: number;
-  readonly p95Micros: number;
-  readonly p99Micros: number;
-  readonly minMicros: number;
-  readonly maxMicros: number;
+  readonly quoteCount: number;
+  readonly noRouteCount: number;
+  readonly quote: LatencyDistribution | null;
+  readonly noRoute: LatencyDistribution | null;
   readonly throughputPerSecond: number;
 }
 
@@ -137,34 +194,56 @@ export interface BenchmarkEnvironment {
   readonly commit: string;
 }
 
-export interface BenchmarkReport {
-  readonly schemaVersion: 'routelab.portfolio-benchmark.v1';
-  readonly caseSetId: 'portfolio-v1';
-  readonly configuration: {
-    readonly caseCount: number;
-    readonly warmups: number;
-    readonly samples: number;
-    readonly profiles: Readonly<Record<BenchmarkProfile, unknown>>;
-    readonly latencyCombinations: readonly {
-      readonly strategy: QuoteStrategy;
-      readonly profile: QuoteEffort;
-    }[];
-  };
-  readonly environment: BenchmarkEnvironment;
-  readonly cases: readonly {
-    readonly caseId: string;
-    readonly purpose: string;
+export interface BenchmarkSummary {
+  readonly schemaVersion: 'routelab.portfolio-benchmark-summary.v2';
+  readonly corpus: {
+    readonly schemaVersion: 'routelab.synthetic-request-corpus-verification-summary.v1';
+    readonly corpusId: string;
+    readonly datasetId: string;
     readonly snapshotId: string;
     readonly snapshotChecksum: string;
-    readonly assetIn: string;
-    readonly assetOut: string;
-    readonly amountIn: string;
-    readonly maxHops: number;
-    readonly maxRoutes: number;
-    readonly expectedOutcome: 'quote' | 'no-route';
-  }[];
-  readonly quality: readonly QualityRow[];
-  readonly aggregates: readonly QualityAggregate[];
-  readonly numericalComparisons: readonly NumericalComparison[];
+    readonly artifactSha256: string;
+    readonly requestCount: number;
+    readonly amountBucketCount: number;
+    readonly directRequestCount: number;
+    readonly multiHopOnlyRequestCount: number;
+    readonly randomness: 'none';
+  };
+  readonly configuration: {
+    readonly maxHops: 2;
+    readonly maxRoutes: 2;
+    readonly warmupsPerLatencyLane: number;
+    readonly samplesPerLatencyLane: number;
+    readonly profiles: Readonly<Record<BenchmarkProfile, unknown>>;
+    readonly qualityModes: readonly {
+      readonly strategy: BenchmarkStrategy;
+      readonly profile: BenchmarkProfile;
+    }[];
+    readonly latencyCombinations: readonly {
+      readonly strategy: 'best-single' | 'greedy-split' | 'numerical-split';
+      readonly profile: QuoteEffort;
+    }[];
+    readonly comparisonRule: 'best-observed-across-fixed-modes-including-bounded-reference';
+  };
+  readonly digests: {
+    readonly requestOrderSha256: string;
+    readonly qualityRowsSha256: string;
+    readonly qualityAggregatesSha256: string;
+    readonly numericalComparisonsSha256: string;
+  };
+  readonly quality: {
+    readonly rowCount: number;
+    readonly exactReplaySuccessCount: number;
+    readonly referenceBeatenCount: number;
+    readonly referenceBeatenRequestCount: number;
+    readonly referenceBeatenByMode: readonly {
+      readonly strategy: BenchmarkStrategy;
+      readonly profile: BenchmarkProfile;
+      readonly count: number;
+    }[];
+    readonly aggregates: readonly QualityAggregate[];
+    readonly numericalComparisons: readonly NumericalComparison[];
+  };
+  readonly environment: BenchmarkEnvironment;
   readonly latency: readonly LatencyRow[];
 }

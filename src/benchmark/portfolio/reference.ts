@@ -78,6 +78,7 @@ export function runReference(input: PortfolioCase): ExactBenchmarkOutcome {
     work: Object.freeze({ ...counters }),
     numericalProposals: counters.numericalProposals,
     numericalIterations: counters.numericalIterations,
+    numericalProposalFailures: counters.numericalProposalFailures,
     numericalConverged: diagnostics.length > 0 && diagnostics.every(({ converged }) => converged),
     authorizationRejections:
       counters.finalAuthorizationRejections +

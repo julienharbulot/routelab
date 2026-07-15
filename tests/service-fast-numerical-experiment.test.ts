@@ -63,6 +63,7 @@ import {
   parseFrozenServiceFastConfiguration,
   sha256Bytes,
   type FrozenServiceFastConfiguration,
+  type SourceClosureDescriptor,
 } from '../src/benchmark/service-fast-numerical-experiment/source-closure/codec.ts';
 import {
   generateServiceFastSourceClosure,
@@ -198,9 +199,13 @@ import {
   admitAcceptedRecordBindings,
 } from '../src/benchmark/service-fast-numerical-experiment/accepted-run/input.ts';
 import {
+  mergeAcceptedBoundDescriptors,
   recheckAcceptedBoundBytes,
   type AcceptedPreflightResult,
 } from '../src/benchmark/service-fast-numerical-experiment/accepted-run/preflight.ts';
+import {
+  SERVICE_FAST_INPUT_PROJECT_RUNTIME_ALLOWLIST,
+} from '../src/benchmark/service-fast-numerical-experiment/input/closure-audit.ts';
 
 function pool(
   poolId: string,
@@ -4959,6 +4964,61 @@ void test('rechecks every closure-bound byte sequence immediately before candida
       error.envelope.cause === 'repository-state-mismatch' &&
       error.envelope.phase === 'preflight',
   );
+});
+
+void test('composes closure and input-runtime bindings before accepted audit', async () => {
+  const inputOnlyRuntimePaths = new Set([
+    'src/domain/index.ts',
+    'src/domain/liquidity-snapshot.ts',
+    'src/router/anytime-exact-input-split/index.ts',
+    'src/router/numerical-exact-input-split/index.ts',
+    'src/search/pool-disjoint-route-sets/index.ts',
+    'src/search/shared-route-discovery/index.ts',
+    'src/search/simple-paths/index.ts',
+    'src/search/simple-paths/traversal.ts',
+    'src/serialization/canonical-snapshot/index.ts',
+  ]);
+  assert.deepEqual(
+    ACCEPTED_RUN_RUNTIME_PATHS.filter((sourcePath) => inputOnlyRuntimePaths.has(sourcePath)),
+    [...inputOnlyRuntimePaths],
+  );
+  const descriptors = new Map<string, SourceClosureDescriptor>(await Promise.all(
+    ACCEPTED_RUN_RUNTIME_PATHS.map(async (sourcePath) => {
+      const bytes = await readFile(sourcePath);
+      return [sourcePath, Object.freeze({
+        path: sourcePath,
+        bytes: bytes.byteLength,
+        sha256: sha256Bytes(bytes),
+      })] as const;
+    }),
+  ));
+  const closureDescriptors = ACCEPTED_RUN_RUNTIME_PATHS
+    .filter((sourcePath) => !inputOnlyRuntimePaths.has(sourcePath))
+    .map((sourcePath) => descriptors.get(sourcePath) ?? assert.fail(sourcePath));
+  const inputRuntimeDescriptors = SERVICE_FAST_INPUT_PROJECT_RUNTIME_ALLOWLIST
+    .map((sourcePath) => descriptors.get(sourcePath))
+    .filter((bound) => bound !== undefined);
+  const merged = mergeAcceptedBoundDescriptors(
+    closureDescriptors,
+    inputRuntimeDescriptors,
+  );
+  assert.deepEqual(
+    acceptedRunRuntimeAuditProfile(merged).projectSources.map((bound) => bound.path),
+    ACCEPTED_RUN_RUNTIME_PATHS,
+  );
+  const first = merged[0] ?? assert.fail('missing accepted descriptor');
+  for (const conflicting of [
+    Object.freeze({ ...first, bytes: first.bytes + 1 }),
+    Object.freeze({ ...first, sha256: `sha256:${'0'.repeat(64)}` }),
+  ]) {
+    assert.throws(
+      () => mergeAcceptedBoundDescriptors(merged, [conflicting]),
+      (error: unknown) =>
+        error instanceof AcceptedRunFailure &&
+        error.envelope.cause === 'repository-state-mismatch' &&
+        error.envelope.phase === 'preflight',
+    );
+  }
 });
 
 void test('qualifies all six clauses and applies every deterministic ranking tie-break', () => {

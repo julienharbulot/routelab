@@ -115,6 +115,33 @@ function descriptor(
   return Object.freeze({ path: source.path, bytes: source.bytes, sha256: source.sha256 });
 }
 
+/** Compose independently verified descriptor sets without allowing collisions to disagree. @internal */
+export function mergeAcceptedBoundDescriptors(
+  ...groups: readonly (readonly SourceClosureDescriptor[])[]
+): readonly SourceClosureDescriptor[] {
+  const byPath = new Map<string, SourceClosureDescriptor>();
+  const merged: SourceClosureDescriptor[] = [];
+  for (const group of groups) {
+    for (const bound of group) {
+      const existing = byPath.get(bound.path);
+      if (existing !== undefined) {
+        if (existing.bytes !== bound.bytes || existing.sha256 !== bound.sha256) {
+          throw acceptedRunFailure('preflight-repository-binding');
+        }
+        continue;
+      }
+      const admitted = Object.freeze({
+        path: bound.path,
+        bytes: bound.bytes,
+        sha256: bound.sha256,
+      });
+      byPath.set(admitted.path, admitted);
+      merged.push(admitted);
+    }
+  }
+  return Object.freeze(merged);
+}
+
 function admittedIndexEntries(
   dependencies: AcceptedPreflightDependencies,
   repositoryRoot: string,
@@ -209,14 +236,6 @@ export async function performAcceptedPreflight(
       bytes: closureBytes.byteLength,
       sha256: sha256Bytes(closureBytes),
     });
-    const finalBoundDescriptors = Object.freeze([
-      sourceClosureDescriptor,
-      closure.config,
-      closure.artifactSchema,
-      closure.inputArtifact,
-      ...closure.sources,
-      ...closure.protectedSources,
-    ]);
     const inputBytes = await readBound(
       dependencies,
       repositoryRoot,
@@ -232,9 +251,17 @@ export async function performAcceptedPreflight(
     const operations = dependencies.operations();
     const records = decodeAcceptedInputBytes(inputBytes);
     const cells = prepareAcceptedCells(records, source, operations);
-    const allDescriptors = Object.freeze([
-      ...closure.sources,
-      ...closure.protectedSources,
+    const allDescriptors = mergeAcceptedBoundDescriptors(
+      closure.sources,
+      closure.protectedSources,
+      source.runtimeClosure.projectSources,
+    );
+    const finalBoundDescriptors = Object.freeze([
+      sourceClosureDescriptor,
+      closure.config,
+      closure.artifactSchema,
+      closure.inputArtifact,
+      ...allDescriptors,
     ]);
     const profile = acceptedRunRuntimeAuditProfile(allDescriptors);
     const trackedPaths = new Set(indexEntriesBefore.map((entry) => entry.path));

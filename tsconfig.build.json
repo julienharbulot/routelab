@@ -9,6 +9,6 @@
     "sourceMap": false,
     "rewriteRelativeImportExtensions": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/index.ts", "src/adapters/near-intents/index.ts"],
   "exclude": ["tests", "cli"]
 }

@@ -67,81 +67,11 @@ JSON amounts are canonical unsigned decimal strings. The public service rejects 
 
 ## Public API shape
 
-```ts
-export interface RoutingContext {
-  readonly snapshotId: string;
-  readonly snapshotChecksum: string;
-  // Opaque implementation state.
-}
-
-export interface QuoteRequest {
-  readonly snapshotId: string;
-  readonly assetIn: string;
-  readonly assetOut: string;
-  readonly amountIn: bigint;
-  readonly maxHops?: number;
-  readonly maxRoutes?: number;
-}
-
-export type QuoteStrategy =
-  | 'best-single'
-  | 'greedy-split'
-  | 'numerical-split';
-
-export type QuoteEffort = 'fast' | 'balanced' | 'thorough';
-
-export interface QuoteOptions {
-  readonly strategy?: QuoteStrategy;
-  readonly effort?: QuoteEffort;
-  // Relative monotonic wall-clock stop budget, not CPU time.
-  readonly deadlineMs?: number;
-  readonly includeDiagnostics?: boolean;
-}
-
-export interface ValidatedQuote {
-  readonly snapshotId: string;
-  readonly snapshotChecksum: string;
-  readonly assetIn: string;
-  readonly assetOut: string;
-  readonly amountIn: bigint;
-  readonly amountOut: bigint;
-  readonly routes: readonly {
-    readonly allocation: bigint;
-    readonly hops: readonly {
-      readonly poolId: string;
-      readonly assetIn: string;
-      readonly assetOut: string;
-    }[];
-  }[];
-  readonly requestedStrategy: QuoteStrategy;
-  readonly effort: QuoteEffort;
-  readonly planKind: 'single' | 'split';
-  readonly numericalImprovementSelected?: boolean;
-  readonly termination: 'complete' | 'work-limit' | 'deadline' | 'interrupted';
-  readonly planFingerprint: string;
-  readonly timing: {
-    readonly elapsedMicros: number;
-  };
-  readonly diagnostics?: {
-    readonly work: Readonly<Record<string, number>>;
-    readonly pathExpansions: number;
-    readonly candidateSetExpansions: number;
-    readonly numericalProposals: number;
-    readonly numericalConvergedProposals: number;
-    readonly numericalFailedProposals: number;
-    readonly numericalIterations: number;
-    readonly allProposalsConverged: boolean | null;
-    readonly numericalOutcome: 'improved' | 'not-better' | 'failed' | 'stopped' | 'not-applicable';
-    readonly authorizationRejections: number;
-  };
-}
-
-export type QuoteResult =
-  | { readonly ok: true; readonly value: ValidatedQuote }
-  | { readonly ok: false; readonly error: QuoteError };
-```
-
-`RoutingContext` should be nominal or otherwise opaque so callers cannot fabricate one.
+The root exports `prepareSnapshot`, `quote`, `serializeQuote`, and `formatQuote`. Exact request,
+allocation, and output values are `bigint`; serialized exact values are canonical decimal strings.
+`RoutingContext` is opaque, results are typed success/error unions, and successful quotes carry the
+snapshot identity, exact routes, termination metadata, and plan fingerprint. See the authoritative
+[public types](../src/public/types.ts) instead of duplicating the declarations here.
 
 `quote()` remains synchronous and CPU-bound. The HTTP boundary can use a fixed worker pool: each worker prepares immutable snapshots once, messages carry canonical decimal strings, worker results pass a bounded required-field parser and request/snapshot match, and the main server retains bounded admission and queue/deadline policy. The retained service report records the predeclared same-run retention decision and its memory tradeoff.
 
@@ -217,7 +147,7 @@ The HTTP server owns:
 
 The service does not accept raw internal work caps.
 
-The default CLI service uses four fixed workers and same-thread mode remains available for measurement. The retained comparison runs both modes sequentially in one invocation without reading a previous report; workers passed the frozen gate with their peak-RSS and event-loop costs reported. The server stays local/offline for v0.1; a network adapter may be added later without changing the router.
+The default CLI service uses four fixed workers and same-thread mode remains available for measurement. The retained comparison runs both modes sequentially in one invocation without reading a previous report; workers passed the frozen gate with their peak-RSS and event-loop costs reported. The server stays local/offline for v0.1.
 
 ## NEAR Intents boundary
 

@@ -32,6 +32,7 @@ void test('portfolio-v2 uses the complete verified historical-snapshot-derived c
   const loaded = await loadHistoricalPortfolioCases();
   assert.equal(loaded.cases.length, 396);
   assert.equal(loaded.corpus.requestCount, 396);
+  assert.equal(loaded.corpus.schemaVersion, 'routelab.generated-benchmark-corpus.v2');
   assert.equal(new Set(loaded.cases.map(({ caseId }) => caseId)).size, 396);
   assert.deepEqual(
     loaded.cases.reduce<Record<string, number>>((counts, value) => {
@@ -183,6 +184,7 @@ void test('Markdown and both SVGs state the evidence scope and axis semantics', 
   } satisfies BenchmarkSummary;
   assert.match(renderMarkdown(summary), /not historical orders/u);
   assert.match(renderMarkdown(summary), /fresh exact replay/u);
+  assert.doesNotMatch(renderMarkdown(summary), /amountBucket:|topology:/u);
   assert.doesNotMatch(
     `${renderMarkdown(summary)}\n${renderQualityByEffortSvg(summary)}`,
     /bounded-reference|quality versus work|Work p50\/p95|Additional work|data-work=/u,

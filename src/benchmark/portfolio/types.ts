@@ -9,7 +9,7 @@ import type {
 import type {
   SyntheticRequestAmountBucket,
   SyntheticRequestTopology,
-} from '../../verification/synthetic-request-corpus/index.ts';
+} from './generate-cases.ts';
 
 export type BenchmarkProfile = QuoteEffort | 'large-budget';
 export type BenchmarkStrategy =
@@ -199,12 +199,12 @@ export interface BenchmarkSummary {
   readonly schemaVersion: 'routelab.portfolio-benchmark-summary.v2';
   readonly evidenceSource: EvidenceSourceIdentity;
   readonly corpus: {
-    readonly schemaVersion: 'routelab.synthetic-request-corpus-verification-summary.v1';
+    readonly schemaVersion: 'routelab.generated-benchmark-corpus.v2';
     readonly corpusId: string;
     readonly datasetId: string;
     readonly snapshotId: string;
     readonly snapshotChecksum: string;
-    readonly artifactSha256: string;
+    readonly corpusDigest: string;
     readonly requestCount: number;
     readonly amountBucketCount: number;
     readonly directRequestCount: number;

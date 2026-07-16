@@ -9,9 +9,9 @@ The six companion JSON files are deterministic curated facts and project metadat
 Run the offline integrity and preparation boundary:
 
 ```bash
-pnpm verify:historical-data
+pnpm verify:inputs
 ```
 
-The verifier checks the closed manifest and companion schemas, file byte lengths and hashes, exact source reconciliation, pool order, canonical snapshot content and checksum, and acceptance through the untrusted snapshot parse-before-prepare boundary.
+The verifier checks the retained block and token metadata, companion file hashes, snapshot identity and checksum, pool and asset counts, and acceptance through the untrusted snapshot parse-before-prepare boundary. It then derives the fixed benchmark requests from the verified snapshot.
 
 This snapshot represents stored reserves for the selected subset at one historical block. It does not establish complete liquidity, historical order flow, token-transfer feasibility, transaction simulation or submission, custody, live execution, future state, or unrestricted routing optimality. Synthetic workload semantics and algorithm evaluation are separate future artifacts.

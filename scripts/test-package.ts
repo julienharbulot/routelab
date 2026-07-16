@@ -79,6 +79,10 @@ try {
   assert.equal(paths.includes('dist/index.js'), true);
   assert.equal(paths.includes('dist/index.d.ts'), true);
   assert.equal(paths.includes('dist/adapters/near-intents/index.js'), true);
+  assert.equal(paths.some((path) => path.startsWith('dist/benchmark/')), false);
+  assert.equal(paths.some((path) => path.startsWith('dist/evidence/')), false);
+  assert.equal(paths.some((path) => path.startsWith('dist/verification/')), false);
+  assert.equal(paths.some((path) => /^dist\/service\/(?:load|verify)/u.test(path)), false);
   assert.equal(paths.includes('DATA_NOTICE.md'), true);
   assert.equal(paths.includes('CHANGELOG.md'), true);
   const allowedRootFiles = new Set([

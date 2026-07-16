@@ -23,8 +23,6 @@ export const EVIDENCE_SOURCE_PATH_SPECS = Object.freeze([
   'datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/snapshot.json',
   'datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/sources/infura-normalized.json',
   'datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/sources/sqd-normalized.json',
-  'datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/manifest.json',
-  'datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/requests.json',
 ]);
 
 export interface EvidenceSourceIdentity {

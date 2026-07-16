@@ -142,8 +142,7 @@ pnpm typecheck
 pnpm test
 pnpm build
 pnpm test:package
-pnpm verify:historical-data
-pnpm verify:synthetic-requests
+pnpm verify:inputs
 pnpm benchmark:verify
 pnpm service:verify
 pnpm test:api
@@ -152,7 +151,7 @@ pnpm pack --dry-run
 pnpm release:verify
 ```
 
-The package consumer check packs a tarball, installs it into a clean temporary ESM project, imports the root and NEAR subpath, and executes one exact quote. The archive allowlist contains `dist/`, this README, the code license, the data notice, and package metadata; source/declaration maps are omitted so consumers receive no broken source references.
+The package consumer check packs a tarball, installs it into a clean temporary ESM project, imports the root and NEAR subpath, and executes one exact quote. Only the runtime dependency closure for those two exports is compiled into `dist/`; benchmark, evidence, service, and input-verification tooling stays in the repository.
 
 ## Scope and limitations
 
@@ -162,8 +161,9 @@ The package consumer check packs a tarball, installs it into a clean temporary E
 - The project uses snapshots and localhost only; it does not submit transactions, sign messages, hold funds, connect to a relay, or settle trades.
 - The HTTP boundary defaults to the retained fixed four-worker pool; its local comparison is not a production-capacity claim or an adaptive scheduler, and peak RSS increased materially.
 - Timing is observational and excluded from plan fingerprints; no production-latency claim is made.
+- Later work should be evidence-led: additional versioned snapshots, a separately designed live-data boundary, or new pool/gas semantics with exact differential evidence.
 
-See [architecture](docs/architecture.md), [benchmark design](docs/benchmark.md), [case study](docs/case-study.md), [release notes](docs/release-notes-v0.1.0.md), [portfolio notes](docs/portfolio-notes.md), [accepted invariants](docs/invariants.md), [roadmap](docs/roadmap.md), and [current status](STATUS.md).
+See [architecture](docs/architecture.md), [benchmark design](docs/benchmark.md), [case study](docs/case-study.md), [accepted invariants](docs/invariants.md), and the [changelog](CHANGELOG.md).
 
 ## License
 

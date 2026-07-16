@@ -52,14 +52,12 @@
     "lint": "eslint src cli scripts tests",
     "test": "node --test \"tests/**/*.test.ts\"",
     "test:pool": "node --test tests/constant-product.test.ts",
-    "verify:historical-data": "node cli/verify-historical-dataset.ts",
-    "verify:synthetic-requests": "node cli/verify-synthetic-request-corpus.ts",
+    "verify:inputs": "node cli/verify-inputs.ts",
     "demo": "node cli/demo.ts",
     "quote": "node cli/quote.ts",
     "benchmark": "node cli/benchmark.ts",
     "benchmark:verify": "node cli/verify-benchmark.ts",
-    "benchmark:extended": "node cli/benchmark-extended.ts",
-    "benchmark:smoke": "node cli/benchmark-extended.ts --smoke",
+    "benchmark:smoke": "node cli/benchmark.ts --smoke",
     "test:benchmark": "node --test tests/portfolio-benchmark.test.ts",
     "serve": "node cli/serve.ts",
     "serve:smoke": "node cli/serve.ts --smoke",
@@ -72,8 +70,8 @@
     "test:intents": "node --test tests/near-intents-adapter.test.ts",
     "test:package": "node scripts/test-package.ts",
     "test:core": "node --test tests/constant-product.test.ts tests/route-replay.test.ts tests/exact-input-split-replay.test.ts tests/simple-paths.test.ts tests/pool-disjoint-route-sets.test.ts tests/path-shadow-price-allocation.test.ts tests/anytime-exact-input-split-router.test.ts tests/numerical-exact-input-split-router.test.ts tests/public-facade.test.ts",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm verify:historical-data && pnpm verify:synthetic-requests && pnpm demo",
-    "release:verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:package && pnpm verify:historical-data && pnpm verify:synthetic-requests && pnpm benchmark:verify && pnpm service:verify && pnpm test:api && pnpm serve:smoke && pnpm load:smoke && pnpm pack --dry-run"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm verify:inputs && pnpm demo",
+    "release:verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:package && pnpm verify:inputs && pnpm benchmark:verify && pnpm service:verify && pnpm test:api && pnpm serve:smoke && pnpm load:smoke && pnpm pack --dry-run"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

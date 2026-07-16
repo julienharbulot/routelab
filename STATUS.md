@@ -1,6 +1,6 @@
 # RouteLab status
 
-**State:** REL-003 release candidate; cumulative gate pending
+**State:** REL-003 release candidate ready for owner approval
 
 Implemented: public omitted `min_deadline_ms` default, strict solver event, official-example-derived fixture, packed NEAR import proof, final reports, and portfolio narrative.
 
@@ -8,6 +8,6 @@ Evidence source: `79642a2c88f07800344252e0990d0f433ab22c63`; digest `sha256:36e5
 
 Result: workers passed the frozen c16 gate at 51.12→23.04 ms p95 and 434.2→1,044.3/s, while peak RSS rose from 249.7 to 402.8 MiB.
 
-Next: run the clean-clone/cumulative gate, read-only release review, and exact-SHA CI.
+Next: owner confirms the candidate and explicitly authorizes any tag or GitHub release; npm remains a separate decision.
 
 Out of scope: live data, signing, custody, settlement, PRIME, ML, gas-aware routing, and concentrated liquidity.

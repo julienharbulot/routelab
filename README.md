@@ -123,7 +123,8 @@ while `draftNearSolverQuoteExactInput()` accepts the solver event fields includi
 returns a RouteLab-specific internal unsigned draft. The snapshot-bound fictional asset map checks
 both snapshot identity fields and every mapped internal asset. The
 [adapter boundary](src/adapters/near-intents/README.md) records the 2026-07-16 documentation check
-and exact exclusions. The draft is not an official
+and exact exclusions. An omitted public `min_deadline_ms` normalizes to the documented 60,000 ms;
+the solver event remains strict. The draft is not an official
 `quote_response`: it has no `signed_data`, relay connection, authentication, balance lookup,
 signing, key handling, execution, or settlement.
 

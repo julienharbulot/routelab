@@ -39,6 +39,7 @@ const MAX_IDENTIFIER_LENGTH = 200;
 const MAX_AMOUNT_DIGITS = 78;
 const MIN_VALIDITY_MS = 1_000;
 const MAX_VALIDITY_MS = 300_000;
+const DEFAULT_PUBLIC_VALIDITY_MS = 60_000;
 
 function error(
   code: NearIntentsAdapterErrorCode,
@@ -137,6 +138,7 @@ function parseAssetMap(input: unknown):
 function parseExactInput(
   input: unknown,
   fields: ReadonlySet<string>,
+  defaultValidityMs?: number,
 ): ParseNearQuoteParamsResult {
   const value = object(input);
   if (value === undefined) {
@@ -166,7 +168,9 @@ function parseExactInput(
   const assetIn = value['defuse_asset_identifier_in'];
   const assetOut = value['defuse_asset_identifier_out'];
   const amountIn = value['exact_amount_in'];
-  const validity = value['min_deadline_ms'];
+  const validity = Object.hasOwn(value, 'min_deadline_ms')
+    ? value['min_deadline_ms']
+    : defaultValidityMs;
   if (typeof assetIn !== 'string' || assetIn.length === 0 || assetIn.length > MAX_IDENTIFIER_LENGTH) {
     return Object.freeze({
       ok: false,
@@ -230,7 +234,7 @@ function parseExactInput(
 }
 
 export function parseNearQuoteParamsExactInput(input: unknown): ParseNearQuoteParamsResult {
-  return parseExactInput(input, QUOTE_FIELDS);
+  return parseExactInput(input, QUOTE_FIELDS, DEFAULT_PUBLIC_VALIDITY_MS);
 }
 
 function parseSolverQuoteEvent(input: unknown):

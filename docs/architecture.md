@@ -224,8 +224,9 @@ The default CLI service uses four fixed workers and same-thread mode remains ava
 The official NEAR Intents Message Bus overview, JSON-RPC API, WebSocket reference, and example
 solver were checked on 2026-07-16. The fixture keeps the public RPC parameter object distinct from
 the solver event object: both use `defuse_asset_identifier_in`,
-`defuse_asset_identifier_out`, `exact_amount_in`, and `min_deadline_ms`, while only the solver
-event carries `quote_id`. Exact output is rejected with a typed unsupported error.
+`defuse_asset_identifier_out`, and `exact_amount_in`; public `min_deadline_ms` is optional and
+normalizes to the documented 60,000 ms default, while the solver event requires that field and
+adds `quote_id`. Exact output is rejected with a typed unsupported error.
 
 The explicit fictional asset map is bound to snapshot ID and checksum. Preparation rejects
 duplicate external or internal IDs and mappings to assets absent from the parsed snapshot. Routing
@@ -235,6 +236,8 @@ and is not repurposed as a router work deadline.
 The solver path returns `routelab.near-solver-quote-draft.v1`, an internal unsigned object that
 preserves `quote_id`, proposed `amount_out`, a descriptive intended token difference, and the exact
 plan fingerprint. It is not an official `quote_response`, which requires `signed_data`.
+The official shape also carries `quote_output` and a signed payload containing nonce, signature,
+and key material; none of those fields are synthesized by RouteLab.
 
 It does not:
 

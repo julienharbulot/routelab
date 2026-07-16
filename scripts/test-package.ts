@@ -50,7 +50,14 @@ assert.match(result.value.planFingerprint, /^sha256:[0-9a-f]{64}$/u);
 assert.equal(serializeQuote(result.value).amountOut, '66');
 assert.match(formatQuote(result.value), /A 100 -> B 66/u);
 assert.equal(typeof prepareNearIntentsFixtureAdapter, 'function');
-assert.equal(typeof parseNearQuoteParamsExactInput, 'function');
+const parsedNearParams = parseNearQuoteParamsExactInput({
+  defuse_asset_identifier_in: 'nep141:asset-a.fixture.invalid',
+  defuse_asset_identifier_out: 'nep141:asset-b.fixture.invalid',
+  exact_amount_in: '1000',
+});
+assert.equal(parsedNearParams.ok, true);
+if (!parsedNearParams.ok) throw new Error(parsedNearParams.error.code);
+assert.equal(parsedNearParams.value.min_deadline_ms, 60_000);
 assert.equal(typeof draftNearSolverQuoteExactInput, 'function');
 process.stdout.write('packed consumer quote: 100 -> 66\\n');
 `;
@@ -74,6 +81,18 @@ try {
   assert.equal(paths.includes('dist/adapters/near-intents/index.js'), true);
   assert.equal(paths.includes('DATA_NOTICE.md'), true);
   assert.equal(paths.includes('CHANGELOG.md'), true);
+  const allowedRootFiles = new Set([
+    'CHANGELOG.md',
+    'DATA_NOTICE.md',
+    'LICENSE',
+    'README.md',
+    'package.json',
+  ]);
+  assert.deepEqual(
+    paths.filter((path) => !path.startsWith('dist/') && !allowedRootFiles.has(path)),
+    [],
+    'Package contains a path outside the published allowlist.',
+  );
 
   const consumer = join(temporary, 'consumer');
   await mkdir(consumer);

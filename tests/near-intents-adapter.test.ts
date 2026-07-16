@@ -53,13 +53,25 @@ async function prepared() {
 }
 
 void test('parses the official exact-input public quote parameter subset', async () => {
-  const request = await json('fixtures/near-intents/quote-params-exact-input.json');
+  const request = await json('fixtures/near-intents/public-quote-official-example.json');
   const result = parseNearQuoteParamsExactInput(request);
   assert.equal(result.ok, true);
   if (!result.ok) throw new Error('Expected exact-input quote parameters.');
   assert.deepEqual(result.value, request);
   assert.equal(Object.isFrozen(result.value), true);
   assert.equal(Object.hasOwn(result.value, 'quote_id'), false);
+});
+
+void test('defaults omitted public min_deadline_ms to 60,000 ms', async () => {
+  const request = await json(
+    'fixtures/near-intents/public-quote-official-example.json',
+  ) as Record<string, unknown>;
+  delete request['min_deadline_ms'];
+  const result = parseNearQuoteParamsExactInput(request);
+  assert.equal(result.ok, true);
+  if (!result.ok) throw new Error('Expected defaulted exact-input quote parameters.');
+  assert.equal(result.value.min_deadline_ms, 60_000);
+  assert.equal(Object.isFrozen(result.value), true);
 });
 
 void test('rejects exact-output-only and simultaneous public or solver fields as unsupported', async () => {
@@ -126,6 +138,22 @@ void test('validates solver quote IDs, canonical amounts, and validity periods',
   }
   for (const min_deadline_ms of [999, 300_001, 1_000.5, '60000']) {
     const result = draftNearSolverQuoteExactInput(adapter, { ...base, min_deadline_ms });
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.error.field, 'min_deadline_ms');
+  }
+  const missingValidity = { ...base };
+  delete missingValidity['min_deadline_ms'];
+  const result = draftNearSolverQuoteExactInput(adapter, missingValidity);
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.equal(result.error.field, 'min_deadline_ms');
+});
+
+void test('rejects invalid explicit public validity types and ranges', async () => {
+  const base = await json(
+    'fixtures/near-intents/public-quote-official-example.json',
+  ) as Record<string, unknown>;
+  for (const min_deadline_ms of [undefined, 999, 300_001, 1_000.5, '60000']) {
+    const result = parseNearQuoteParamsExactInput({ ...base, min_deadline_ms });
     assert.equal(result.ok, false);
     if (!result.ok) assert.equal(result.error.field, 'min_deadline_ms');
   }

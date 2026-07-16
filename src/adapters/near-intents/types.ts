@@ -7,14 +7,21 @@ export interface NearIntentsFixtureAdapter {
   readonly [nearIntentsAdapterBrand]: typeof nearIntentsAdapterBrand;
 }
 
-export interface NearQuoteParamsExactInput {
+export interface NearQuoteParamsExactInputInput {
+  readonly defuse_asset_identifier_in: string;
+  readonly defuse_asset_identifier_out: string;
+  readonly exact_amount_in: string;
+  readonly min_deadline_ms?: number;
+}
+
+export interface ParsedNearQuoteParamsExactInput {
   readonly defuse_asset_identifier_in: string;
   readonly defuse_asset_identifier_out: string;
   readonly exact_amount_in: string;
   readonly min_deadline_ms: number;
 }
 
-export interface NearSolverQuoteEventExactInput extends NearQuoteParamsExactInput {
+export interface NearSolverQuoteEventExactInput extends ParsedNearQuoteParamsExactInput {
   readonly quote_id: string;
 }
 
@@ -56,7 +63,7 @@ export type PrepareNearIntentsAdapterResult =
   | { readonly ok: false; readonly error: NearIntentsAdapterError };
 
 export type ParseNearQuoteParamsResult =
-  | { readonly ok: true; readonly value: NearQuoteParamsExactInput }
+  | { readonly ok: true; readonly value: ParsedNearQuoteParamsExactInput }
   | { readonly ok: false; readonly error: NearIntentsAdapterError };
 
 export type NearSolverQuoteDraftResult =

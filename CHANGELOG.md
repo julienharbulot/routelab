@@ -41,6 +41,8 @@
 ### NEAR fixture boundary
 
 - Public exact-input quote parameters and solver WebSocket quote events are modeled separately.
+- Omitted public `min_deadline_ms` normalizes to the documented 60,000 ms default, while solver
+  events continue to require the field.
 - Solver drafts preserve `quote_id` but are explicitly internal and unsigned, with no
   `signed_data`, nonce, quote hash, signature, public key, relay connectivity, or settlement.
 

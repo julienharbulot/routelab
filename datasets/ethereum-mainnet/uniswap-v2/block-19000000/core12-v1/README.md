@@ -14,4 +14,4 @@ pnpm verify:inputs
 
 The verifier checks the retained block and token metadata, companion file hashes, snapshot identity and checksum, pool and asset counts, and acceptance through the untrusted snapshot parse-before-prepare boundary. It then derives the fixed benchmark requests from the verified snapshot.
 
-This snapshot represents stored reserves for the selected subset at one historical block. It does not establish complete liquidity, historical order flow, token-transfer feasibility, transaction simulation or submission, custody, live execution, future state, or unrestricted routing optimality. Synthetic workload semantics and algorithm evaluation are separate future artifacts.
+This snapshot represents stored reserves for the selected subset at one historical block. It does not establish complete liquidity, historical order flow, token-transfer feasibility, transaction simulation or submission, custody, live execution, future state, or unrestricted routing optimality. The generated benchmark workload is synthetic evaluation evidence only.

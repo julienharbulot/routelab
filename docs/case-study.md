@@ -72,18 +72,18 @@ adding unlike work units.
 ## Service decision
 
 The load generator and server ran in separate processes from clean source commit
-`79642a2c88f07800344252e0990d0f433ab22c63`. Same-thread mode shut down before four-worker mode
+`e7f8c1032aa29f3a9ebf1cbf4859907fe076b138`. Same-thread mode shut down before four-worker mode
 started, and no prior report supplied a baseline. All 6,000 normal responses matched exact output
 and fingerprint.
 
-At concurrency 16, workers changed p95 latency from 51.12 to 23.04 ms and throughput from 434.2 to
-1,044.3 requests/s. Queue-wait p95 fell from 45.22 to 14.67 ms even though quote-service p95 rose
-from 4.14 to 7.04 ms. The cost was explicit: peak server RSS rose from 249.7 to 402.8 MiB, and
+At concurrency 16, workers changed p95 latency from 50.51 to 20.58 ms and throughput from 439.6 to
+1,098.1 requests/s. Queue-wait p95 fell from 45.12 to 13.31 ms even though quote-service p95 rose
+from 4.22 to 6.70 ms. The cost was explicit: peak server RSS rose from 250.2 to 405.1 MiB, and
 maximum event-loop delay was worse in that lane. Workers were retained because the predeclared
 semantic, tail-latency, throughput, c1-overhead, admission, and memory-reporting gate passed.
 
-At concurrency 16, the 25/50/100 ms lanes returned 181/200/200 exactly validated quotes, including
-deadline incumbents, plus 19/0/0 deadline-before-plan errors and no schema/internal failures. A
+At concurrency 16, the 25/50/100 ms lanes returned 193/200/200 exactly validated quotes, including
+deadline incumbents, plus 7/0/0 deadline-before-plan errors and no schema/internal failures. A
 52-request burst filled all 4 active and 32 queued slots; 36 accepted requests remained exact and
 16 received typed 503 overload responses with `Retry-After`.
 
@@ -118,11 +118,3 @@ not production-capacity claims.
 The larger-budget profile is only another bounded comparison mode. The 396 requests cover one
 snapshot-derived Cartesian corpus rather than historical orders. Worker results use four fixed
 workers on one machine and should be remeasured for any deployment target.
-
-## What production work would come next
-
-The first production step would be versioned, incremental snapshot publication with explicit
-freshness and rollback behavior. After that, a separate live integration could add balance-aware
-quoting and signed testnet responses behind the existing boundary. Both require operational and
-security work that would weaken this portfolio release if simulated without credentials, funded
-accounts, or real deployment evidence.

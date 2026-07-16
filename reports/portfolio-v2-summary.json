@@ -2,12 +2,11 @@
   "schemaVersion": "routelab.portfolio-benchmark-summary.v2",
   "evidenceSource": {
     "schemaVersion": "routelab.evidence-source.v1",
-    "revision": "79642a2c88f07800344252e0990d0f433ab22c63",
+    "revision": "e7f8c1032aa29f3a9ebf1cbf4859907fe076b138",
     "pathSet": {
       "schemaVersion": "routelab.evidence-source-paths.v1",
       "paths": [
         ".nvmrc",
-        "cli/benchmark-extended.ts",
         "cli/benchmark.ts",
         "cli/demo.ts",
         "cli/load-deadlines.ts",
@@ -17,9 +16,8 @@
         "cli/serve.ts",
         "cli/service-child.ts",
         "cli/verify-benchmark.ts",
-        "cli/verify-historical-dataset.ts",
+        "cli/verify-inputs.ts",
         "cli/verify-service-report.ts",
-        "cli/verify-synthetic-request-corpus.ts",
         "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/canonical-snapshot-content.json",
         "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/manifest.json",
         "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/policy.json",
@@ -27,8 +25,6 @@
         "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/snapshot.json",
         "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/sources/infura-normalized.json",
         "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/sources/sqd-normalized.json",
-        "datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/manifest.json",
-        "datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/requests.json",
         "eslint.config.mjs",
         "package.json",
         "pnpm-lock.yaml",
@@ -41,6 +37,8 @@
         "src/allocation/path-shadow-price/types.ts",
         "src/benchmark/portfolio/cases.ts",
         "src/benchmark/portfolio/config.ts",
+        "src/benchmark/portfolio/generate-cases.ts",
+        "src/benchmark/portfolio/input-manifest.ts",
         "src/benchmark/portfolio/latency.ts",
         "src/benchmark/portfolio/quality.ts",
         "src/benchmark/portfolio/reference.ts",
@@ -89,24 +87,20 @@
         "src/service/types.ts",
         "src/service/verify.ts",
         "src/service/worker-pool.ts",
-        "src/verification/historical-dataset/index.ts",
-        "src/verification/historical-dataset/types.ts",
-        "src/verification/synthetic-request-corpus/index.ts",
-        "src/verification/synthetic-request-corpus/types.ts",
         "src/walking-skeleton.ts",
         "tsconfig.build.json",
         "tsconfig.json"
       ]
     },
-    "digest": "sha256:36e5cfb6625c9f9c4be1288c8f23595f4179b7d71db57a1dec188b5d32e00499"
+    "digest": "sha256:e195c5d8df3121d19f52990452a71c54f4af00b7733d015249f864ba8036c783"
   },
   "corpus": {
-    "schemaVersion": "routelab.synthetic-request-corpus-verification-summary.v1",
+    "schemaVersion": "routelab.generated-benchmark-corpus.v2",
     "corpusId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1-synthetic-exhaustive-v1",
     "datasetId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1",
     "snapshotId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1",
     "snapshotChecksum": "sha256:5d21166cf218997776efc23b203c2f70637b1fb822807fb236bfc6fd0bf3e755",
-    "artifactSha256": "sha256:c470f0a33b5d03cdd1ac8d88c92a8e2ec79b78f7d488541c0f4a321ff3e03173",
+    "corpusDigest": "sha256:be31d0abcbd80d2364df3e5a9a62aeabf7e93fddce3b7a66f6cea66967ab74ac",
     "requestCount": 396,
     "amountBucketCount": 3,
     "directRequestCount": 324,
@@ -3481,12 +3475,12 @@
     ]
   },
   "environment": {
-    "observedAt": "2026-07-16T03:52:31.948Z",
+    "observedAt": "2026-07-16T05:21:29.592Z",
     "node": "v24.18.0",
     "platform": "linux",
     "arch": "x64",
     "cpu": "13th Gen Intel(R) Core(TM) i9-13900H",
-    "commit": "79642a2c88f07800344252e0990d0f433ab22c63"
+    "commit": "e7f8c1032aa29f3a9ebf1cbf4859907fe076b138"
   },
   "latency": [
     {
@@ -3498,14 +3492,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 46,
+        "p50Micros": 50,
         "p95Micros": 78,
-        "p99Micros": 144,
-        "minMicros": 32,
-        "maxMicros": 1275
+        "p99Micros": 175,
+        "minMicros": 35,
+        "maxMicros": 1274
       },
       "noRoute": null,
-      "throughputPerSecond": 18783.13
+      "throughputPerSecond": 17629.339
     },
     {
       "strategy": "greedy-split",
@@ -3516,14 +3510,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 1706,
-        "p95Micros": 3993,
-        "p99Micros": 4564,
-        "minMicros": 651,
-        "maxMicros": 5541
+        "p50Micros": 1717,
+        "p95Micros": 4060,
+        "p99Micros": 4516,
+        "minMicros": 622,
+        "maxMicros": 5073
       },
       "noRoute": null,
-      "throughputPerSecond": 512.697
+      "throughputPerSecond": 515.801
     },
     {
       "strategy": "numerical-split",
@@ -3534,14 +3528,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 3113,
-        "p95Micros": 7674,
-        "p99Micros": 8974,
-        "minMicros": 1094,
-        "maxMicros": 13900
+        "p50Micros": 3141,
+        "p95Micros": 7797,
+        "p99Micros": 9379,
+        "minMicros": 1155,
+        "maxMicros": 10493
       },
       "noRoute": null,
-      "throughputPerSecond": 278.352
+      "throughputPerSecond": 272.299
     },
     {
       "strategy": "greedy-split",
@@ -3552,14 +3546,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 3206,
-        "p95Micros": 7612,
-        "p99Micros": 8225,
-        "minMicros": 1190,
-        "maxMicros": 10496
+        "p50Micros": 3269,
+        "p95Micros": 7762,
+        "p99Micros": 8557,
+        "minMicros": 1203,
+        "maxMicros": 9660
       },
       "noRoute": null,
-      "throughputPerSecond": 278.511
+      "throughputPerSecond": 271.074
     },
     {
       "strategy": "numerical-split",
@@ -3570,14 +3564,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 6137,
-        "p95Micros": 15503,
-        "p99Micros": 17962,
-        "minMicros": 2187,
-        "maxMicros": 20940
+        "p50Micros": 6154,
+        "p95Micros": 15291,
+        "p99Micros": 17626,
+        "minMicros": 2109,
+        "maxMicros": 22118
       },
       "noRoute": null,
-      "throughputPerSecond": 140.675
+      "throughputPerSecond": 141.39
     }
   ]
 }

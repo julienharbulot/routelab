@@ -14,9 +14,9 @@ immutable snapshot -> prepare -> bounded search/allocation -> exact replay
 - All 3,168 returned mode/request plans passed fresh exact replay.
 - At fast effort, numerical split beat/tied/lost greedy split on 19/377/0 requests.
 - Thorough numerical split had p95 regret of 640 ppm (6.40 bps) against the best observed declared fixed mode.
-- On the recorded local run, fast greedy split had 1,706 µs p50 and 4,564 µs p99 in-process latency over 1,000 rotating requests.
-- In one clean-source comparison, all 6,000 normal responses matched exact output and fingerprint. At concurrency 16, four workers changed p95 latency from 51.12 to 23.04 ms and throughput from 434.2 to 1,044.3 requests/s, while peak server RSS rose from 249.7 to 402.8 MiB; this passed the frozen retention gate.
-- At concurrency 16, 25/50/100 ms deadline lanes produced 181/200/200 exactly validated quotes (including deadline incumbents), with 19/0/0 deadline-before-plan responses and no internal/schema failures. A 52-request burst filled 4 active plus 32 queued slots and returned 16 typed overloads with `Retry-After`.
+- On the recorded local run, fast greedy split had 1,717 µs p50 and 4,516 µs p99 in-process latency over 1,000 rotating requests.
+- In one clean-source comparison, all 6,000 normal responses matched exact output and fingerprint. At concurrency 16, four workers changed p95 latency from 50.51 to 20.58 ms and throughput from 439.6 to 1,098.1 requests/s, while peak server RSS rose from 250.2 to 405.1 MiB; this passed the frozen retention gate.
+- At concurrency 16, 25/50/100 ms deadline lanes produced 193/200/200 exactly validated quotes (including deadline incumbents), with 7/0/0 deadline-before-plan responses and no internal/schema failures. A 52-request burst filled 4 active plus 32 queued slots and returned 16 typed overloads with `Retry-After`.
 
 See the [full benchmark report](reports/portfolio-v2.md).
 

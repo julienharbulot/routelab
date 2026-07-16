@@ -15,7 +15,7 @@ immutable snapshot -> prepare -> bounded search/allocation -> exact replay
 - At fast effort, numerical split beat/tied/lost greedy split on 19/377/0 requests.
 - Thorough numerical split had p95 regret of 640 ppm (6.40 bps) against the best observed declared fixed mode.
 - On the recorded local run, fast greedy split had 1,617 µs p50 and 4,551 µs p99 in-process latency over 1,000 rotating requests.
-- At HTTP concurrency 16, the retained four-worker mode reduced p95 from 46.08 ms to 19.30 ms and raised throughput from 480.1 to 1,189.2 requests/s, with all 3,000 worker responses matching expected exact outputs and fingerprints.
+- The clean-source same-thread service baseline completed all 3,000 requests with exact output/fingerprint parity; at concurrency 16 it recorded 48.94 ms p95 and 450.7 requests/s. The prior cross-run worker comparison is withdrawn pending a same-run replacement.
 
 See the [full benchmark report](reports/portfolio-v2.md).
 
@@ -96,15 +96,17 @@ The loopback service prepares the retained snapshot once in each of four fixed w
 `GET /v1/snapshots`, and `POST /v1/quote`. Its boundary limits the body to 32 KiB, requires
 canonical decimal amount strings, bounds all identifiers and route controls, and never accepts
 internal work caps. Admission is bounded to four active and 32 queued quotes with typed overloads;
-use `pnpm serve -- --mode same-thread` for the measured one-active baseline. Run
+use `pnpm serve -- --mode same-thread` for the measured one-active baseline. Worker operation remains
+available, but its retain/reject decision awaits the same-run comparison in REL-002. Run
 `pnpm serve:smoke`, `pnpm test:api`, or `pnpm load:smoke` for local checks.
 
 ## Benchmark evidence
 
 `pnpm benchmark` regenerates deterministic quality and 1,000-sample in-process latency evidence;
 `pnpm benchmark:verify` freshly replays every reported success. `pnpm load --
---mode same-thread --concurrency 1,4,16` measures the isolated baseline, while `--mode worker`
-performs the retained fixed-worker comparison. Raw observations are ignored.
+--mode same-thread --concurrency 1,4,16` measures the isolated baseline. A retained `--mode worker`
+run fails closed instead of reading an older baseline; REL-002 will add one same-run comparison.
+`pnpm service:verify` checks the committed service rendering and source identity. Raw observations are ignored.
 
 See the concise [portfolio report](reports/portfolio-v2.md), [service report](reports/service-v2.md),
 and [benchmark methodology](docs/benchmark.md). The curated inputs and one local machine are not
@@ -139,9 +141,11 @@ pnpm test:package
 pnpm verify:historical-data
 pnpm verify:synthetic-requests
 pnpm benchmark:verify
+pnpm service:verify
 pnpm test:api
 pnpm load:smoke
 pnpm pack --dry-run
+pnpm release:verify
 ```
 
 The package consumer check packs a tarball, installs it into a clean temporary ESM project, imports the root and NEAR subpath, and executes one exact quote. The archive allowlist contains `dist/`, this README, the code license, the data notice, and package metadata; source/declaration maps are omitted so consumers receive no broken source references.
@@ -152,7 +156,7 @@ The package consumer check packs a tarball, installs it into a clean temporary E
 - Route discovery, split cardinality, allocation work, and numerical work are bounded. RouteLab does not claim unrestricted global optimality.
 - The retained dataset is one 54-pool allowlist snapshot at Ethereum block 19,000,000. Its synthetic request corpus is not historical or representative demand.
 - The project uses snapshots and localhost only; it does not submit transactions, sign messages, hold funds, connect to a relay, or settle trades.
-- The HTTP boundary uses a fixed four-worker pool selected by the documented local retention gate; it is not a production-capacity claim or an adaptive scheduler.
+- The HTTP boundary defaults to a fixed four-worker pool, but its prior cross-run retention result is withdrawn until REL-002 performs a same-run comparison; it is not a production-capacity claim or an adaptive scheduler.
 - Timing is observational and excluded from plan fingerprints; no production-latency claim is made.
 
 See [architecture](docs/architecture.md), [benchmark design](docs/benchmark.md), [accepted invariants](docs/invariants.md), [roadmap](docs/roadmap.md), and [current status](STATUS.md).

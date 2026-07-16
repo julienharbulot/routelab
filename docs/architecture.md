@@ -140,7 +140,7 @@ export type QuoteResult =
 
 `RoutingContext` should be nominal or otherwise opaque so callers cannot fabricate one.
 
-`quote()` remains synchronous and CPU-bound. The HTTP boundary therefore uses a measured fixed worker pool: each worker prepares immutable snapshots once, messages carry canonical decimal strings, and the main server retains bounded admission and queue/deadline policy. The isolated same-thread baseline remains in the service report.
+`quote()` remains synchronous and CPU-bound. The HTTP boundary has a fixed worker pool: each worker prepares immutable snapshots once, messages carry canonical decimal strings, and the main server retains bounded admission and queue/deadline policy. The worker implementation remains available, but its retention decision awaits a same-run comparison; the current retained service report is a clean-source same-thread baseline.
 
 The default is `greedy-split` with `balanced` effort. Numerical routing is explicit and benchmarked.
 
@@ -214,7 +214,7 @@ The HTTP server owns:
 
 The service does not accept raw internal work caps.
 
-The default CLI service uses four fixed workers because the predeclared local retention gate passed. Same-thread mode remains available for measurement. The server stays local/offline for v0.1; a network adapter may be added later without changing the router.
+The default CLI service uses four fixed workers and same-thread mode remains available for measurement. The earlier worker evidence combined different runs, so it is no longer used to justify retention. Until one invocation measures both modes, retained worker comparison fails closed rather than reading a previous report. The server stays local/offline for v0.1; a network adapter may be added later without changing the router.
 
 ## NEAR Intents boundary
 

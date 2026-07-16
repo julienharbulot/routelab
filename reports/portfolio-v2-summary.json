@@ -1,5 +1,100 @@
 {
   "schemaVersion": "routelab.portfolio-benchmark-summary.v2",
+  "evidenceSource": {
+    "schemaVersion": "routelab.evidence-source.v1",
+    "revision": "1ba8d1e11f29fbab11d2667dfb5654df3d877702",
+    "pathSet": {
+      "schemaVersion": "routelab.evidence-source-paths.v1",
+      "paths": [
+        ".nvmrc",
+        "cli/benchmark-extended.ts",
+        "cli/benchmark.ts",
+        "cli/demo.ts",
+        "cli/load.ts",
+        "cli/quote.ts",
+        "cli/serve.ts",
+        "cli/service-child.ts",
+        "cli/verify-benchmark.ts",
+        "cli/verify-historical-dataset.ts",
+        "cli/verify-service-report.ts",
+        "cli/verify-synthetic-request-corpus.ts",
+        "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/canonical-snapshot-content.json",
+        "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/manifest.json",
+        "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/policy.json",
+        "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/reconciliation.json",
+        "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/snapshot.json",
+        "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/sources/infura-normalized.json",
+        "datasets/ethereum-mainnet/uniswap-v2/block-19000000/core12-v1/sources/sqd-normalized.json",
+        "datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/manifest.json",
+        "datasets/requests/ethereum-mainnet-uniswap-v2/block-19000000/core12-v1/synthetic-exhaustive-v1/requests.json",
+        "eslint.config.mjs",
+        "package.json",
+        "pnpm-lock.yaml",
+        "scripts/clean-dist.ts",
+        "scripts/test-package.ts",
+        "src/adapters/near-intents/adapter.ts",
+        "src/adapters/near-intents/index.ts",
+        "src/adapters/near-intents/types.ts",
+        "src/allocation/path-shadow-price/index.ts",
+        "src/allocation/path-shadow-price/types.ts",
+        "src/benchmark/portfolio/cases.ts",
+        "src/benchmark/portfolio/config.ts",
+        "src/benchmark/portfolio/latency.ts",
+        "src/benchmark/portfolio/quality.ts",
+        "src/benchmark/portfolio/reference.ts",
+        "src/benchmark/portfolio/report.ts",
+        "src/benchmark/portfolio/run.ts",
+        "src/benchmark/portfolio/types.ts",
+        "src/benchmark/portfolio/verify.ts",
+        "src/domain/index.ts",
+        "src/domain/liquidity-snapshot.ts",
+        "src/evidence/source-identity.ts",
+        "src/index.ts",
+        "src/pools/constant-product/index.ts",
+        "src/public/effort-profiles.ts",
+        "src/public/format.ts",
+        "src/public/plan-fingerprint.ts",
+        "src/public/quote.ts",
+        "src/public/serialize.ts",
+        "src/public/types.ts",
+        "src/replay/exact-input-kernel/index.ts",
+        "src/replay/exact-input-route/index.ts",
+        "src/replay/exact-input-split/index.ts",
+        "src/router/anytime-exact-input-split/index.ts",
+        "src/router/numerical-exact-input-split/index.ts",
+        "src/router/numerical-exact-input-split/runtime.ts",
+        "src/router/numerical-exact-input-split/support.ts",
+        "src/router/numerical-exact-input-split/types.ts",
+        "src/router/numerical-exact-input-split/validation.ts",
+        "src/router/shared/objective.ts",
+        "src/runtime/prepared-routing-context/index.ts",
+        "src/search/pool-disjoint-route-sets/index.ts",
+        "src/search/shared-route-discovery/index.ts",
+        "src/search/simple-paths/index.ts",
+        "src/search/simple-paths/traversal.ts",
+        "src/serialization/canonical-snapshot/index.ts",
+        "src/service/index.ts",
+        "src/service/load-report.ts",
+        "src/service/load.ts",
+        "src/service/parse.ts",
+        "src/service/policy.ts",
+        "src/service/process.ts",
+        "src/service/quote-worker.ts",
+        "src/service/server.ts",
+        "src/service/types.ts",
+        "src/service/verify.ts",
+        "src/service/worker-pool.ts",
+        "src/verification/historical-dataset/index.ts",
+        "src/verification/historical-dataset/types.ts",
+        "src/verification/synthetic-request-corpus/index.ts",
+        "src/verification/synthetic-request-corpus/types.ts",
+        "src/walking-skeleton.ts",
+        "tsconfig.build.json",
+        "tsconfig.json"
+      ]
+    },
+    "digest": "sha256:b89118f07fe728acc5ea53debea423865d10d47aa09b123585e88e75d4021f29"
+  },
   "corpus": {
     "schemaVersion": "routelab.synthetic-request-corpus-verification-summary.v1",
     "corpusId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1-synthetic-exhaustive-v1",
@@ -1959,12 +2054,12 @@
     ]
   },
   "environment": {
-    "observedAt": "2026-07-16T00:20:55.474Z",
+    "observedAt": "2026-07-16T02:05:21.780Z",
     "node": "v24.18.0",
     "platform": "linux",
     "arch": "x64",
     "cpu": "13th Gen Intel(R) Core(TM) i9-13900H",
-    "commit": "26601fa"
+    "commit": "1ba8d1e11f29fbab11d2667dfb5654df3d877702"
   },
   "latency": [
     {
@@ -1976,14 +2071,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 46,
-        "p95Micros": 75,
-        "p99Micros": 159,
-        "minMicros": 32,
-        "maxMicros": 1653
+        "p50Micros": 49,
+        "p95Micros": 71,
+        "p99Micros": 125,
+        "minMicros": 34,
+        "maxMicros": 1179
       },
       "noRoute": null,
-      "throughputPerSecond": 18339.853
+      "throughputPerSecond": 18482.12
     },
     {
       "strategy": "greedy-split",
@@ -1994,14 +2089,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 1617,
-        "p95Micros": 3837,
-        "p99Micros": 4551,
-        "minMicros": 626,
-        "maxMicros": 5233
+        "p50Micros": 1640,
+        "p95Micros": 3887,
+        "p99Micros": 4458,
+        "minMicros": 628,
+        "maxMicros": 5416
       },
       "noRoute": null,
-      "throughputPerSecond": 544.026
+      "throughputPerSecond": 536.365
     },
     {
       "strategy": "numerical-split",
@@ -2012,14 +2107,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 2831,
-        "p95Micros": 7164,
-        "p99Micros": 8090,
-        "minMicros": 1059,
-        "maxMicros": 8818
+        "p50Micros": 3073,
+        "p95Micros": 7546,
+        "p99Micros": 8778,
+        "minMicros": 1121,
+        "maxMicros": 9523
       },
       "noRoute": null,
-      "throughputPerSecond": 304.771
+      "throughputPerSecond": 284.562
     },
     {
       "strategy": "greedy-split",
@@ -2030,14 +2125,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 3026,
-        "p95Micros": 7239,
-        "p99Micros": 7966,
-        "minMicros": 1130,
-        "maxMicros": 9801
+        "p50Micros": 3152,
+        "p95Micros": 7442,
+        "p99Micros": 8008,
+        "minMicros": 1149,
+        "maxMicros": 11364
       },
       "noRoute": null,
-      "throughputPerSecond": 293.491
+      "throughputPerSecond": 283.605
     },
     {
       "strategy": "numerical-split",
@@ -2048,14 +2143,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 5733,
-        "p95Micros": 13981,
-        "p99Micros": 15819,
-        "minMicros": 2084,
-        "maxMicros": 20385
+        "p50Micros": 5978,
+        "p95Micros": 14589,
+        "p99Micros": 15658,
+        "minMicros": 2119,
+        "maxMicros": 17682
       },
       "noRoute": null,
-      "throughputPerSecond": 152.943
+      "throughputPerSecond": 147.667
     }
   ]
 }

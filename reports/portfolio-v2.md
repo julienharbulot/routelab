@@ -4,6 +4,8 @@ All 396 requests are synthetic exact-input requests derived from one historical 
 
 Every one of the 3168 returned mode/request plans passed a fresh exact replay. 306 fixed-mode results across 221 requests beat the bounded reference. The 128-part reference allocation grid and public effort grids are not nested, so a larger grid does not prove dominance; regret therefore uses the best result observed across every declared fixed mode.
 
+Evidence source: 1ba8d1e11f29fbab11d2667dfb5654df3d877702; routelab.evidence-source-paths.v1 (85 named paths); sha256:b89118f07fe728acc5ea53debea423865d10d47aa09b123585e88e75d4021f29.
+
 At fast effort, numerical split beat/tied/lost greedy split on 19/377/0 requests.
 
 ## Deterministic quality
@@ -88,11 +90,11 @@ Regret uses integer parts per million (ppm) against the best observed output acr
 
 | Mode | Warmups | Samples | Quote samples; p50/p95/p99 µs; min/max | No-route samples; p50/p95/p99 µs; min/max | Calls/s |
 |---|---:|---:|---:|---:|---:|
-| best-single | 50 | 1000 | 1000; 46/75/159; 32/1653 | n/a | 18339.9 |
-| greedy-split/fast | 50 | 1000 | 1000; 1617/3837/4551; 626/5233 | n/a | 544.0 |
-| numerical-split/fast | 50 | 1000 | 1000; 2831/7164/8090; 1059/8818 | n/a | 304.8 |
-| greedy-split/balanced | 50 | 1000 | 1000; 3026/7239/7966; 1130/9801 | n/a | 293.5 |
-| numerical-split/balanced | 50 | 1000 | 1000; 5733/13981/15819; 2084/20385 | n/a | 152.9 |
+| best-single | 50 | 1000 | 1000; 49/71/125; 34/1179 | n/a | 18482.1 |
+| greedy-split/fast | 50 | 1000 | 1000; 1640/3887/4458; 628/5416 | n/a | 536.4 |
+| numerical-split/fast | 50 | 1000 | 1000; 3073/7546/8778; 1121/9523 | n/a | 284.6 |
+| greedy-split/balanced | 50 | 1000 | 1000; 3152/7442/8008; 1149/11364 | n/a | 283.6 |
+| numerical-split/balanced | 50 | 1000 | 1000; 5978/14589/15658; 2119/17682 | n/a | 147.7 |
 
 Fast effort is measured for all strategies, with balanced effort also measured for greedy and numerical split. Deterministic quality covers every effort. The corpus is connected with diameter two, so it contains no expected no-route request and the no-route latency distributions are explicitly `n/a`.
 
@@ -108,4 +110,4 @@ The numerical reference uses one frozen, larger bounded profile with the same ro
 
 Canonical digests: request order sha256:31e9eaeec7242c204b97679a36a1862aa66bbd0f3da400b7b9cc6a69279d9c96; quality rows sha256:0b068559182a37dc4fc4ff4bbaea332a79779693a193596d39eaef97af89de05; aggregates sha256:b697af51d1a0db7ab288661c96a42a6cd1e2e92c61420c57a26bdbafc10e2024; numerical comparisons sha256:3bc277a9808fcd605f62a7a7da792e5eb558ac57698dab8fa03eaa13fbdf36a1.
 
-Environment: v24.18.0; linux/x64; 13th Gen Intel(R) Core(TM) i9-13900H; revision 26601fa; observed 2026-07-16T00:20:55.474Z.
+Environment: v24.18.0; linux/x64; 13th Gen Intel(R) Core(TM) i9-13900H; source revision 1ba8d1e11f29fbab11d2667dfb5654df3d877702; observed 2026-07-16T02:05:21.780Z.

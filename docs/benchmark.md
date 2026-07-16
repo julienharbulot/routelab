@@ -50,8 +50,18 @@ reports/historical-regret-distribution.svg
 
 Each remains below 250 KiB. Raw rows, latency observations, and temporary output stay ignored.
 
+## Evidence source identity
+
+Retained benchmark and service generation require clean named executable/configuration paths. The
+`routelab.evidence-source-paths.v1` set covers tracked TypeScript under `src/`, `cli/`, and
+`scripts/`; the pinned Node, pnpm, lint, and TypeScript configuration; and the executable JSON for
+the retained dataset and request corpus. Reports, raw observations, and non-executable prose are
+excluded. Each summary stores the sorted resolved path list, the full source commit, and one
+canonical SHA-256 digest; verifiers resolve the same list and recompute the digest from the current
+tree.
+
 ## Verification
 
-`pnpm benchmark:verify` re-verifies corpus identity and count, reruns deterministic quality, freshly exact-replays every success, checks exact allocation conservation, reconciles all aggregates and digests, enforces the best-observed comparison rule, validates latency sample counts, rejects tracked raw data, and byte-compares deterministic Markdown and SVG rendering. It also checks chart titles, axes, series, and a non-degenerate quality metric.
+`pnpm benchmark:verify` first checks the evidence-source identity, then re-verifies corpus identity and count, reruns deterministic quality, freshly exact-replays every success, checks exact allocation conservation, reconciles all aggregates and digests, enforces the best-observed comparison rule, validates latency sample counts, rejects tracked raw data, and byte-compares deterministic Markdown and SVG rendering. It also checks chart titles, axes, series, and a non-degenerate quality metric. `pnpm service:verify` applies the same source check to the committed service summary and its deterministic Markdown/SVG renderings.
 
 `pnpm benchmark:extended` is a lightweight full-corpus fast-strategy traversal. The current [portfolio report](../reports/portfolio-v2.md) and [isolated HTTP service report](../reports/service-v2.md) are local v0.1 evidence.

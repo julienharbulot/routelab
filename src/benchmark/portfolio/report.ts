@@ -82,6 +82,8 @@ export function renderMarkdown(summary: BenchmarkSummary): string {
     '',
     `Every one of the ${summary.quality.exactReplaySuccessCount} returned mode/request plans passed a fresh exact replay. ${referenceNote}`,
     '',
+    `Evidence source: ${summary.evidenceSource.revision}; ${summary.evidenceSource.pathSet.schemaVersion} (${summary.evidenceSource.pathSet.paths.length} named paths); ${summary.evidenceSource.digest}.`,
+    '',
     fastComparison === undefined
       ? 'No fast numerical/greedy comparison was available.'
       : `At fast effort, numerical split beat/tied/lost greedy split on ${fastComparison.beatsGreedy}/${fastComparison.tiesGreedy}/${fastComparison.losesGreedy} requests.`,
@@ -114,7 +116,7 @@ export function renderMarkdown(summary: BenchmarkSummary): string {
     '',
     `Canonical digests: request order ${summary.digests.requestOrderSha256}; quality rows ${summary.digests.qualityRowsSha256}; aggregates ${summary.digests.qualityAggregatesSha256}; numerical comparisons ${summary.digests.numericalComparisonsSha256}.`,
     '',
-    `Environment: ${summary.environment.node}; ${summary.environment.platform}/${summary.environment.arch}; ${summary.environment.cpu}; revision ${summary.environment.commit}; observed ${summary.environment.observedAt}.`,
+    `Environment: ${summary.environment.node}; ${summary.environment.platform}/${summary.environment.arch}; ${summary.environment.cpu}; source revision ${summary.evidenceSource.revision}; observed ${summary.environment.observedAt}.`,
     '',
   ].join('\n');
 }

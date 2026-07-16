@@ -109,6 +109,15 @@ void test('Markdown and both SVGs state the evidence scope and axis semantics', 
   const numericalComparisons = compareNumerical(rows);
   const summary = {
     schemaVersion: 'routelab.portfolio-benchmark-summary.v2',
+    evidenceSource: {
+      schemaVersion: 'routelab.evidence-source.v1',
+      revision: '0123456789abcdef0123456789abcdef01234567',
+      pathSet: {
+        schemaVersion: 'routelab.evidence-source-paths.v1',
+        paths: ['src/index.ts'],
+      },
+      digest: `sha256:${'0'.repeat(64)}`,
+    },
     corpus: loaded.corpus,
     configuration: {
       maxHops: 2,

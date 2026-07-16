@@ -1,4 +1,5 @@
 import type { LiquiditySnapshot } from '../../domain/index.ts';
+import type { EvidenceSourceIdentity } from '../../evidence/source-identity.ts';
 import type { PreparedRoutingContext } from '../../runtime/prepared-routing-context/index.ts';
 import type {
   QuoteEffort,
@@ -178,6 +179,7 @@ export interface BenchmarkEnvironment {
 
 export interface BenchmarkSummary {
   readonly schemaVersion: 'routelab.portfolio-benchmark-summary.v2';
+  readonly evidenceSource: EvidenceSourceIdentity;
   readonly corpus: {
     readonly schemaVersion: 'routelab.synthetic-request-corpus-verification-summary.v1';
     readonly corpusId: string;

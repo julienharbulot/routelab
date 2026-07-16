@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 
+import { verifyEvidenceSource } from '../../evidence/source-identity.ts';
 import { replayExactInputSplit } from '../../replay/exact-input-split/index.ts';
 import {
   BENCHMARK_SAMPLES,
@@ -155,6 +156,7 @@ export async function verifyPortfolioBenchmark(root = process.cwd()): Promise<re
   if (summary.schemaVersion !== 'routelab.portfolio-benchmark-summary.v2') {
     issues.push('Unexpected benchmark summary schema.');
   }
+  issues.push(...verifyEvidenceSource(summary.evidenceSource, root));
   if (!same(summary.corpus, loaded.corpus)) issues.push('Corpus identity or counts changed.');
   if (
     summary.configuration.maxHops !== 2

@@ -32,3 +32,10 @@ void test('HTTP load rejects unsafe or duplicate concurrency levels', async () =
   await assert.rejects(() => runHttpLoad([1, 1], { smoke: true }), /Concurrency levels/u);
   await assert.rejects(() => runHttpLoad([65], { smoke: true }), /Concurrency levels/u);
 });
+
+void test('retained worker comparison fails closed instead of reusing a prior report', async () => {
+  await assert.rejects(
+    () => runHttpLoad([1], { mode: 'worker' }),
+    /same-run baseline; prior reports are never reused/u,
+  );
+});

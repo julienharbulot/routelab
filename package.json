@@ -66,10 +66,12 @@
     "test:api": "node --test tests/http-service.test.ts tests/http-load.test.ts",
     "load": "node cli/load.ts",
     "load:smoke": "node cli/load.ts --smoke",
+    "service:verify": "node cli/verify-service-report.ts",
     "test:intents": "node --test tests/near-intents-adapter.test.ts",
     "test:package": "node scripts/test-package.ts",
     "test:core": "node --test tests/constant-product.test.ts tests/route-replay.test.ts tests/exact-input-split-replay.test.ts tests/simple-paths.test.ts tests/pool-disjoint-route-sets.test.ts tests/path-shadow-price-allocation.test.ts tests/anytime-exact-input-split-router.test.ts tests/numerical-exact-input-split-router.test.ts tests/public-facade.test.ts",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm verify:historical-data && pnpm verify:synthetic-requests && pnpm demo"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm verify:historical-data && pnpm verify:synthetic-requests && pnpm demo",
+    "release:verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:package && pnpm verify:historical-data && pnpm verify:synthetic-requests && pnpm benchmark:verify && pnpm service:verify && pnpm test:api && pnpm serve:smoke && pnpm load:smoke && pnpm pack --dry-run"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

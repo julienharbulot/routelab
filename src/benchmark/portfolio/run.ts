@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { captureEvidenceSource } from '../../evidence/source-identity.ts';
 import {
   BENCHMARK_SAMPLES,
   BENCHMARK_WARMUPS,
@@ -20,6 +21,7 @@ import { writeReport } from './report.ts';
 import type { BenchmarkSummary } from './types.ts';
 
 export async function runPortfolioBenchmark(root = process.cwd()): Promise<BenchmarkSummary> {
+  const evidenceSource = captureEvidenceSource(root);
   const loaded = await loadHistoricalPortfolioCases(root);
   const qualityRows = runQuality(loaded.cases);
   const aggregates = aggregateQuality(qualityRows);
@@ -36,6 +38,7 @@ export async function runPortfolioBenchmark(root = process.cwd()): Promise<Bench
   }));
   const summary: BenchmarkSummary = Object.freeze({
     schemaVersion: 'routelab.portfolio-benchmark-summary.v2',
+    evidenceSource,
     corpus: loaded.corpus,
     configuration: Object.freeze({
       maxHops: 2,

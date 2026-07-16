@@ -1,10 +1,14 @@
-import { execFileSync } from 'node:child_process';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
 import { loadHistoricalPortfolioCases } from '../benchmark/portfolio/cases.ts';
 import type { PortfolioCase } from '../benchmark/portfolio/types.ts';
+import {
+  captureEvidenceSource,
+  inspectEvidenceSource,
+  type EvidenceSourceIdentity,
+} from '../evidence/source-identity.ts';
 import { quote } from '../index.ts';
 import { SERVICE_POLICY } from './policy.ts';
 import { startQuoteServiceProcess } from './process.ts';
@@ -45,6 +49,7 @@ export interface ServiceLoadRow {
 
 export interface ServiceLoadReport {
   readonly schemaVersion: 'routelab.service-load-summary.v2';
+  readonly evidenceSource: EvidenceSourceIdentity;
   readonly observedAt: string;
   readonly environment: {
     readonly node: string;
@@ -105,11 +110,6 @@ const SMOKE_REQUESTS = 12;
 const REQUEST_TIMEOUT_MS = 10_000;
 const QUOTE_DEADLINE_MS = 5_000;
 
-interface GateResult {
-  readonly retained: boolean;
-  readonly reason: string;
-}
-
 interface ExpectedResult {
   readonly amountOut: string;
   readonly planFingerprint: string;
@@ -131,23 +131,13 @@ function distribution(values: readonly number[]): ClientLatencyDistribution | nu
   });
 }
 
-function environment(root: string): ServiceLoadReport['environment'] {
-  let commit = 'unavailable';
-  try {
-    commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
-      cwd: root,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-  } catch {
-    // Source archives can still produce local operational measurements.
-  }
+function environment(revision: string): ServiceLoadReport['environment'] {
   return Object.freeze({
     node: process.version,
     platform: os.platform(),
     arch: os.arch(),
     cpu: os.cpus()[0]?.model ?? 'unavailable',
-    commit,
+    commit: revision,
   });
 }
 
@@ -358,68 +348,6 @@ async function writeReport(
   ]);
 }
 
-function gate(
-  baseline: readonly ServiceLoadRow[],
-  worker: readonly ServiceLoadRow[],
-): GateResult {
-  const baseOne = baseline.find((value) => value.concurrency === 1);
-  const baseSixteen = baseline.find((value) => value.concurrency === 16);
-  const workerOne = worker.find((value) => value.concurrency === 1);
-  const workerSixteen = worker.find((value) => value.concurrency === 16);
-  if (
-    baseOne?.successfulLatency === null
-    || baseOne === undefined
-    || baseSixteen?.successfulLatency === null
-    || baseSixteen === undefined
-    || workerOne?.successfulLatency === null
-    || workerOne === undefined
-    || workerSixteen?.successfulLatency === null
-    || workerSixteen === undefined
-  ) return Object.freeze({ retained: false, reason: 'Required concurrency-1/16 rows are missing.' });
-  const noRegression = worker.every((value) =>
-    value.completed === value.requests
-    && value.typedErrors === 0
-    && value.timedOut === 0
-    && value.responseSchemaFailures === 0
-    && value.exactOutputPresenceCount === value.requests
-    && value.fingerprintPresenceCount === value.requests
-    && value.semanticMatchCount === value.requests
-  );
-  const p95Improvement = 1
-    - workerSixteen.successfulLatency.p95Micros / baseSixteen.successfulLatency.p95Micros;
-  const p99Improvement = 1
-    - (workerSixteen.successfulLatency.p99Micros ?? Number.POSITIVE_INFINITY)
-      / (baseSixteen.successfulLatency.p99Micros ?? 1);
-  const eventLoopImprovement = 1
-    - workerSixteen.server.eventLoopDelayMaxMicros
-      / Math.max(1, baseSixteen.server.eventLoopDelayMaxMicros);
-  const latencyGate = p95Improvement >= 0.25
-    || p99Improvement >= 0.25
-    || eventLoopImprovement >= 0.50;
-  const throughputGate = workerSixteen.throughputPerSecond
-    >= baseSixteen.throughputPerSecond * 0.90;
-  const overheadMicros = workerOne.successfulLatency.p50Micros
-    - baseOne.successfulLatency.p50Micros;
-  const overheadGate = overheadMicros <= 2_000;
-  const retained = noRegression && latencyGate && throughputGate && overheadGate;
-  return Object.freeze({
-    retained,
-    reason: `Gate ${retained ? 'passed' : 'failed'}: c16 p95 ${(p95Improvement * 100).toFixed(1)}%, p99 ${(p99Improvement * 100).toFixed(1)}%, event-loop max ${(eventLoopImprovement * 100).toFixed(1)}%; throughput ratio ${(workerSixteen.throughputPerSecond / baseSixteen.throughputPerSecond).toFixed(3)}; c1 p50 overhead ${(overheadMicros / 1_000).toFixed(2)} ms; semantic/schema regression ${noRegression ? 'none' : 'present'}.`,
-  });
-}
-
-async function baselineReport(root: string): Promise<ServiceLoadReport> {
-  const parsed = JSON.parse(await readFile(
-    path.join(root, 'reports', 'service-v2-summary.json'),
-    'utf8',
-  )) as ServiceLoadReport;
-  if (
-    parsed.schemaVersion !== 'routelab.service-load-summary.v2'
-    || !parsed.rows.some((value) => value.mode === 'same-thread')
-  ) throw new Error('Worker comparison requires a retained same-thread service-v2 baseline.');
-  return parsed;
-}
-
 export function validateServiceLoadReport(report: ServiceLoadReport): readonly string[] {
   const issues: string[] = [];
   if (report.schemaVersion !== 'routelab.service-load-summary.v2') {
@@ -484,6 +412,14 @@ export async function runHttpLoad(
   const root = options.root ?? process.cwd();
   const smoke = options.smoke ?? false;
   const mode = options.mode ?? 'same-thread';
+  if (!smoke && mode === 'worker') {
+    throw new Error(
+      'Retained worker comparison requires a same-run baseline; prior reports are never reused.',
+    );
+  }
+  const evidenceSource = smoke
+    ? inspectEvidenceSource(root)
+    : captureEvidenceSource(root);
   const requests = smoke ? SMOKE_REQUESTS : FULL_REQUESTS;
   const warmups = smoke ? SMOKE_WARMUPS : FULL_WARMUPS;
   const loaded = await loadHistoricalPortfolioCases(root);
@@ -498,7 +434,6 @@ export async function runHttpLoad(
       planFingerprint: result.value.planFingerprint,
     })] as const;
   }));
-  const baseline = !smoke && mode === 'worker' ? await baselineReport(root) : undefined;
   const service = await startQuoteServiceProcess(root, mode);
   const rows: ServiceLoadRow[] = [];
   const observations: Observation[] = [];
@@ -522,17 +457,11 @@ export async function runHttpLoad(
   } finally {
     await service.shutdown();
   }
-  const combinedRows = baseline === undefined
-    ? rows
-    : [...baseline.rows.filter((value) => value.mode === 'same-thread'), ...rows];
-  const gateResult = baseline === undefined ? undefined : gate(
-    combinedRows.filter((value) => value.mode === 'same-thread'),
-    rows,
-  );
   const report: ServiceLoadReport = Object.freeze({
     schemaVersion: 'routelab.service-load-summary.v2',
+    evidenceSource,
     observedAt: new Date().toISOString(),
-    environment: environment(root),
+    environment: environment(evidenceSource.revision),
     corpus: Object.freeze({
       corpusId: loaded.corpus.corpusId,
       snapshotId: loaded.corpus.snapshotId,
@@ -541,7 +470,7 @@ export async function runHttpLoad(
       claim: 'synthetic exact-input requests derived from one historical pool-reserve snapshot',
     }),
     configuration: Object.freeze({
-      modes: Object.freeze([...new Set(combinedRows.map((value) => value.mode))]),
+      modes: Object.freeze([mode]),
       processModel: 'isolated-load-generator-and-server-processes',
       host: '127.0.0.1',
       requestsPerConcurrency: requests,
@@ -556,15 +485,14 @@ export async function runHttpLoad(
       maximumQueuedWork: SERVICE_POLICY.maxQueuedWork,
       workerCount: SERVICE_POLICY.workerCount,
     }),
-    rows: Object.freeze(combinedRows),
+    rows: Object.freeze(rows),
     workerDecision: Object.freeze({
-      evaluated: gateResult !== undefined,
-      retained: gateResult?.retained ?? false,
-      decision: gateResult === undefined
-        ? 'not-evaluated'
-        : gateResult.retained ? 'retained' : 'rejected',
-      reason: gateResult?.reason
-        ?? 'The isolated same-thread baseline is retained before conditional worker evaluation.',
+      evaluated: false,
+      retained: false,
+      decision: 'not-evaluated',
+      reason: mode === 'worker'
+        ? 'Smoke-only worker operation does not support a retention decision.'
+        : 'Worker comparison is withheld until both modes run in one invocation.',
     }),
   });
   const issues = validateServiceLoadReport(report);

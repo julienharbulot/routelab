@@ -27,7 +27,7 @@ interface RawLatencyObservation {
 function environment(root: string): BenchmarkEnvironment {
   let commit = 'unavailable';
   try {
-    commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+    commit = execFileSync('git', ['rev-parse', 'HEAD'], {
       cwd: root,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],

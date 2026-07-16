@@ -36,10 +36,15 @@ export function renderServiceMarkdown(report: ServiceLoadReport): string {
   const rows = report.rows.map((row) =>
     `| ${row.mode} | ${row.concurrency} | ${row.requests} | ${row.completed}/${row.typedErrors}/${row.timedOut}/${row.responseSchemaFailures} | ${successful(row)} | ${errorLatency(row)} | ${row.throughputPerSecond.toFixed(1)} | ${row.exactOutputPresenceCount}/${row.fingerprintPresenceCount}/${row.semanticMatchCount} | ${row.deadlineCompletionRatePpm === null ? 'n/a' : `${(row.deadlineCompletionRatePpm / 10_000).toFixed(2)}%`} | ${service(row)} | ${(row.server.eventLoopDelayP95Micros / 1_000).toFixed(2)}/${(row.server.eventLoopDelayMaxMicros / 1_000).toFixed(2)} | ${row.server.admissionAcceptedCount}/${row.server.admissionRejectedCount}/${row.server.overloadCount} | ${row.server.maximumActiveWork}/${row.server.maximumQueuedWork} | ${counts(row.server.terminationCounts)} | ${counts(row.server.routeCountCounts)} | ${(row.server.initialRssBytes / 1_048_576).toFixed(1)}/${(row.server.peakRssBytes / 1_048_576).toFixed(1)}/${(row.server.finalRssBytes / 1_048_576).toFixed(1)} | ${(row.server.initialHeapUsedBytes / 1_048_576).toFixed(1)}/${(row.server.peakHeapUsedBytes / 1_048_576).toFixed(1)}/${(row.server.finalHeapUsedBytes / 1_048_576).toFixed(1)} |`,
   );
+  const comparisonScope = report.configuration.modes.length === 1
+    ? `This retained run contains ${report.configuration.modes[0]} mode only. Worker retention is not evaluated until both modes run sequentially in one invocation.`
+    : `Same-thread mode retains ${report.configuration.sameThreadMaximumActiveWork} active synchronous quote; worker mode uses ${report.configuration.workerMaximumActiveWork} fixed workers.`;
   return [
     '# RouteLab isolated service performance v2',
     '',
-    `The load generator and quote server run in separate processes over localhost. Same-thread mode retains ${report.configuration.sameThreadMaximumActiveWork} active synchronous quote; worker mode uses ${report.configuration.workerMaximumActiveWork} fixed workers. Both retain at most ${report.configuration.maximumQueuedWork} queued quotes, with typed 503 overload responses.`,
+    `The load generator and quote server run in separate processes over localhost. ${comparisonScope} Both modes retain at most ${report.configuration.maximumQueuedWork} queued quotes, with typed 503 overload responses.`,
+    '',
+    `Evidence source: ${report.evidenceSource.revision}; ${report.evidenceSource.pathSet.schemaVersion} (${report.evidenceSource.pathSet.paths.length} named paths); ${report.evidenceSource.digest}.`,
     '',
     '| Mode | Concurrency | Requests | Completed/typed error/timeout/schema failure | Client success p50/p95/p99 ms | Error response p50/p95/p99 ms | req/s | Exact output/fingerprint/semantic match | Deadline completion | Quote service p50/p95/p99 ms | Event-loop p95/max ms | Accepted/rejected/overload | Max active/queued | Terminations | Route counts | RSS initial/peak/final MiB | Heap initial/peak/final MiB |',
     '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
@@ -53,11 +58,11 @@ export function renderServiceMarkdown(report: ServiceLoadReport): string {
     '',
     'The load-generator process owns concurrency scheduling, client timeouts, end-to-end latency, response validation, and client aggregation. The server child alone owns admission, structured completion logs, quote execution, event-loop delay, and server memory metrics.',
     '',
-    `Each retained row rotates all ${report.configuration.caseCount} requests in deterministic corpus order, uses ${report.configuration.warmupsPerConcurrency} warmups and ${report.configuration.requestsPerConcurrency} measured requests, ${report.configuration.strategy}/${report.configuration.effort}, a ${report.configuration.quoteDeadlineMs} ms end-to-end quote deadline, and a ${report.configuration.requestTimeoutMs} ms client timeout. Successful and error-response latency are separate; p99 is omitted below 1,000 observations. Server event-loop and memory metrics come only from the server process. Worker mode uses a fixed ${report.configuration.workerCount}-worker pool with snapshots prepared once per worker.`,
+    `Each retained row rotates all ${report.configuration.caseCount} requests in deterministic corpus order, uses ${report.configuration.warmupsPerConcurrency} warmups and ${report.configuration.requestsPerConcurrency} measured requests, ${report.configuration.strategy}/${report.configuration.effort}, a ${report.configuration.quoteDeadlineMs} ms end-to-end quote deadline, and a ${report.configuration.requestTimeoutMs} ms client timeout. Successful and error-response latency are separate; p99 is omitted below 1,000 observations. Server event-loop and memory metrics come only from the server process.`,
     '',
     'The requests are synthetic exact-input requests derived from one historical pool-reserve snapshot, not historical order flow or representative demand. This local result is not a production-capacity or statistical-significance claim. No live upstream, transaction submission, signing, custody, execution, or settlement is involved.',
     '',
-    `Environment: ${report.environment.node}; ${report.environment.platform}/${report.environment.arch}; ${report.environment.cpu}; revision ${report.environment.commit}; observed ${report.observedAt}.`,
+    `Environment: ${report.environment.node}; ${report.environment.platform}/${report.environment.arch}; ${report.environment.cpu}; source revision ${report.evidenceSource.revision}; observed ${report.observedAt}.`,
     '',
     '![Service latency](service-latency.svg)',
     '',

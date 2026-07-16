@@ -37,3 +37,6 @@ jobs:
 
       - name: Run benchmark smoke and verify committed evidence
         run: pnpm benchmark:smoke && pnpm benchmark:verify
+
+      - name: Test HTTP boundary and smoke service
+        run: pnpm test:api && pnpm serve:smoke

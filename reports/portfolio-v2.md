@@ -88,11 +88,11 @@ Regret uses integer parts per million (ppm) against the best observed output acr
 
 | Mode | Warmups | Samples | Quote samples; p50/p95/p99 µs; min/max | No-route samples; p50/p95/p99 µs; min/max | Calls/s |
 |---|---:|---:|---:|---:|---:|
-| best-single | 50 | 1000 | 1000; 45/64/103; 32/1040 | n/a | 20288.0 |
-| greedy-split/fast | 50 | 1000 | 1000; 1550/3598/4033; 611/4802 | n/a | 570.7 |
-| numerical-split/fast | 50 | 1000 | 1000; 2812/6909/7959; 1029/8552 | n/a | 311.1 |
-| greedy-split/balanced | 50 | 1000 | 1000; 2938/6840/7292; 1140/7826 | n/a | 305.3 |
-| numerical-split/balanced | 50 | 1000 | 1000; 5479/13749/15668; 1996/18149 | n/a | 158.9 |
+| best-single | 50 | 1000 | 1000; 46/75/159; 32/1653 | n/a | 18339.9 |
+| greedy-split/fast | 50 | 1000 | 1000; 1617/3837/4551; 626/5233 | n/a | 544.0 |
+| numerical-split/fast | 50 | 1000 | 1000; 2831/7164/8090; 1059/8818 | n/a | 304.8 |
+| greedy-split/balanced | 50 | 1000 | 1000; 3026/7239/7966; 1130/9801 | n/a | 293.5 |
+| numerical-split/balanced | 50 | 1000 | 1000; 5733/13981/15819; 2084/20385 | n/a | 152.9 |
 
 Fast effort is measured for all strategies, with balanced effort also measured for greedy and numerical split. Deterministic quality covers every effort. The corpus is connected with diameter two, so it contains no expected no-route request and the no-route latency distributions are explicitly `n/a`.
 
@@ -108,4 +108,4 @@ The numerical reference uses one frozen, larger bounded profile with the same ro
 
 Canonical digests: request order sha256:31e9eaeec7242c204b97679a36a1862aa66bbd0f3da400b7b9cc6a69279d9c96; quality rows sha256:0b068559182a37dc4fc4ff4bbaea332a79779693a193596d39eaef97af89de05; aggregates sha256:b697af51d1a0db7ab288661c96a42a6cd1e2e92c61420c57a26bdbafc10e2024; numerical comparisons sha256:3bc277a9808fcd605f62a7a7da792e5eb558ac57698dab8fa03eaa13fbdf36a1.
 
-Environment: v24.18.0; linux/x64; 13th Gen Intel(R) Core(TM) i9-13900H; revision 8527e88; observed 2026-07-15T23:37:24.804Z.
+Environment: v24.18.0; linux/x64; 13th Gen Intel(R) Core(TM) i9-13900H; revision 26601fa; observed 2026-07-16T00:20:55.474Z.

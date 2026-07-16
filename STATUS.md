@@ -1,13 +1,13 @@
 # RouteLab status
 
-**State:** PORT-009 complete; PORT-010 active
+**State:** PORT-010 complete; v0.1 release candidate ready for owner approval
 
-Implemented: isolated server/load processes, one-active/32-queued same-thread admission, typed overload/deadline behavior, structured logs, and a retained fixed four-worker pool.
+Implemented: current public quote-param parsing, a distinct solver-event unsigned draft with `quote_id`, snapshot/checksum-bound asset mapping, release notes, and complete CI coverage.
 
-Evidence: 1,000 requests per mode at concurrency 1/4/16; worker c16 p95 improved 58.1%, throughput ratio was 2.477, c1 p50 overhead was 0.22 ms, and all exact outputs/fingerprints matched.
+Evidence: all 223 tests and the complete local release gate pass; the packed root and NEAR subpath execute in a clean consumer; committed benchmark reports verify by fresh replay.
 
-Known limitation: service evidence is one local machine and synthetic request grid; four workers increase process RSS and do not imply production capacity.
+Known limitation: data/request/service evidence is curated, synthetic, and local; the NEAR boundary has no live connection, balances, credentials, signing, execution, or settlement.
 
-Next: align the offline NEAR Intents fixture with current official protocol shapes and complete release proof in PORT-010.
+Next: owner approval is required before any tag, hosted release, or package publication; none has been performed.
 
 Out of scope: live data, signing, custody, settlement, PRIME, ML, gas-aware routing, and concentrated liquidity.

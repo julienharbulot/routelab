@@ -2,10 +2,11 @@
 
 RouteLab v0.1 is a compact exact-input liquidity-routing portfolio project. The immediate goal is a defensible release, not a broader solver platform.
 
-## Release-candidate work
+## Release status
 
-- Align the offline NEAR Intents parser and unsigned solver draft with current official request/event shapes.
-- Complete clean-clone, packed-consumer, CI, and release-note proof before an owner-approved tag.
+The v0.1 code, benchmark evidence, isolated service evidence, offline NEAR fixture boundary, and
+release checks are frozen as a release candidate. Tagging, a GitHub release, and package
+publication remain separate owner-approved actions.
 
 ## Later, evidence-led options
 

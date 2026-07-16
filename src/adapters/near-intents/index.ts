@@ -1,13 +1,16 @@
 export {
+  draftNearSolverQuoteExactInput,
+  parseNearQuoteParamsExactInput,
   prepareNearIntentsFixtureAdapter,
-  quoteNearIntentsExactInput,
 } from './adapter.ts';
 export type {
   NearIntentsAdapterError,
   NearIntentsAdapterErrorCode,
-  NearIntentsExactInputRequest,
   NearIntentsFixtureAdapter,
-  NearIntentsQuoteResult,
-  NearIntentsUnsignedQuoteCandidate,
+  NearQuoteParamsExactInput,
+  NearSolverQuoteDraftResult,
+  NearSolverQuoteEventExactInput,
+  ParseNearQuoteParamsResult,
   PrepareNearIntentsAdapterResult,
+  UnsignedNearSolverQuoteDraft,
 } from './types.ts';

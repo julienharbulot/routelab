@@ -1,6 +1,12 @@
 # RouteLab TS
 
-RouteLab is an exact-input TypeScript liquidity router for immutable snapshots of two-asset constant-product pools. It discovers bounded multi-hop and pool-disjoint split routes, optionally proposes allocations with a path-shadow-price numerical method, and authorizes every returned quote through fresh exact `bigint` replay.
+RouteLab is an exact-input TypeScript liquidity router that searches immutable constant-product snapshots and authorizes every returned plan through fresh exact `bigint` replay.
+
+```text
+immutable snapshot -> prepare -> bounded search/allocation -> exact replay
+                                                           -> library / CLI / HTTP
+                                                           -> unsigned NEAR fixture draft
+```
 
 ## Measured result
 
@@ -8,10 +14,12 @@ RouteLab is an exact-input TypeScript liquidity router for immutable snapshots o
 - All 3,168 returned mode/request plans passed fresh exact replay.
 - At fast effort, numerical split beat/tied/lost greedy split on 19/377/0 requests.
 - Thorough numerical split had p95 regret of 640 ppm (6.40 bps) against the best observed declared fixed mode.
-- On the recorded local run, fast greedy split had 1,550 µs p50 and 4,033 µs p99 in-process latency over 1,000 rotating requests.
+- On the recorded local run, fast greedy split had 1,617 µs p50 and 4,551 µs p99 in-process latency over 1,000 rotating requests.
 - At HTTP concurrency 16, the retained four-worker mode reduced p95 from 46.08 ms to 19.30 ms and raised throughput from 480.1 to 1,189.2 requests/s, with all 3,000 worker responses matching expected exact outputs and fingerprints.
 
 See the [full benchmark report](reports/portfolio-v2.md).
+
+Limitation: the retained dataset, synthetic request corpus, and local timings are portfolio evidence, not representative demand, unrestricted optimality, or production capacity.
 
 ## Quickstart
 
@@ -104,11 +112,15 @@ representative demand or a production-capacity claim.
 
 ## NEAR Intents fixture boundary
 
-The `routelab-ts/near-intents-fixture` package subpath maps the four documented exact-input quote
-fields through an explicit fictional asset map and returns an unsigned quote candidate. The
-[adapter boundary](src/adapters/near-intents/README.md) records the official documentation access
-date and exclusions. There is no Message Bus or 1Click connection, authentication, key handling,
-signing, balance/deposit check, execution, or settlement.
+The `routelab-ts/near-intents-fixture` package subpath separates two official concepts:
+`parseNearQuoteParamsExactInput()` parses the exact-input subset of public JSON-RPC quote params,
+while `draftNearSolverQuoteExactInput()` accepts the solver event fields including `quote_id` and
+returns a RouteLab-specific internal unsigned draft. The snapshot-bound fictional asset map checks
+both snapshot identity fields and every mapped internal asset. The
+[adapter boundary](src/adapters/near-intents/README.md) records the 2026-07-16 documentation check
+and exact exclusions. The draft is not an official
+`quote_response`: it has no `signed_data`, relay connection, authentication, balance lookup,
+signing, key handling, execution, or settlement.
 
 ## Exact authorization
 

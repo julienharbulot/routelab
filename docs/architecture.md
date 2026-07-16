@@ -218,12 +218,20 @@ The default CLI service uses four fixed workers because the predeclared local re
 
 ## NEAR Intents boundary
 
-The official NEAR Intents Market Maker/Message Bus documentation was checked on 2026-07-15. The
-fixture adapter accepts `defuse_asset_identifier_in`, `defuse_asset_identifier_out`,
-`exact_amount_in`, and `min_deadline_ms`. An explicit fictional asset map produces a bounded
-`QuoteRequest`; `min_deadline_ms` remains candidate-validity metadata and is not repurposed as a
-router work deadline. The adapter returns an unsigned quote candidate and is available only as
-the `routelab-ts/near-intents-fixture` package subpath.
+The official NEAR Intents Message Bus overview, JSON-RPC API, WebSocket reference, and example
+solver were checked on 2026-07-16. The fixture keeps the public RPC parameter object distinct from
+the solver event object: both use `defuse_asset_identifier_in`,
+`defuse_asset_identifier_out`, `exact_amount_in`, and `min_deadline_ms`, while only the solver
+event carries `quote_id`. Exact output is rejected with a typed unsupported error.
+
+The explicit fictional asset map is bound to snapshot ID and checksum. Preparation rejects
+duplicate external or internal IDs and mappings to assets absent from the parsed snapshot. Routing
+still crosses only the public `quote()` facade. `min_deadline_ms` remains draft-validity metadata
+and is not repurposed as a router work deadline.
+
+The solver path returns `routelab.near-solver-quote-draft.v1`, an internal unsigned object that
+preserves `quote_id`, proposed `amount_out`, a descriptive intended token difference, and the exact
+plan fingerprint. It is not an official `quote_response`, which requires `signed_data`.
 
 It does not:
 
@@ -231,6 +239,7 @@ It does not:
 - open a Message Bus WebSocket;
 - sign NEP-413 payloads;
 - inspect solver balances;
+- create a nonce, quote hash, signature, or public key;
 - submit intents;
 - settle trades.
 

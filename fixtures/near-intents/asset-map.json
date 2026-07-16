@@ -1,6 +1,7 @@
 {
-  "schemaVersion": "routelab.near-intents-asset-map.v1",
+  "schemaVersion": "routelab.near-intents-asset-map.v2",
   "snapshotId": "near-intents-local-fixture",
+  "snapshotChecksum": "sha256:4bf0c444f9f255f5cbdd52a94281052e24a6dbeede18e16d3c41e99dfa7461a4",
   "assets": [
     {
       "defuse_asset_identifier": "nep141:asset-a.fixture.invalid",

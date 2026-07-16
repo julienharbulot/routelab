@@ -3,8 +3,9 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  draftNearSolverQuoteExactInput,
+  parseNearQuoteParamsExactInput,
   prepareNearIntentsFixtureAdapter,
-  quoteNearIntentsExactInput,
 } from '../src/adapters/near-intents/index.ts';
 import type { LiquiditySnapshot } from '../src/domain/index.ts';
 import { computeCanonicalSnapshotChecksum } from '../src/serialization/canonical-snapshot/index.ts';
@@ -51,86 +52,153 @@ async function prepared() {
   return result.value;
 }
 
-void test('fixture exact-input request produces the frozen expected unsigned candidate', async () => {
-  const adapter = await prepared();
-  const request = await json('fixtures/near-intents/exact-input-request.json');
-  const expected = await json('fixtures/near-intents/expected-unsigned-quote.json');
-  const result = quoteNearIntentsExactInput(adapter, request);
+void test('parses the official exact-input public quote parameter subset', async () => {
+  const request = await json('fixtures/near-intents/quote-params-exact-input.json');
+  const result = parseNearQuoteParamsExactInput(request);
   assert.equal(result.ok, true);
-  if (!result.ok) throw new Error('Expected unsigned quote.');
+  if (!result.ok) throw new Error('Expected exact-input quote parameters.');
+  assert.deepEqual(result.value, request);
+  assert.equal(Object.isFrozen(result.value), true);
+  assert.equal(Object.hasOwn(result.value, 'quote_id'), false);
+});
+
+void test('rejects exact-output-only and simultaneous public or solver fields as unsupported', async () => {
+  const adapter = await prepared();
+  const base = await json(
+    'fixtures/near-intents/quote-params-exact-input.json',
+  ) as Record<string, unknown>;
+  for (const request of [
+    {
+      defuse_asset_identifier_in: base['defuse_asset_identifier_in'],
+      defuse_asset_identifier_out: base['defuse_asset_identifier_out'],
+      exact_amount_out: '10',
+      min_deadline_ms: base['min_deadline_ms'],
+    },
+    { ...base, exact_amount_out: '10' },
+  ]) {
+    const expected = {
+      ok: false,
+      error: {
+        code: 'exact-output-unsupported',
+        message: 'The fixture supports exact-input quotes only; exact_amount_out is unsupported.',
+        field: 'exact_amount_out',
+      },
+    };
+    assert.deepEqual(parseNearQuoteParamsExactInput(request), expected);
+    assert.deepEqual(
+      draftNearSolverQuoteExactInput(adapter, { quote_id: 'unsupported-fixture', ...request }),
+      expected,
+    );
+  }
+});
+
+void test('solver quote event produces the frozen expected internal unsigned draft', async () => {
+  const adapter = await prepared();
+  const event = await json('fixtures/near-intents/solver-quote-event-exact-input.json');
+  const expected = await json('fixtures/near-intents/expected-unsigned-solver-quote-draft.json');
+  const result = draftNearSolverQuoteExactInput(adapter, event);
+  assert.equal(result.ok, true);
+  if (!result.ok) throw new Error('Expected unsigned solver quote draft.');
   assert.deepEqual(result.value, expected);
   assert.equal(Object.isFrozen(result.value), true);
-  assert.equal(result.value.unsigned, true);
-  assert.equal(Object.hasOwn(result.value, 'signed_data'), false);
-  assert.equal(Object.hasOwn(result.value, 'quote_hash'), false);
+  assert.equal(Object.isFrozen(result.value.quote_output), true);
+  assert.equal(Object.isFrozen(result.value.intended_token_diff), true);
+  const serialized = JSON.stringify(result.value);
+  for (const forbidden of ['signed_data', 'quote_hash', 'nonce', 'signature', 'public_key']) {
+    assert.doesNotMatch(serialized, new RegExp(forbidden, 'u'));
+  }
 });
 
-void test('rejects exact output before other quote-shape validation', async () => {
-  const result = quoteNearIntentsExactInput(await prepared(), {
-    exact_amount_out: '10',
-  });
-  assert.deepEqual(result, {
-    ok: false,
-    error: {
-      code: 'exact-output-unsupported',
-      message: 'Fixture adapter supports exact input only.',
-      field: 'exact_amount_out',
-    },
-  });
-});
-
-void test('rejects noncanonical amounts and unreasonable validity periods', async () => {
+void test('validates solver quote IDs, canonical amounts, and validity periods', async () => {
   const adapter = await prepared();
-  const base = await json('fixtures/near-intents/exact-input-request.json') as Record<string, unknown>;
+  const base = await json(
+    'fixtures/near-intents/solver-quote-event-exact-input.json',
+  ) as Record<string, unknown>;
+  for (const quote_id of ['', 1, 'x'.repeat(201)]) {
+    const result = draftNearSolverQuoteExactInput(adapter, { ...base, quote_id });
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.error.field, 'quote_id');
+  }
   for (const exact_amount_in of [1, '0', '01', '-1', '1.0', 'x']) {
-    const result = quoteNearIntentsExactInput(adapter, { ...base, exact_amount_in });
+    const result = draftNearSolverQuoteExactInput(adapter, { ...base, exact_amount_in });
     assert.equal(result.ok, false);
     if (!result.ok) assert.equal(result.error.field, 'exact_amount_in');
   }
   for (const min_deadline_ms of [999, 300_001, 1_000.5, '60000']) {
-    const result = quoteNearIntentsExactInput(adapter, { ...base, min_deadline_ms });
+    const result = draftNearSolverQuoteExactInput(adapter, { ...base, min_deadline_ms });
     assert.equal(result.ok, false);
     if (!result.ok) assert.equal(result.error.field, 'min_deadline_ms');
   }
 });
 
-void test('requires explicit mapped fictional assets and rejects unknown fields', async () => {
+void test('requires explicitly mapped fictional assets and rejects shape conflation', async () => {
   const adapter = await prepared();
-  const base = await json('fixtures/near-intents/exact-input-request.json') as Record<string, unknown>;
+  const event = await json(
+    'fixtures/near-intents/solver-quote-event-exact-input.json',
+  ) as Record<string, unknown>;
   for (const override of [
     { defuse_asset_identifier_in: 'nep141:unknown.fixture.invalid' },
     { defuse_asset_identifier_out: 'nep141:unknown.fixture.invalid' },
   ]) {
-    const result = quoteNearIntentsExactInput(adapter, { ...base, ...override });
+    const result = draftNearSolverQuoteExactInput(adapter, { ...event, ...override });
     assert.equal(result.ok, false);
     if (!result.ok) assert.equal(result.error.code, 'unknown-asset');
   }
-  const unknown = quoteNearIntentsExactInput(adapter, { ...base, quote_id: 'not-supported' });
-  assert.equal(unknown.ok, false);
-  if (!unknown.ok) assert.equal(unknown.error.code, 'invalid-request');
+  const publicParams = { ...event };
+  delete publicParams['quote_id'];
+  const missingQuoteId = draftNearSolverQuoteExactInput(adapter, publicParams);
+  assert.equal(missingQuoteId.ok, false);
+  if (!missingQuoteId.ok) assert.equal(missingQuoteId.error.field, 'quote_id');
+
+  const solverEventAsPublicParams = parseNearQuoteParamsExactInput(event);
+  assert.equal(solverEventAsPublicParams.ok, false);
+  if (!solverEventAsPublicParams.ok) {
+    assert.equal(solverEventAsPublicParams.error.field, 'quote_id');
+  }
 });
 
-void test('asset map is closed, unique, bounded, and snapshot-bound', async () => {
+void test('asset map is unique, bounded, snapshot-bound, and closed over snapshot assets', async () => {
   const source = await json('fixtures/near-intents/asset-map.json') as Record<string, unknown>;
-  const mismatch = prepareNearIntentsFixtureAdapter(snapshot(), { ...source, snapshotId: 'other' });
-  assert.equal(mismatch.ok, false);
-  if (!mismatch.ok) assert.equal(mismatch.error.code, 'snapshot-mismatch');
+  for (const [field, value] of [
+    ['snapshotId', 'other'],
+    ['snapshotChecksum', 'sha256:other'],
+  ] as const) {
+    const mismatch = prepareNearIntentsFixtureAdapter(snapshot(), { ...source, [field]: value });
+    assert.equal(mismatch.ok, false);
+    if (!mismatch.ok) {
+      assert.equal(mismatch.error.code, 'snapshot-mismatch');
+      assert.equal(mismatch.error.field, field);
+    }
+  }
 
   const assets = source['assets'] as readonly Record<string, unknown>[];
-  const duplicate = prepareNearIntentsFixtureAdapter(snapshot(), {
+  for (const duplicate of [
+    [assets[0], assets[0]],
+    [assets[0], { ...assets[1], snapshot_asset_id: assets[0]?.['snapshot_asset_id'] }],
+  ]) {
+    const result = prepareNearIntentsFixtureAdapter(snapshot(), { ...source, assets: duplicate });
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.error.code, 'invalid-asset-map');
+  }
+
+  const absent = prepareNearIntentsFixtureAdapter(snapshot(), {
     ...source,
-    assets: [assets[0], assets[0]],
+    assets: [assets[0], { ...assets[1], snapshot_asset_id: 'C' }],
   });
-  assert.equal(duplicate.ok, false);
-  if (!duplicate.ok) assert.equal(duplicate.error.code, 'invalid-asset-map');
+  assert.equal(absent.ok, false);
+  if (!absent.ok) {
+    assert.equal(absent.error.code, 'invalid-asset-map');
+    assert.equal(absent.error.field, 'assets');
+  }
 
   const extra = prepareNearIntentsFixtureAdapter(snapshot(), { ...source, liveEndpoint: true });
   assert.equal(extra.ok, false);
   if (!extra.ok) assert.equal(extra.error.code, 'invalid-asset-map');
 });
 
-void test('adapter implementation depends on the root facade rather than routing internals', async () => {
+void test('routing uses the root facade and no adapter reaches routing internals', async () => {
   const source = await readFile('src/adapters/near-intents/adapter.ts', 'utf8');
   assert.match(source, /from '\.\.\/\.\.\/index\.ts'/u);
+  assert.match(source, /quote\(state\.context/u);
   assert.doesNotMatch(source, /router\/|runtime\/|replay\/|allocation\//u);
 });

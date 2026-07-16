@@ -15,6 +15,9 @@ pnpm check
 
 Before opening a change, also run the narrow command for the affected boundary, such as `pnpm test:core`, `pnpm test:benchmark`, `pnpm test:api`, or `pnpm test:intents`.
 
+Release-candidate changes also run `pnpm test:package`, both dataset verifiers,
+`pnpm benchmark:verify`, the HTTP/load smoke commands, and `pnpm pack --dry-run` from a clean clone.
+
 ## Correctness rules
 
 - Keep exact amounts, reserves, fees, allocations, and outputs as `bigint` in memory and canonical decimal strings on wire boundaries.
@@ -32,3 +35,6 @@ Do not commit raw benchmark observations, credentials, provider material without
 ## Pull requests
 
 Describe the user-visible outcome, commands and results, exactness impact, generated-file impact, and retained limitations. Keep one coherent concern per pull request and call out any public API change explicitly.
+
+Tags, hosted releases, and package publication require explicit owner approval after CI is visibly
+green on the exact candidate commit.

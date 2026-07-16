@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "routelab.near-solver-quote-draft.v1",
+  "unsigned": true,
+  "quote_id": "near-quote-fixture-001",
+  "quote_output": {
+    "amount_out": "66"
+  },
+  "intended_token_diff": {
+    "receive_asset": "nep141:asset-a.fixture.invalid",
+    "receive_amount": "100",
+    "give_asset": "nep141:asset-b.fixture.invalid",
+    "give_amount": "66"
+  },
+  "valid_for_ms": 60000,
+  "routelab_plan_fingerprint": "sha256:922a071c61654064b2f15cfbc2e428a1520cac92dd0855632ccb2b72299fd743"
+}

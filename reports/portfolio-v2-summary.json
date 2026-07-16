@@ -1959,12 +1959,12 @@
     ]
   },
   "environment": {
-    "observedAt": "2026-07-15T23:37:24.804Z",
+    "observedAt": "2026-07-16T00:20:55.474Z",
     "node": "v24.18.0",
     "platform": "linux",
     "arch": "x64",
     "cpu": "13th Gen Intel(R) Core(TM) i9-13900H",
-    "commit": "8527e88"
+    "commit": "26601fa"
   },
   "latency": [
     {
@@ -1976,14 +1976,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 45,
-        "p95Micros": 64,
-        "p99Micros": 103,
+        "p50Micros": 46,
+        "p95Micros": 75,
+        "p99Micros": 159,
         "minMicros": 32,
-        "maxMicros": 1040
+        "maxMicros": 1653
       },
       "noRoute": null,
-      "throughputPerSecond": 20288.004
+      "throughputPerSecond": 18339.853
     },
     {
       "strategy": "greedy-split",
@@ -1994,14 +1994,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 1550,
-        "p95Micros": 3598,
-        "p99Micros": 4033,
-        "minMicros": 611,
-        "maxMicros": 4802
+        "p50Micros": 1617,
+        "p95Micros": 3837,
+        "p99Micros": 4551,
+        "minMicros": 626,
+        "maxMicros": 5233
       },
       "noRoute": null,
-      "throughputPerSecond": 570.704
+      "throughputPerSecond": 544.026
     },
     {
       "strategy": "numerical-split",
@@ -2012,14 +2012,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 2812,
-        "p95Micros": 6909,
-        "p99Micros": 7959,
-        "minMicros": 1029,
-        "maxMicros": 8552
+        "p50Micros": 2831,
+        "p95Micros": 7164,
+        "p99Micros": 8090,
+        "minMicros": 1059,
+        "maxMicros": 8818
       },
       "noRoute": null,
-      "throughputPerSecond": 311.083
+      "throughputPerSecond": 304.771
     },
     {
       "strategy": "greedy-split",
@@ -2030,14 +2030,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 2938,
-        "p95Micros": 6840,
-        "p99Micros": 7292,
-        "minMicros": 1140,
-        "maxMicros": 7826
+        "p50Micros": 3026,
+        "p95Micros": 7239,
+        "p99Micros": 7966,
+        "minMicros": 1130,
+        "maxMicros": 9801
       },
       "noRoute": null,
-      "throughputPerSecond": 305.299
+      "throughputPerSecond": 293.491
     },
     {
       "strategy": "numerical-split",
@@ -2048,14 +2048,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 5479,
-        "p95Micros": 13749,
-        "p99Micros": 15668,
-        "minMicros": 1996,
-        "maxMicros": 18149
+        "p50Micros": 5733,
+        "p95Micros": 13981,
+        "p99Micros": 15819,
+        "minMicros": 2084,
+        "maxMicros": 20385
       },
       "noRoute": null,
-      "throughputPerSecond": 158.888
+      "throughputPerSecond": 152.943
     }
   ]
 }

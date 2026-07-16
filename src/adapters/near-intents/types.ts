@@ -1,5 +1,3 @@
-import type { QuoteEffort, QuoteStrategy } from '../../index.ts';
-
 declare const nearIntentsAdapterBrand: unique symbol;
 
 export interface NearIntentsFixtureAdapter {
@@ -9,27 +7,32 @@ export interface NearIntentsFixtureAdapter {
   readonly [nearIntentsAdapterBrand]: typeof nearIntentsAdapterBrand;
 }
 
-export interface NearIntentsExactInputRequest {
+export interface NearQuoteParamsExactInput {
   readonly defuse_asset_identifier_in: string;
   readonly defuse_asset_identifier_out: string;
   readonly exact_amount_in: string;
   readonly min_deadline_ms: number;
 }
 
-export interface NearIntentsUnsignedQuoteCandidate {
-  readonly schemaVersion: 'routelab.near-intents-unsigned-quote.v1';
+export interface NearSolverQuoteEventExactInput extends NearQuoteParamsExactInput {
+  readonly quote_id: string;
+}
+
+export interface UnsignedNearSolverQuoteDraft {
+  readonly schemaVersion: 'routelab.near-solver-quote-draft.v1';
   readonly unsigned: true;
-  readonly defuse_asset_identifier_in: string;
-  readonly defuse_asset_identifier_out: string;
-  readonly amount_in: string;
-  readonly amount_out: string;
+  readonly quote_id: string;
+  readonly quote_output: {
+    readonly amount_out: string;
+  };
+  readonly intended_token_diff: {
+    readonly receive_asset: string;
+    readonly receive_amount: string;
+    readonly give_asset: string;
+    readonly give_amount: string;
+  };
   readonly valid_for_ms: number;
-  readonly snapshot_id: string;
-  readonly snapshot_checksum: string;
   readonly routelab_plan_fingerprint: string;
-  readonly selected_strategy: QuoteStrategy;
-  readonly effort: QuoteEffort;
-  readonly termination: string;
 }
 
 export type NearIntentsAdapterErrorCode =
@@ -52,6 +55,10 @@ export type PrepareNearIntentsAdapterResult =
   | { readonly ok: true; readonly value: NearIntentsFixtureAdapter }
   | { readonly ok: false; readonly error: NearIntentsAdapterError };
 
-export type NearIntentsQuoteResult =
-  | { readonly ok: true; readonly value: NearIntentsUnsignedQuoteCandidate }
+export type ParseNearQuoteParamsResult =
+  | { readonly ok: true; readonly value: NearQuoteParamsExactInput }
+  | { readonly ok: false; readonly error: NearIntentsAdapterError };
+
+export type NearSolverQuoteDraftResult =
+  | { readonly ok: true; readonly value: UnsignedNearSolverQuoteDraft }
   | { readonly ok: false; readonly error: NearIntentsAdapterError };

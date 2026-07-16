@@ -24,7 +24,7 @@ function run(command: string, arguments_: readonly string[], cwd: string): strin
 const consumerSource = `
 import assert from 'node:assert/strict';
 import { formatQuote, prepareSnapshot, quote, serializeQuote } from 'routelab-ts';
-import { prepareNearIntentsFixtureAdapter, quoteNearIntentsExactInput } from 'routelab-ts/near-intents-fixture';
+import { draftNearSolverQuoteExactInput, parseNearQuoteParamsExactInput, prepareNearIntentsFixtureAdapter } from 'routelab-ts/near-intents-fixture';
 
 const snapshot = {
   snapshotId: 'demo-two-direct-pools',
@@ -50,7 +50,8 @@ assert.match(result.value.planFingerprint, /^sha256:[0-9a-f]{64}$/u);
 assert.equal(serializeQuote(result.value).amountOut, '66');
 assert.match(formatQuote(result.value), /A 100 -> B 66/u);
 assert.equal(typeof prepareNearIntentsFixtureAdapter, 'function');
-assert.equal(typeof quoteNearIntentsExactInput, 'function');
+assert.equal(typeof parseNearQuoteParamsExactInput, 'function');
+assert.equal(typeof draftNearSolverQuoteExactInput, 'function');
 process.stdout.write('packed consumer quote: 100 -> 66\\n');
 `;
 
@@ -72,6 +73,7 @@ try {
   assert.equal(paths.includes('dist/index.d.ts'), true);
   assert.equal(paths.includes('dist/adapters/near-intents/index.js'), true);
   assert.equal(paths.includes('DATA_NOTICE.md'), true);
+  assert.equal(paths.includes('CHANGELOG.md'), true);
 
   const consumer = join(temporary, 'consumer');
   await mkdir(consumer);

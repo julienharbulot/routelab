@@ -11,13 +11,27 @@ import type {
   SyntheticRequestTopology,
 } from '../../verification/synthetic-request-corpus/index.ts';
 
-export type BenchmarkProfile = QuoteEffort | 'reference';
+export type BenchmarkProfile = QuoteEffort | 'large-budget';
 export type BenchmarkStrategy =
   | 'best-single'
   | 'greedy-split'
   | 'numerical-split'
-  | 'bounded-reference';
+  | 'large-budget-comparison';
 export type AggregateDimension = 'overall' | 'amountBucket' | 'topology';
+
+export type BenchmarkCounter =
+  | 'pathExpansions'
+  | 'candidateSetExpansions'
+  | 'greedyOptionReplays'
+  | 'finalAuthorizationReplays'
+  | 'numericalProposals'
+  | 'numericalIterations'
+  | 'numericalAuthorizationReplays';
+
+export interface CounterPercentiles {
+  readonly p50: number | null;
+  readonly p95: number | null;
+}
 
 export interface PortfolioCase {
   readonly caseId: string;
@@ -54,10 +68,12 @@ export interface ExactBenchmarkQuote {
   }[];
   readonly termination: string;
   readonly work: Readonly<Record<string, number>>;
-  readonly numericalProposals: number;
+  readonly numericalProposalAttemptedCount: number;
+  readonly numericalProposalConvergedCount: number;
+  readonly numericalProposalFailedCount: number;
   readonly numericalIterations: number;
-  readonly numericalProposalFailures: number;
-  readonly numericalConverged: boolean | null;
+  readonly allProposalsConverged: boolean | null;
+  readonly numericalImprovementSelected: boolean;
   readonly authorizationRejections: number;
   readonly planFingerprint: string;
 }
@@ -75,10 +91,10 @@ export interface QualityRow {
   readonly outcome: 'quote' | 'no-route';
   readonly amountIn: string;
   readonly amountOut: string | null;
-  readonly referenceAmountOut: string | null;
+  readonly largeBudgetAmountOut: string | null;
   readonly comparisonAmountOut: string | null;
   readonly exactReplayPassed: boolean;
-  readonly exactReferenceEquality: boolean;
+  readonly exactLargeBudgetEquality: boolean;
   readonly regretPpm: number | null;
   readonly within1Bps: boolean;
   readonly within10Bps: boolean;
@@ -91,12 +107,14 @@ export interface QualityRow {
   readonly hopCount: number;
   readonly termination: string;
   readonly work: Readonly<Record<string, number>>;
-  readonly numericalProposals: number;
+  readonly numericalProposalAttemptedCount: number;
+  readonly numericalProposalConvergedCount: number;
+  readonly numericalProposalFailedCount: number;
   readonly numericalIterations: number;
-  readonly numericalProposalFailures: number;
-  readonly numericalConverged: boolean | null;
+  readonly allProposalsConverged: boolean | null;
+  readonly numericalImprovementSelected: boolean;
   readonly authorizationRejections: number;
-  readonly referenceBeaten: boolean;
+  readonly largeBudgetBeaten: boolean;
   readonly planFingerprint: string | null;
   readonly routes: readonly SerializedBenchmarkRoute[];
 }
@@ -110,7 +128,7 @@ export interface QualityAggregate {
   readonly quoteCount: number;
   readonly noRouteCount: number;
   readonly exactReplaySuccessCount: number;
-  readonly exactReferenceEqualityCount: number;
+  readonly exactLargeBudgetEqualityCount: number;
   readonly regretP50Ppm: number | null;
   readonly regretP90Ppm: number | null;
   readonly regretP95Ppm: number | null;
@@ -124,14 +142,15 @@ export interface QualityAggregate {
   readonly splitImprovementRatePpm: number | null;
   readonly medianImprovementPpm: number | null;
   readonly maximumImprovementPpm: number | null;
-  readonly workP50: number | null;
-  readonly workP95: number | null;
+  readonly counterPercentiles: Readonly<Record<BenchmarkCounter, CounterPercentiles>>;
   readonly authorizationRejectionCount: number;
-  readonly numericalProposalFailureCount: number;
+  readonly numericalProposalAttemptedCount: number;
+  readonly numericalProposalConvergedCount: number;
+  readonly numericalProposalFailedCount: number;
   readonly numericalRequestCount: number;
-  readonly numericalConvergedCount: number;
-  readonly numericalConvergenceRatePpm: number | null;
-  readonly referenceBeatenCount: number;
+  readonly allProposalsConvergedRequestCount: number;
+  readonly exactNumericalImprovementSelectedCount: number;
+  readonly largeBudgetBeatenCount: number;
 }
 
 export interface NumericalComparison {
@@ -144,7 +163,6 @@ export interface NumericalComparison {
   readonly losesGreedy: number;
   readonly medianPositiveImprovementPpm: number | null;
   readonly maximumPositiveImprovementPpm: number | null;
-  readonly totalAdditionalWork: number;
 }
 
 export interface LatencyDistribution {
@@ -207,7 +225,7 @@ export interface BenchmarkSummary {
       readonly strategy: 'best-single' | 'greedy-split' | 'numerical-split';
       readonly profile: QuoteEffort;
     }[];
-    readonly comparisonRule: 'best-observed-across-fixed-modes-including-bounded-reference';
+    readonly comparisonRule: 'best-observed-exact-output-across-all-fixed-modes';
   };
   readonly digests: {
     readonly requestOrderSha256: string;
@@ -218,9 +236,9 @@ export interface BenchmarkSummary {
   readonly quality: {
     readonly rowCount: number;
     readonly exactReplaySuccessCount: number;
-    readonly referenceBeatenCount: number;
-    readonly referenceBeatenRequestCount: number;
-    readonly referenceBeatenByMode: readonly {
+    readonly largeBudgetBeatenCount: number;
+    readonly largeBudgetBeatenRequestCount: number;
+    readonly largeBudgetBeatenByMode: readonly {
       readonly strategy: BenchmarkStrategy;
       readonly profile: BenchmarkProfile;
       readonly count: number;

@@ -16,6 +16,7 @@ import {
 } from '../src/service/index.ts';
 import { parseServiceQuote } from '../src/service/parse.ts';
 import { createWorkerQuoteExecutor } from '../src/service/worker-pool.ts';
+import { parseSerializedQuote } from '../src/service/serialized-quote.ts';
 import type { ServiceExecutionResult, ServiceSnapshot } from '../src/service/types.ts';
 
 function wireSnapshot(): unknown {
@@ -189,6 +190,32 @@ void test('successful quote returns exact strings, routes, timing, fingerprint, 
     assert.equal(Object.hasOwn(log, 'amountIn'), false);
     assert.equal(Object.hasOwn(log, 'routes'), false);
   });
+});
+
+void test('worker quote boundary rejects malformed required serialized fields', () => {
+  const fixture = preparedFixture();
+  const result = quote(fixture.snapshot.context, {
+    snapshotId: fixture.snapshot.snapshotId,
+    assetIn: 'A',
+    assetOut: 'B',
+    amountIn: 100n,
+  });
+  if (!result.ok) throw new Error('Serialized worker fixture quote failed.');
+  const valid = serializeQuote(result.value);
+  assert.deepEqual(parseSerializedQuote(valid), valid);
+  const firstRoute = valid.routes[0];
+  if (firstRoute === undefined) throw new Error('Serialized worker fixture has no route.');
+  const malformed: unknown[] = [
+    { ...valid, schemaVersion: 'wrong' },
+    { ...valid, snapshotChecksum: 'wrong' },
+    { ...valid, amountOut: '01' },
+    { ...valid, routes: [] },
+    { ...valid, routes: [{ ...firstRoute, hops: [] }] },
+    { ...valid, termination: 'unknown' },
+    { ...valid, planFingerprint: 'wrong' },
+    { ...valid, timing: { elapsedMicros: -1 } },
+  ];
+  assert.equal(malformed.every((value) => parseSerializedQuote(value) === undefined), true);
 });
 
 void test('rejects malformed JSON and never exposes a stack trace', async () => {

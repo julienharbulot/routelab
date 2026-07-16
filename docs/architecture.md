@@ -126,8 +126,11 @@ export interface ValidatedQuote {
     readonly work: Readonly<Record<string, number>>;
     readonly pathExpansions: number;
     readonly candidateSetExpansions: number;
+    readonly numericalProposals: number;
+    readonly numericalConvergedProposals: number;
+    readonly numericalFailedProposals: number;
     readonly numericalIterations: number;
-    readonly numericalConverged: boolean | null;
+    readonly allProposalsConverged: boolean | null;
     readonly numericalOutcome: 'improved' | 'not-better' | 'failed' | 'stopped' | 'not-applicable';
     readonly authorizationRejections: number;
   };
@@ -140,7 +143,7 @@ export type QuoteResult =
 
 `RoutingContext` should be nominal or otherwise opaque so callers cannot fabricate one.
 
-`quote()` remains synchronous and CPU-bound. The HTTP boundary has a fixed worker pool: each worker prepares immutable snapshots once, messages carry canonical decimal strings, and the main server retains bounded admission and queue/deadline policy. The worker implementation remains available, but its retention decision awaits a same-run comparison; the current retained service report is a clean-source same-thread baseline.
+`quote()` remains synchronous and CPU-bound. The HTTP boundary can use a fixed worker pool: each worker prepares immutable snapshots once, messages carry canonical decimal strings, worker results pass a bounded required-field parser and request/snapshot match, and the main server retains bounded admission and queue/deadline policy. The retained service report records the predeclared same-run retention decision and its memory tradeoff.
 
 The default is `greedy-split` with `balanced` effort. Numerical routing is explicit and benchmarked.
 

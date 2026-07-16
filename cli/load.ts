@@ -4,8 +4,8 @@ const args = process.argv.slice(2).filter((value) => value !== '--');
 const smoke = args.includes('--smoke');
 const modeIndex = args.indexOf('--mode');
 const rawMode = modeIndex === -1 ? 'same-thread' : args[modeIndex + 1];
-if (rawMode !== 'same-thread' && rawMode !== 'worker') {
-  throw new Error('--mode must be same-thread or worker.');
+if (rawMode !== 'same-thread' && rawMode !== 'worker' && rawMode !== 'compare') {
+  throw new Error('--mode must be same-thread, worker, or compare.');
 }
 const concurrencyIndex = args.indexOf('--concurrency');
 const rawConcurrency = concurrencyIndex === -1
@@ -29,6 +29,25 @@ for (const row of report.rows) {
     `throughput=${row.throughputPerSecond.toFixed(1)}/s\n`,
   );
 }
+for (const row of report.deadlineSweep) {
+  process.stdout.write(
+    `deadline=${row.deadlineMs}ms requests=${row.requests} ` +
+    `complete=${row.classifications['complete-exact-quote']} ` +
+    `incumbent=${row.classifications['validated-deadline-incumbent']} ` +
+    `beforePlan=${row.classifications['deadline-before-plan']} ` +
+    `overload=${row.classifications.overload} timeout=${row.classifications['client-timeout']} ` +
+    `failure=${row.classifications['schema-or-internal-failure']}\n`,
+  );
+}
+if (report.overloadBurst !== null) {
+  process.stdout.write(
+    `overload burst requests=${report.overloadBurst.requests} ` +
+    `accepted=${report.overloadBurst.acceptedCount} ` +
+    `overloaded=${report.overloadBurst.overloadedCount} ` +
+    `retryAfter=${report.overloadBurst.retryAfterCount}\n`,
+  );
+}
+process.stdout.write(`worker decision=${report.workerDecision.decision}\n`);
 process.stdout.write(smoke
   ? 'load smoke passed; raw smoke observations are ignored\n'
   : 'wrote reports/service-v2.{md,summary.json}, reports/service-latency.svg; raw observations are ignored\n');

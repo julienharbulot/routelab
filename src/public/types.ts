@@ -57,8 +57,10 @@ export interface QuoteDiagnostics {
   readonly pathExpansions: number;
   readonly candidateSetExpansions: number;
   readonly numericalProposals: number;
+  readonly numericalConvergedProposals: number;
+  readonly numericalFailedProposals: number;
   readonly numericalIterations: number;
-  readonly numericalConverged: boolean | null;
+  readonly allProposalsConverged: boolean | null;
   readonly numericalFailures: number;
   readonly numericalOutcome: 'improved' | 'not-better' | 'failed' | 'stopped' | 'not-applicable';
   readonly authorizationRejections: number;

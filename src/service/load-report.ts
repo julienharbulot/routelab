@@ -1,4 +1,4 @@
-import type { ServiceLoadReport, ServiceLoadRow } from './load.ts';
+import type { DeadlineLoadRow, ServiceLoadReport, ServiceLoadRow } from './load-types.ts';
 
 function milliseconds(value: number | null): string {
   return value === null ? 'n/a' : (value / 1_000).toFixed(2);
@@ -32,6 +32,23 @@ function counts(value: Readonly<Record<string, number>>): string {
     : entries.map(([key, count]) => `${key}:${count}`).join(', ');
 }
 
+function deadlineLatency(value: DeadlineLoadRow['completeQuoteLatency']): string {
+  return value === null
+    ? 'n/a'
+    : `${milliseconds(value.p50Micros)}/${milliseconds(value.p95Micros)}/${milliseconds(value.p99Micros)}`;
+}
+
+function deadlineTable(report: ServiceLoadReport): string {
+  if (report.deadlineSweep.length === 0) return 'Not measured in this run.';
+  return [
+    '| Deadline | Requests | Complete/deadline incumbent/before plan/overload/timeout/failure | Exact valid | Complete p50/p95/p99 ms | Deadline incumbent p50/p95/p99 ms | Error p50/p95/p99 ms |',
+    '|---:|---:|---:|---:|---:|---:|---:|',
+    ...report.deadlineSweep.map((value) =>
+      `| ${value.deadlineMs} ms | ${value.requests} | ${value.classifications['complete-exact-quote']}/${value.classifications['validated-deadline-incumbent']}/${value.classifications['deadline-before-plan']}/${value.classifications.overload}/${value.classifications['client-timeout']}/${value.classifications['schema-or-internal-failure']} | ${value.exactValidationCount} | ${deadlineLatency(value.completeQuoteLatency)} | ${deadlineLatency(value.deadlineIncumbentLatency)} | ${deadlineLatency(value.errorResponseLatency)} |`
+    ),
+  ].join('\n');
+}
+
 export function renderServiceMarkdown(report: ServiceLoadReport): string {
   const rows = report.rows.map((row) =>
     `| ${row.mode} | ${row.concurrency} | ${row.requests} | ${row.completed}/${row.typedErrors}/${row.timedOut}/${row.responseSchemaFailures} | ${successful(row)} | ${errorLatency(row)} | ${row.throughputPerSecond.toFixed(1)} | ${row.exactOutputPresenceCount}/${row.fingerprintPresenceCount}/${row.semanticMatchCount} | ${row.deadlineCompletionRatePpm === null ? 'n/a' : `${(row.deadlineCompletionRatePpm / 10_000).toFixed(2)}%`} | ${service(row)} | ${(row.server.eventLoopDelayP95Micros / 1_000).toFixed(2)}/${(row.server.eventLoopDelayMaxMicros / 1_000).toFixed(2)} | ${row.server.admissionAcceptedCount}/${row.server.admissionRejectedCount}/${row.server.overloadCount} | ${row.server.maximumActiveWork}/${row.server.maximumQueuedWork} | ${counts(row.server.terminationCounts)} | ${counts(row.server.routeCountCounts)} | ${(row.server.initialRssBytes / 1_048_576).toFixed(1)}/${(row.server.peakRssBytes / 1_048_576).toFixed(1)}/${(row.server.finalRssBytes / 1_048_576).toFixed(1)} | ${(row.server.initialHeapUsedBytes / 1_048_576).toFixed(1)}/${(row.server.peakHeapUsedBytes / 1_048_576).toFixed(1)}/${(row.server.finalHeapUsedBytes / 1_048_576).toFixed(1)} |`,
@@ -54,11 +71,29 @@ export function renderServiceMarkdown(report: ServiceLoadReport): string {
     '',
     `Decision: **${report.workerDecision.decision}**. ${report.workerDecision.reason}`,
     '',
+    report.workerDecision.gate === null
+      ? 'The frozen gate was not evaluated.'
+      : `Frozen gate measurements: semantic/schema=${report.workerDecision.gate.semanticAndSchemaRegressionFree}; tail=${report.workerDecision.gate.tailLatencyMetric ?? 'n/a'} ${report.workerDecision.gate.tailLatencyImprovementPpm ?? 'n/a'} ppm; event-loop max=${report.workerDecision.gate.eventLoopMaxImprovementPpm ?? 'n/a'} ppm; c16 throughput ratio=${report.workerDecision.gate.concurrency16ThroughputRatioPpm ?? 'n/a'} ppm; c1 p50 overhead=${report.workerDecision.gate.concurrency1P50OverheadMicros ?? 'n/a'} µs; no lost requests=${report.workerDecision.gate.noLostRequests}; memory reported=${report.workerDecision.gate.memoryReported}.`,
+    '',
+    'The frozen retention thresholds are: no semantic/schema regression; at least 25% c16 p95 or p99 improvement, or at least 50% event-loop max improvement; c16 throughput at least 90% of baseline; c1 p50 overhead no more than 2 ms; no lost requests; and reported memory cost.',
+    '',
+    '## Deadline sweep',
+    '',
+    deadlineTable(report),
+    '',
+    'Deadline outcomes are classified separately from the normal successful-latency distribution. Every complete or deadline-incumbent quote counted above passed exact replay and fingerprint validation in the load-generator process.',
+    '',
+    '## Bounded overload burst',
+    '',
+    report.overloadBurst === null
+      ? 'Not measured in this run.'
+      : `The deterministic ${report.overloadBurst.requests}-request burst exceeded ${report.overloadBurst.activeCapacity} active plus ${report.overloadBurst.queueCapacity} queued work slots: ${report.overloadBurst.acceptedCount} were accepted and exactly validated, ${report.overloadBurst.overloadedCount} received typed 503 overloaded responses, and all ${report.overloadBurst.retryAfterCount} overload responses carried Retry-After. Maximum observed queue depth was ${report.overloadBurst.server.maximumQueuedWork}.`,
+    '',
     '## Method and limitations',
     '',
     'The load-generator process owns concurrency scheduling, client timeouts, end-to-end latency, response validation, and client aggregation. The server child alone owns admission, structured completion logs, quote execution, event-loop delay, and server memory metrics.',
     '',
-    `Each retained row rotates all ${report.configuration.caseCount} requests in deterministic corpus order, uses ${report.configuration.warmupsPerConcurrency} warmups and ${report.configuration.requestsPerConcurrency} measured requests, ${report.configuration.strategy}/${report.configuration.effort}, a ${report.configuration.quoteDeadlineMs} ms end-to-end quote deadline, and a ${report.configuration.requestTimeoutMs} ms client timeout. Successful and error-response latency are separate; p99 is omitted below 1,000 observations. Server event-loop and memory metrics come only from the server process.`,
+    `Each normal retained row rotates all ${report.configuration.caseCount} requests in deterministic corpus order, uses ${report.configuration.warmupsPerConcurrency} warmups and ${report.configuration.requestsPerConcurrency} measured requests, ${report.configuration.strategy}/${report.configuration.effort}, a ${report.configuration.quoteDeadlineMs} ms end-to-end quote deadline, and a ${report.configuration.requestTimeoutMs} ms client timeout. Same-thread is shut down before worker mode starts; no prior report is read as a baseline. Successful and error-response latency are separate; p99 is omitted below 1,000 observations. Server event-loop and memory metrics come only from the server process.`,
     '',
     'The requests are synthetic exact-input requests derived from one historical pool-reserve snapshot, not historical order flow or representative demand. This local result is not a production-capacity or statistical-significance claim. No live upstream, transaction submission, signing, custody, execution, or settlement is involved.',
     '',

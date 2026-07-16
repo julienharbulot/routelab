@@ -4,7 +4,7 @@ import {
   type NumericalExactInputSplitWorkCounters,
 } from '../../router/numerical-exact-input-split/index.ts';
 import { replayPreparedExactInputSplit } from '../../runtime/prepared-routing-context/index.ts';
-import { REFERENCE_PROFILE } from './config.ts';
+import { LARGE_BUDGET_PROFILE } from './config.ts';
 import type {
   ExactBenchmarkOutcome,
   PortfolioCase,
@@ -15,7 +15,7 @@ function counter(counters: NumericalExactInputSplitWorkCounters, field: string):
   return typeof value === 'number' ? value : 0;
 }
 
-export function runReference(input: PortfolioCase): ExactBenchmarkOutcome {
+export function runLargeBudgetComparison(input: PortfolioCase): ExactBenchmarkOutcome {
   const result = routeExactInputSplitNumericalAnytime(input.prepared, {
     snapshotId: input.snapshot.snapshotId,
     snapshotChecksum: input.snapshot.snapshotChecksum,
@@ -24,9 +24,9 @@ export function runReference(input: PortfolioCase): ExactBenchmarkOutcome {
     amountIn: input.request.amountIn,
     maxHops: input.request.maxHops ?? 3,
     maxRoutes: input.request.maxRoutes ?? 3,
-    greedyParts: REFERENCE_PROFILE.greedyParts,
-    numerical: REFERENCE_PROFILE.numerical,
-  }, { workCaps: REFERENCE_PROFILE.workCaps });
+    greedyParts: LARGE_BUDGET_PROFILE.greedyParts,
+    numerical: LARGE_BUDGET_PROFILE.numerical,
+  }, { workCaps: LARGE_BUDGET_PROFILE.workCaps });
   if (result.status === 'no-route') return Object.freeze({ outcome: 'no-route' });
   if (result.status !== 'success') {
     throw new Error(`Reference failed for ${input.caseId}: ${result.status}.`);
@@ -48,7 +48,7 @@ export function runReference(input: PortfolioCase): ExactBenchmarkOutcome {
     })),
   });
   if (!authorization.ok) {
-    throw new Error(`Fresh reference replay rejected ${input.caseId}.`);
+    throw new Error(`Fresh large-budget comparison replay rejected ${input.caseId}.`);
   }
   const counters = result.plan.search.counters;
   const diagnostics = result.plan.search.numericalDiagnostics;
@@ -76,10 +76,18 @@ export function runReference(input: PortfolioCase): ExactBenchmarkOutcome {
     }))),
     termination: result.plan.search.termination,
     work: Object.freeze({ ...counters }),
-    numericalProposals: counters.numericalProposals,
+    numericalProposalAttemptedCount: counters.numericalProposals,
+    numericalProposalConvergedCount: diagnostics.filter(
+      ({ counters: value, converged }) => value.numericalProposals > 0 && converged,
+    ).length,
+    numericalProposalFailedCount: counters.numericalProposals - diagnostics.filter(
+      ({ counters: value, converged }) => value.numericalProposals > 0 && converged,
+    ).length,
     numericalIterations: counters.numericalIterations,
-    numericalProposalFailures: counters.numericalProposalFailures,
-    numericalConverged: diagnostics.length > 0 && diagnostics.every(({ converged }) => converged),
+    allProposalsConverged: counters.numericalProposals > 0 && diagnostics
+      .filter(({ counters: value }) => value.numericalProposals > 0)
+      .every(({ converged }) => converged),
+    numericalImprovementSelected: diagnostics.some(({ status }) => status === 'improved'),
     authorizationRejections:
       counters.finalAuthorizationRejections +
       counter(counters, 'numericalAuthorizationReplayRejections'),

@@ -2,9 +2,10 @@ import { createHash } from 'node:crypto';
 
 import { quote, type QuoteEffort, type QuoteStrategy, type ValidatedQuote } from '../../index.ts';
 import { PUBLIC_EFFORTS, QUALITY_MODES } from './config.ts';
-import { runReference } from './reference.ts';
+import { runLargeBudgetComparison } from './reference.ts';
 import type {
   AggregateDimension,
+  BenchmarkCounter,
   BenchmarkProfile,
   BenchmarkStrategy,
   ExactBenchmarkOutcome,
@@ -35,10 +36,6 @@ function publicOutcome(
   return Object.freeze({ outcome: 'quote', value: fromPublicQuote(result.value) });
 }
 
-function numericWork(value: Readonly<Record<string, number>>, key: string): number {
-  return value[key] ?? 0;
-}
-
 function fromPublicQuote(value: ValidatedQuote): ExactBenchmarkQuote {
   const work = value.diagnostics?.work ?? Object.freeze({});
   return Object.freeze({
@@ -54,10 +51,12 @@ function fromPublicQuote(value: ValidatedQuote): ExactBenchmarkQuote {
     }))),
     termination: value.termination,
     work,
-    numericalProposals: value.diagnostics?.numericalProposals ?? 0,
+    numericalProposalAttemptedCount: value.diagnostics?.numericalProposals ?? 0,
+    numericalProposalConvergedCount: value.diagnostics?.numericalConvergedProposals ?? 0,
+    numericalProposalFailedCount: value.diagnostics?.numericalFailedProposals ?? 0,
     numericalIterations: value.diagnostics?.numericalIterations ?? 0,
-    numericalProposalFailures: numericWork(work, 'numericalProposalFailures'),
-    numericalConverged: value.diagnostics?.numericalConverged ?? null,
+    allProposalsConverged: value.diagnostics?.allProposalsConverged ?? null,
+    numericalImprovementSelected: value.numericalImprovementSelected ?? false,
     authorizationRejections: value.diagnostics?.authorizationRejections ?? 0,
     planFingerprint: value.planFingerprint,
   });
@@ -95,7 +94,7 @@ function row(
   profile: BenchmarkProfile,
   outcome: ExactBenchmarkOutcome,
   bestSingle: bigint | null,
-  reference: bigint | null,
+  largeBudget: bigint | null,
   comparison: bigint | null,
 ): QualityRow {
   if (outcome.outcome === 'no-route') {
@@ -108,10 +107,10 @@ function row(
       outcome: 'no-route',
       amountIn: input.request.amountIn.toString(10),
       amountOut: null,
-      referenceAmountOut: reference?.toString(10) ?? null,
+      largeBudgetAmountOut: largeBudget?.toString(10) ?? null,
       comparisonAmountOut: comparison?.toString(10) ?? null,
       exactReplayPassed: false,
-      exactReferenceEquality: reference === null,
+      exactLargeBudgetEquality: largeBudget === null,
       regretPpm: null,
       within1Bps: false,
       within10Bps: false,
@@ -124,12 +123,14 @@ function row(
       hopCount: 0,
       termination: 'no-route',
       work: Object.freeze({}),
-      numericalProposals: 0,
+      numericalProposalAttemptedCount: 0,
+      numericalProposalConvergedCount: 0,
+      numericalProposalFailedCount: 0,
       numericalIterations: 0,
-      numericalProposalFailures: 0,
-      numericalConverged: null,
+      allProposalsConverged: null,
+      numericalImprovementSelected: false,
       authorizationRejections: 0,
-      referenceBeaten: false,
+      largeBudgetBeaten: false,
       planFingerprint: null,
       routes: Object.freeze([]),
     });
@@ -147,10 +148,10 @@ function row(
     outcome: 'quote',
     amountIn: input.request.amountIn.toString(10),
     amountOut: value.amountOut.toString(10),
-    referenceAmountOut: reference?.toString(10) ?? null,
+    largeBudgetAmountOut: largeBudget?.toString(10) ?? null,
     comparisonAmountOut: comparison.toString(10),
     exactReplayPassed: true,
-    exactReferenceEquality: reference !== null && value.amountOut === reference,
+    exactLargeBudgetEquality: largeBudget !== null && value.amountOut === largeBudget,
     regretPpm: regretPpm(value.amountOut, comparison),
     within1Bps: withinBps(value.amountOut, comparison, 1),
     within10Bps: withinBps(value.amountOut, comparison, 10),
@@ -165,12 +166,14 @@ function row(
     hopCount: value.routes.reduce((sum, route) => sum + route.hops.length, 0),
     termination: value.termination,
     work: value.work,
-    numericalProposals: value.numericalProposals,
+    numericalProposalAttemptedCount: value.numericalProposalAttemptedCount,
+    numericalProposalConvergedCount: value.numericalProposalConvergedCount,
+    numericalProposalFailedCount: value.numericalProposalFailedCount,
     numericalIterations: value.numericalIterations,
-    numericalProposalFailures: value.numericalProposalFailures,
-    numericalConverged: value.numericalConverged,
+    allProposalsConverged: value.allProposalsConverged,
+    numericalImprovementSelected: value.numericalImprovementSelected,
     authorizationRejections: value.authorizationRejections,
-    referenceBeaten: reference !== null && value.amountOut > reference,
+    largeBudgetBeaten: largeBudget !== null && value.amountOut > largeBudget,
     planFingerprint: value.planFingerprint,
     routes: serializedRoutes(value),
   });
@@ -191,15 +194,15 @@ export function runQuality(cases: readonly PortfolioCase[]): readonly QualityRow
   for (const input of cases) {
     const outcomes = new Map<string, ExactBenchmarkOutcome>();
     for (const mode of QUALITY_MODES) {
-      const outcome = mode.strategy === 'bounded-reference'
-        ? runReference(input)
+      const outcome = mode.strategy === 'large-budget-comparison'
+        ? runLargeBudgetComparison(input)
         : publicOutcome(input, mode.strategy, mode.profile as QuoteEffort);
       assertExpected(input, outcome, `${mode.strategy}/${mode.profile}`);
       outcomes.set(`${mode.strategy}\0${mode.profile}`, outcome);
     }
     const bestOutcome = outcomes.get('best-single\0fast');
-    const referenceOutcome = outcomes.get('bounded-reference\0reference');
-    if (bestOutcome === undefined || referenceOutcome === undefined) {
+    const largeBudgetOutcome = outcomes.get('large-budget-comparison\0large-budget');
+    if (bestOutcome === undefined || largeBudgetOutcome === undefined) {
       throw new Error(`Benchmark modes are incomplete for ${input.caseId}.`);
     }
     const outputs = [...outcomes.values()].flatMap((outcome) => {
@@ -211,7 +214,7 @@ export function runQuality(cases: readonly PortfolioCase[]): readonly QualityRow
       null,
     );
     const bestSingle = exactOutput(bestOutcome);
-    const reference = exactOutput(referenceOutcome);
+    const largeBudget = exactOutput(largeBudgetOutcome);
     for (const mode of QUALITY_MODES) {
       const outcome = outcomes.get(`${mode.strategy}\0${mode.profile}`);
       if (outcome === undefined) throw new Error('Benchmark mode result disappeared.');
@@ -221,7 +224,7 @@ export function runQuality(cases: readonly PortfolioCase[]): readonly QualityRow
         mode.profile,
         outcome,
         bestSingle,
-        reference,
+        largeBudget,
         comparison,
       ));
     }
@@ -240,8 +243,26 @@ function ratePpm(numerator: number, denominator: number): number | null {
   return Number(BigInt(numerator) * ONE_MILLION / BigInt(denominator));
 }
 
-export function workTotal(rowValue: QualityRow): number {
-  return Object.values(rowValue.work).reduce((sum, value) => sum + value, 0);
+export const BENCHMARK_COUNTERS: readonly BenchmarkCounter[] = Object.freeze([
+  'pathExpansions',
+  'candidateSetExpansions',
+  'greedyOptionReplays',
+  'finalAuthorizationReplays',
+  'numericalProposals',
+  'numericalIterations',
+  'numericalAuthorizationReplays',
+]);
+
+function counterPercentiles(
+  rows: readonly QualityRow[],
+): QualityAggregate['counterPercentiles'] {
+  return Object.freeze(Object.fromEntries(BENCHMARK_COUNTERS.map((counter) => [
+    counter,
+    Object.freeze({
+      p50: percentile(rows.map((value) => value.work[counter] ?? 0), 0.50),
+      p95: percentile(rows.map((value) => value.work[counter] ?? 0), 0.95),
+    }),
+  ]))) as QualityAggregate['counterPercentiles'];
 }
 
 interface Group {
@@ -283,8 +304,7 @@ export function aggregateQuality(rows: readonly QualityRow[]): readonly QualityA
           ? []
           : [value.improvementOverBestSinglePpm]
       );
-      const work = quotes.map(workTotal);
-      const numerical = quotes.filter((value) => value.numericalConverged !== null);
+      const numerical = quotes.filter((value) => value.allProposalsConverged !== null);
       aggregates.push(Object.freeze({
         dimension: group.dimension,
         group: group.group,
@@ -294,7 +314,8 @@ export function aggregateQuality(rows: readonly QualityRow[]): readonly QualityA
         quoteCount: quotes.length,
         noRouteCount: selected.length - quotes.length,
         exactReplaySuccessCount: quotes.filter((value) => value.exactReplayPassed).length,
-        exactReferenceEqualityCount: quotes.filter((value) => value.exactReferenceEquality).length,
+        exactLargeBudgetEqualityCount:
+          quotes.filter((value) => value.exactLargeBudgetEquality).length,
         regretP50Ppm: percentile(regret, 0.50),
         regretP90Ppm: percentile(regret, 0.90),
         regretP95Ppm: percentile(regret, 0.95),
@@ -320,23 +341,29 @@ export function aggregateQuality(rows: readonly QualityRow[]): readonly QualityA
         ),
         medianImprovementPpm: percentile(improvement, 0.50),
         maximumImprovementPpm: improvement.length === 0 ? null : Math.max(...improvement),
-        workP50: percentile(work, 0.50),
-        workP95: percentile(work, 0.95),
+        counterPercentiles: counterPercentiles(quotes),
         authorizationRejectionCount: quotes.reduce(
           (sum, value) => sum + value.authorizationRejections,
           0,
         ),
-        numericalProposalFailureCount: quotes.reduce(
-          (sum, value) => sum + value.numericalProposalFailures,
+        numericalProposalAttemptedCount: quotes.reduce(
+          (sum, value) => sum + value.numericalProposalAttemptedCount,
+          0,
+        ),
+        numericalProposalConvergedCount: quotes.reduce(
+          (sum, value) => sum + value.numericalProposalConvergedCount,
+          0,
+        ),
+        numericalProposalFailedCount: quotes.reduce(
+          (sum, value) => sum + value.numericalProposalFailedCount,
           0,
         ),
         numericalRequestCount: numerical.length,
-        numericalConvergedCount: numerical.filter((value) => value.numericalConverged).length,
-        numericalConvergenceRatePpm: ratePpm(
-          numerical.filter((value) => value.numericalConverged).length,
-          numerical.length,
-        ),
-        referenceBeatenCount: quotes.filter((value) => value.referenceBeaten).length,
+        allProposalsConvergedRequestCount:
+          numerical.filter((value) => value.allProposalsConverged).length,
+        exactNumericalImprovementSelectedCount:
+          quotes.filter((value) => value.numericalImprovementSelected).length,
+        largeBudgetBeatenCount: quotes.filter((value) => value.largeBudgetBeaten).length,
       }));
     }
   }
@@ -367,11 +394,9 @@ export function compareNumerical(rows: readonly QualityRow[]): readonly Numerica
       let beatsGreedy = 0;
       let tiesGreedy = 0;
       let losesGreedy = 0;
-      let totalAdditionalWork = 0;
       const improvements: number[] = [];
       for (const numerical of selected) {
         const greedy = rowFor(rows, numerical.caseId, 'greedy-split', profile);
-        totalAdditionalWork += workTotal(numerical) - workTotal(greedy);
         if (numerical.amountOut === null || greedy.amountOut === null) {
           if (numerical.amountOut === greedy.amountOut) tiesGreedy += 1;
           else if (numerical.amountOut === null) losesGreedy += 1;
@@ -401,7 +426,6 @@ export function compareNumerical(rows: readonly QualityRow[]): readonly Numerica
         maximumPositiveImprovementPpm: improvements.length === 0
           ? null
           : Math.max(...improvements),
-        totalAdditionalWork,
       }));
     }
   }

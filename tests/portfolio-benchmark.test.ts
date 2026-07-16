@@ -11,18 +11,19 @@ import {
   benchmarkProfileConfiguration,
   LATENCY_COMBINATIONS,
   QUALITY_MODES,
-  REFERENCE_PROFILE,
+  LARGE_BUDGET_PROFILE,
 } from '../src/benchmark/portfolio/config.ts';
 import { runLatency } from '../src/benchmark/portfolio/latency.ts';
 import {
   aggregateQuality,
+  BENCHMARK_COUNTERS,
   canonicalDigest,
   compareNumerical,
   runQuality,
 } from '../src/benchmark/portfolio/quality.ts';
 import {
   renderMarkdown,
-  renderQualityVsWorkSvg,
+  renderQualityByEffortSvg,
   renderRegretDistributionSvg,
 } from '../src/benchmark/portfolio/report.ts';
 import type { BenchmarkSummary } from '../src/benchmark/portfolio/types.ts';
@@ -49,18 +50,18 @@ void test('portfolio-v2 uses the complete verified historical-snapshot-derived c
   assert.equal(loaded.cases.every(({ expectedOutcome }) => expectedOutcome === 'quote'), true);
 });
 
-void test('public and bounded reference profiles are frozen with sufficient latency samples', () => {
+void test('public and large-budget profiles are frozen with sufficient latency samples', () => {
   const profiles = benchmarkProfileConfiguration() as Record<string, {
     readonly greedyParts: number;
     readonly workCaps: { readonly maxNumericalIterations: number };
   }>;
-  assert.deepEqual(Object.keys(profiles), ['fast', 'balanced', 'thorough', 'reference']);
+  assert.deepEqual(Object.keys(profiles), ['fast', 'balanced', 'thorough', 'large-budget']);
   const thorough = profiles['thorough'];
   assert.notEqual(thorough, undefined);
   if (thorough === undefined) throw new Error('Missing thorough profile.');
-  assert.equal(REFERENCE_PROFILE.greedyParts > thorough.greedyParts, true);
+  assert.equal(LARGE_BUDGET_PROFILE.greedyParts > thorough.greedyParts, true);
   assert.equal(
-    REFERENCE_PROFILE.workCaps.maxNumericalIterations
+    LARGE_BUDGET_PROFILE.workCaps.maxNumericalIterations
       > thorough.workCaps.maxNumericalIterations,
     true,
   );
@@ -82,7 +83,14 @@ void test('quality rows are deterministic and reconcile across every required gr
     && row.routes.reduce((sum, route) => sum + BigInt(route.allocation), 0n)
       === selected.find((value) => value.caseId === row.caseId)?.request.amountIn
   ), true);
-  assert.equal(aggregateQuality(first).length, QUALITY_MODES.length * 6);
+  const aggregates = aggregateQuality(first);
+  assert.equal(aggregates.length, QUALITY_MODES.length * 6);
+  assert.equal(aggregates.every((value) =>
+    Object.keys(value.counterPercentiles).join(',') === BENCHMARK_COUNTERS.join(',')
+    && value.numericalProposalAttemptedCount
+      === value.numericalProposalConvergedCount + value.numericalProposalFailedCount
+    && value.allProposalsConvergedRequestCount <= value.numericalRequestCount
+  ), true);
   assert.equal(compareNumerical(first).length, 3 * 6);
   assert.equal(canonicalDigest(first), canonicalDigest(second));
 });
@@ -127,7 +135,7 @@ void test('Markdown and both SVGs state the evidence scope and axis semantics', 
       profiles: benchmarkProfileConfiguration(),
       qualityModes: QUALITY_MODES,
       latencyCombinations: LATENCY_COMBINATIONS,
-      comparisonRule: 'best-observed-across-fixed-modes-including-bounded-reference',
+      comparisonRule: 'best-observed-exact-output-across-all-fixed-modes',
     },
     digests: {
       requestOrderSha256: canonicalDigest([]),
@@ -138,11 +146,11 @@ void test('Markdown and both SVGs state the evidence scope and axis semantics', 
     quality: {
       rowCount: rows.length,
       exactReplaySuccessCount: rows.length,
-      referenceBeatenCount: rows.filter((value) => value.referenceBeaten).length,
-      referenceBeatenRequestCount: new Set(
-        rows.filter((value) => value.referenceBeaten).map((value) => value.caseId),
+      largeBudgetBeatenCount: rows.filter((value) => value.largeBudgetBeaten).length,
+      largeBudgetBeatenRequestCount: new Set(
+        rows.filter((value) => value.largeBudgetBeaten).map((value) => value.caseId),
       ).size,
-      referenceBeatenByMode: [],
+      largeBudgetBeatenByMode: [],
       aggregates,
       numericalComparisons,
     },
@@ -175,7 +183,11 @@ void test('Markdown and both SVGs state the evidence scope and axis semantics', 
   } satisfies BenchmarkSummary;
   assert.match(renderMarkdown(summary), /not historical orders/u);
   assert.match(renderMarkdown(summary), /fresh exact replay/u);
-  assert.match(renderQualityVsWorkSvg(summary), /Deterministic work \(p50 counters\)/u);
-  assert.match(renderQualityVsWorkSvg(summary), /lower is better/u);
+  assert.doesNotMatch(
+    `${renderMarkdown(summary)}\n${renderQualityByEffortSvg(summary)}`,
+    /bounded-reference|quality versus work|Work p50\/p95|Additional work|data-work=/u,
+  );
+  assert.match(renderQualityByEffortSvg(summary), /Effort profile \(categorical\)/u);
+  assert.match(renderQualityByEffortSvg(summary), /lower is better/u);
   assert.match(renderRegretDistributionSvg(summary), /higher is better/u);
 });

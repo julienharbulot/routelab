@@ -22,7 +22,7 @@ export const QUALITY_MODES: readonly {
   Object.freeze({ strategy: 'best-single', profile: 'fast' }),
   ...PUBLIC_EFFORTS.map((profile) => Object.freeze({ strategy: 'greedy-split' as const, profile })),
   ...PUBLIC_EFFORTS.map((profile) => Object.freeze({ strategy: 'numerical-split' as const, profile })),
-  Object.freeze({ strategy: 'bounded-reference', profile: 'reference' }),
+  Object.freeze({ strategy: 'large-budget-comparison', profile: 'large-budget' }),
 ]);
 
 export const LATENCY_COMBINATIONS: readonly {
@@ -36,7 +36,7 @@ export const LATENCY_COMBINATIONS: readonly {
   Object.freeze({ strategy: 'numerical-split', profile: 'balanced' }),
 ]);
 
-export interface ReferenceProfile {
+export interface LargeBudgetProfile {
   readonly greedyParts: number;
   readonly workCaps: NumericalExactInputSplitWorkCaps;
   readonly numerical: NumericalExactInputSplitConfiguration;
@@ -45,7 +45,7 @@ export interface ReferenceProfile {
 // One fixed profile, selected before observing PORT-008 results. It is deliberately
 // larger than the public thorough profile but remains bounded and uses the same
 // maxHops/maxRoutes restrictions as every public mode.
-export const REFERENCE_PROFILE: ReferenceProfile = Object.freeze({
+export const LARGE_BUDGET_PROFILE: LargeBudgetProfile = Object.freeze({
   greedyParts: 128,
   workCaps: Object.freeze({
     maxPathExpansions: 1_000_000,
@@ -84,6 +84,6 @@ export function benchmarkProfileConfiguration(): Readonly<Record<BenchmarkProfil
     fast: serializeProfile(profiles.fast),
     balanced: serializeProfile(profiles.balanced),
     thorough: serializeProfile(profiles.thorough),
-    reference: serializeProfile(REFERENCE_PROFILE),
+    'large-budget': serializeProfile(LARGE_BUDGET_PROFILE),
   });
 }

@@ -20,7 +20,7 @@ import {
 } from './quality.ts';
 import {
   renderMarkdown,
-  renderQualityVsWorkSvg,
+  renderQualityByEffortSvg,
   renderRegretDistributionSvg,
 } from './report.ts';
 import type { BenchmarkSummary, PortfolioCase, QualityRow } from './types.ts';
@@ -29,7 +29,7 @@ const DECIMAL = /^(?:0|[1-9][0-9]*)$/u;
 const COMMITTED_FILES = [
   'portfolio-v2.md',
   'portfolio-v2-summary.json',
-  'quality-vs-work.svg',
+  'quality-by-effort.svg',
   'historical-regret-distribution.svg',
 ] as const;
 
@@ -104,29 +104,29 @@ function verifyComparisonRule(rows: readonly QualityRow[], issues: string[]): vo
       const output = BigInt(value.amountOut as string);
       return current === null || output > current ? output : current;
     }, null);
-    const reference = selected.find((value) =>
-      value.strategy === 'bounded-reference' && value.profile === 'reference'
+    const largeBudget = selected.find((value) =>
+      value.strategy === 'large-budget-comparison' && value.profile === 'large-budget'
     );
-    const referenceOutput = reference?.amountOut ?? null;
+    const largeBudgetOutput = largeBudget?.amountOut ?? null;
     for (const row of selected) {
       if (row.comparisonAmountOut !== maximum?.toString(10)) {
         issues.push(`${caseId}: comparison output is not the best observed fixed-mode result.`);
         break;
       }
-      if (row.referenceAmountOut !== referenceOutput) {
-        issues.push(`${caseId}: bounded reference output does not reconcile.`);
+      if (row.largeBudgetAmountOut !== largeBudgetOutput) {
+        issues.push(`${caseId}: large-budget comparison output does not reconcile.`);
         break;
       }
       if (row.amountOut !== null) {
         const output = BigInt(row.amountOut);
-        if (row.exactReferenceEquality !== (row.amountOut === referenceOutput)) {
-          issues.push(`${caseId}: reference equality flag does not reconcile.`);
+        if (row.exactLargeBudgetEquality !== (row.amountOut === largeBudgetOutput)) {
+          issues.push(`${caseId}: large-budget equality flag does not reconcile.`);
           break;
         }
-        if (row.referenceBeaten !== (
-          referenceOutput !== null && output > BigInt(referenceOutput)
+        if (row.largeBudgetBeaten !== (
+          largeBudgetOutput !== null && output > BigInt(largeBudgetOutput)
         )) {
-          issues.push(`${caseId}: reference-beaten flag does not reconcile.`);
+          issues.push(`${caseId}: large-budget-beaten flag does not reconcile.`);
           break;
         }
       }
@@ -179,7 +179,7 @@ export async function verifyPortfolioBenchmark(root = process.cwd()): Promise<re
   }
   if (
     summary.configuration.comparisonRule
-    !== 'best-observed-across-fixed-modes-including-bounded-reference'
+    !== 'best-observed-exact-output-across-all-fixed-modes'
   ) issues.push('Comparison rule changed.');
 
   const requestOrder = loaded.cases.map((value) => ({
@@ -207,6 +207,18 @@ export async function verifyPortfolioBenchmark(root = process.cwd()): Promise<re
   verifyComparisonRule(regenerated, issues);
   const aggregates = aggregateQuality(regenerated);
   const numericalComparisons = compareNumerical(regenerated);
+  for (const aggregate of aggregates) {
+    if (
+      aggregate.numericalProposalAttemptedCount
+      !== aggregate.numericalProposalConvergedCount + aggregate.numericalProposalFailedCount
+    ) issues.push(`${aggregate.strategy}/${aggregate.profile}: proposal counts do not reconcile.`);
+    if (aggregate.allProposalsConvergedRequestCount > aggregate.numericalRequestCount) {
+      issues.push(`${aggregate.strategy}/${aggregate.profile}: convergence requests do not reconcile.`);
+    }
+    if (Object.keys(aggregate.counterPercentiles).length !== 7) {
+      issues.push(`${aggregate.strategy}/${aggregate.profile}: structured counter set is incomplete.`);
+    }
+  }
   if (summary.digests.qualityRowsSha256 !== canonicalDigest(regenerated)) {
     issues.push('Deterministic quality row digest changed.');
   }
@@ -224,22 +236,22 @@ export async function verifyPortfolioBenchmark(root = process.cwd()): Promise<re
     !== regenerated.filter((value) => value.exactReplayPassed).length
   ) issues.push('Fresh replay success count mismatch.');
   if (
-    summary.quality.referenceBeatenCount
-    !== regenerated.filter((value) => value.referenceBeaten).length
-  ) issues.push('Reference-beaten count mismatch.');
-  const referenceBeatenRows = regenerated.filter((value) => value.referenceBeaten);
+    summary.quality.largeBudgetBeatenCount
+    !== regenerated.filter((value) => value.largeBudgetBeaten).length
+  ) issues.push('Large-budget-beaten count mismatch.');
+  const largeBudgetBeatenRows = regenerated.filter((value) => value.largeBudgetBeaten);
   if (
-    summary.quality.referenceBeatenRequestCount
-    !== new Set(referenceBeatenRows.map((value) => value.caseId)).size
-  ) issues.push('Reference-beaten request count mismatch.');
-  const referenceBeatenByMode = QUALITY_MODES.flatMap((mode) => {
-    const count = referenceBeatenRows.filter((value) =>
+    summary.quality.largeBudgetBeatenRequestCount
+    !== new Set(largeBudgetBeatenRows.map((value) => value.caseId)).size
+  ) issues.push('Large-budget-beaten request count mismatch.');
+  const largeBudgetBeatenByMode = QUALITY_MODES.flatMap((mode) => {
+    const count = largeBudgetBeatenRows.filter((value) =>
       value.strategy === mode.strategy && value.profile === mode.profile
     ).length;
     return count === 0 ? [] : [{ ...mode, count }];
   });
-  if (!same(summary.quality.referenceBeatenByMode, referenceBeatenByMode)) {
-    issues.push('Reference-beaten mode investigation does not reconcile.');
+  if (!same(summary.quality.largeBudgetBeatenByMode, largeBudgetBeatenByMode)) {
+    issues.push('Large-budget-beaten mode investigation does not reconcile.');
   }
 
   for (const expected of LATENCY_COMBINATIONS) {
@@ -285,7 +297,7 @@ export async function verifyPortfolioBenchmark(root = process.cwd()): Promise<re
   try {
     const summaryText = await readText(path.join(reports, 'portfolio-v2-summary.json'));
     const markdown = await readText(path.join(reports, 'portfolio-v2.md'));
-    const qualitySvg = await readText(path.join(reports, 'quality-vs-work.svg'));
+    const qualitySvg = await readText(path.join(reports, 'quality-by-effort.svg'));
     const distributionSvg = await readText(
       path.join(reports, 'historical-regret-distribution.svg'),
     );
@@ -293,20 +305,24 @@ export async function verifyPortfolioBenchmark(root = process.cwd()): Promise<re
       issues.push('Summary JSON is not in deterministic canonical presentation form.');
     }
     if (markdown !== renderMarkdown(summary)) issues.push('Markdown rendering changed.');
-    if (qualitySvg !== renderQualityVsWorkSvg(summary)) {
-      issues.push('Quality-versus-work SVG rendering changed.');
+    if (qualitySvg !== renderQualityByEffortSvg(summary)) {
+      issues.push('Quality-by-effort SVG rendering changed.');
     }
     if (distributionSvg !== renderRegretDistributionSvg(summary)) {
       issues.push('Regret-distribution SVG rendering changed.');
     }
     if (
-      !qualitySvg.includes('<title id="quality-title">Deterministic quality versus work</title>')
-      || !qualitySvg.includes('Deterministic work (p50 counters)')
+      /bounded-reference|quality versus work|Work p50\/p95|Additional work|data-work=/u
+        .test(`${summaryText}\n${markdown}\n${qualitySvg}\n${distributionSvg}`)
+    ) issues.push('Public benchmark reports retain obsolete comparison or scalar-work labels.');
+    if (
+      !qualitySvg.includes('<title id="quality-title">Deterministic quality by effort</title>')
+      || !qualitySvg.includes('Effort profile (categorical)')
       || !qualitySvg.includes('p95 regret (ppm; lower is better)')
       || occurrenceCount(qualitySvg, /data-profile="(?:fast|balanced|thorough)"/gu) !== 6
       || !qualitySvg.includes('data-series="greedy-split"')
       || !qualitySvg.includes('data-series="numerical-split"')
-    ) issues.push('Quality-versus-work chart title, axes, or input series mismatch.');
+    ) issues.push('Quality-by-effort chart title, axes, or input series mismatch.');
     for (const strategy of ['greedy-split', 'numerical-split'] as const) {
       for (const profile of ['fast', 'balanced', 'thorough'] as const) {
         const aggregate = summary.quality.aggregates.find((value) =>
@@ -317,7 +333,7 @@ export async function verifyPortfolioBenchmark(root = process.cwd()): Promise<re
         if (
           aggregate === undefined
           || !qualitySvg.includes(
-            `data-profile="${profile}" data-work="${aggregate.workP50 ?? 0}" data-regret-ppm="${aggregate.regretP95Ppm ?? 0}"`,
+            `data-profile="${profile}" data-regret-ppm="${aggregate.regretP95Ppm ?? 0}"`,
           )
         ) issues.push(`${strategy}/${profile}: quality chart input point mismatch.`);
       }
@@ -327,7 +343,7 @@ export async function verifyPortfolioBenchmark(root = process.cwd()): Promise<re
       && (value.strategy === 'greedy-split' || value.strategy === 'numerical-split')
     ).map((value) => value.regretP95Ppm ?? 0);
     if (new Set(plottedRegret).size < 2) {
-      issues.push('Quality-versus-work chart uses a degenerate quality metric.');
+      issues.push('Quality-by-effort chart uses a degenerate quality metric.');
     }
     if (
       !distributionSvg.includes(

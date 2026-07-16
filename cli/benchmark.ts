@@ -9,6 +9,6 @@ process.stdout.write(
   `portfolio-v2: ${report.corpus.requestCount} requests, ${report.quality.rowCount} quality rows, ` +
   `${report.latency.reduce((sum, value) => sum + value.samples, 0)} latency observations\n` +
   `numerical beats/ties/loses greedy: ${comparisons}\n` +
-  'wrote reports/portfolio-v2.{md,summary.json}, reports/quality-vs-work.svg, ' +
+  'wrote reports/portfolio-v2.{md,summary.json}, reports/quality-by-effort.svg, ' +
   'reports/historical-regret-distribution.svg, and ignored raw observations\n',
 );

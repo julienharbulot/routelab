@@ -65,6 +65,8 @@
     "serve:smoke": "node cli/serve.ts --smoke",
     "test:api": "node --test tests/http-service.test.ts tests/http-load.test.ts",
     "load": "node cli/load.ts",
+    "load:deadlines": "node cli/load-deadlines.ts",
+    "load:overload": "node cli/load-overload.ts",
     "load:smoke": "node cli/load.ts --smoke",
     "service:verify": "node cli/verify-service-report.ts",
     "test:intents": "node --test tests/near-intents-adapter.test.ts",

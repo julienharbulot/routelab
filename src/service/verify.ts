@@ -29,6 +29,18 @@ export async function verifyCommittedServiceReport(
   try {
     issues.push(...validateServiceLoadReport(report));
     issues.push(...verifyEvidenceSource(report.evidenceSource, root));
+    if (
+      JSON.stringify(report.configuration.modes) !== JSON.stringify(['same-thread', 'worker'])
+      || report.rows.length !== 6
+      || report.rows.some((value) => value.requests < 1_000)
+      || report.comparisonIdentity === null
+      || !report.workerDecision.evaluated
+    ) issues.push('Service report is not the complete same-run comparison.');
+    if (
+      report.deadlineSweep.length !== 3
+      || report.deadlineSweep.some((value) => value.requests < 100)
+      || report.overloadBurst === null
+    ) issues.push('Service report lacks retained deadline or overload evidence.');
   } catch {
     issues.push('Service report structure could not be validated.');
   }

@@ -9,99 +9,38 @@ import {
   inspectEvidenceSource,
   type EvidenceSourceIdentity,
 } from '../evidence/source-identity.ts';
-import { quote } from '../index.ts';
-import { SERVICE_POLICY } from './policy.ts';
-import { startQuoteServiceProcess } from './process.ts';
+import { quote, type QuoteEffort, type QuoteStrategy } from '../index.ts';
 import {
-  renderServiceLatencySvg,
-  renderServiceMarkdown,
-} from './load-report.ts';
-import type { ServiceMetrics } from './types.ts';
+  makeDeadlineLoadRow,
+  makeServiceLoadRow,
+  runClientLane,
+  type ExpectedResult,
+  type Observation,
+} from './load-client.ts';
+import { renderServiceLatencySvg, renderServiceMarkdown } from './load-report.ts';
+import type {
+  DeadlineLoadRow,
+  OverloadBurstResult,
+  ServiceExecutionIdentity,
+  ServiceLoadMode,
+  ServiceLoadReport,
+  ServiceLoadRow,
+  ServiceMode,
+  WorkerRetentionGate,
+} from './load-types.ts';
+import { SERVICE_POLICY } from './policy.ts';
+import { startQuoteServiceProcess, type QuoteServiceProcess } from './process.ts';
 
-export type ServiceMode = 'same-thread' | 'worker';
-
-export interface ClientLatencyDistribution {
-  readonly samples: number;
-  readonly p50Micros: number;
-  readonly p95Micros: number;
-  readonly p99Micros: number | null;
-  readonly maxMicros: number;
-}
-
-export interface ServiceLoadRow {
-  readonly mode: ServiceMode;
-  readonly concurrency: number;
-  readonly requests: number;
-  readonly completed: number;
-  readonly typedErrors: number;
-  readonly timedOut: number;
-  readonly responseSchemaFailures: number;
-  readonly exactOutputPresenceCount: number;
-  readonly fingerprintPresenceCount: number;
-  readonly semanticMatchCount: number;
-  readonly deadlineCompletionCount: number;
-  readonly deadlineCompletionRatePpm: number | null;
-  readonly successfulLatency: ClientLatencyDistribution | null;
-  readonly errorResponseLatency: ClientLatencyDistribution | null;
-  readonly throughputPerSecond: number;
-  readonly server: ServiceMetrics;
-}
-
-export interface ServiceLoadReport {
-  readonly schemaVersion: 'routelab.service-load-summary.v2';
-  readonly evidenceSource: EvidenceSourceIdentity;
-  readonly observedAt: string;
-  readonly environment: {
-    readonly node: string;
-    readonly platform: string;
-    readonly arch: string;
-    readonly cpu: string;
-    readonly commit: string;
-  };
-  readonly corpus: {
-    readonly corpusId: string;
-    readonly snapshotId: string;
-    readonly snapshotChecksum: string;
-    readonly requestCount: number;
-    readonly claim: 'synthetic exact-input requests derived from one historical pool-reserve snapshot';
-  };
-  readonly configuration: {
-    readonly modes: readonly ServiceMode[];
-    readonly processModel: 'isolated-load-generator-and-server-processes';
-    readonly host: '127.0.0.1';
-    readonly requestsPerConcurrency: number;
-    readonly warmupsPerConcurrency: number;
-    readonly requestTimeoutMs: number;
-    readonly quoteDeadlineMs: number;
-    readonly strategy: 'greedy-split';
-    readonly effort: 'fast';
-    readonly caseCount: number;
-    readonly sameThreadMaximumActiveWork: number;
-    readonly workerMaximumActiveWork: number;
-    readonly maximumQueuedWork: number;
-    readonly workerCount: number;
-  };
-  readonly rows: readonly ServiceLoadRow[];
-  readonly workerDecision: {
-    readonly evaluated: boolean;
-    readonly retained: boolean;
-    readonly decision: 'not-evaluated' | 'retained' | 'rejected';
-    readonly reason: string;
-  };
-}
-
-interface Observation {
-  readonly concurrency: number;
-  readonly caseId: string;
-  readonly elapsedNanoseconds: string;
-  readonly outcome: 'completed' | 'typed-error' | 'timed-out' | 'schema-failure';
-  readonly status: number | null;
-  readonly errorCode: string | null;
-  readonly exactOutputPresent: boolean;
-  readonly fingerprintPresent: boolean;
-  readonly semanticMatch: boolean;
-  readonly deadlineCompleted: boolean;
-}
+export type {
+  ClientLatencyDistribution,
+  DeadlineClassification,
+  DeadlineLoadRow,
+  OverloadBurstResult,
+  ServiceLoadMode,
+  ServiceLoadReport,
+  ServiceLoadRow,
+  ServiceMode,
+} from './load-types.ts';
 
 const FULL_WARMUPS = 50;
 const FULL_REQUESTS = 1_000;
@@ -109,26 +48,22 @@ const SMOKE_WARMUPS = 3;
 const SMOKE_REQUESTS = 12;
 const REQUEST_TIMEOUT_MS = 10_000;
 const QUOTE_DEADLINE_MS = 5_000;
+const DEADLINE_CONCURRENCY = 16;
+const DEADLINES_MS = [25, 50, 100] as const;
+const DEADLINE_REQUESTS = 200;
+const OVERLOAD_EXTRA_REQUESTS = 16;
 
-interface ExpectedResult {
-  readonly amountOut: string;
-  readonly planFingerprint: string;
+interface LoadedInputs {
+  readonly cases: readonly PortfolioCase[];
+  readonly corpus: Awaited<ReturnType<typeof loadHistoricalPortfolioCases>>['corpus'];
 }
 
-function percentile(sorted: readonly number[], fraction: number): number {
-  return sorted[Math.max(0, Math.ceil(sorted.length * fraction) - 1)] ?? 0;
-}
-
-function distribution(values: readonly number[]): ClientLatencyDistribution | null {
-  if (values.length === 0) return null;
-  const sorted = [...values].sort((left, right) => left - right);
-  return Object.freeze({
-    samples: sorted.length,
-    p50Micros: Math.round(percentile(sorted, 0.50)),
-    p95Micros: Math.round(percentile(sorted, 0.95)),
-    p99Micros: sorted.length >= 1_000 ? Math.round(percentile(sorted, 0.99)) : null,
-    maxMicros: Math.round(sorted.at(-1) ?? 0),
-  });
+interface ModeRun {
+  readonly rows: readonly ServiceLoadRow[];
+  readonly deadlineSweep: readonly DeadlineLoadRow[];
+  readonly overloadBurst: OverloadBurstResult | null;
+  readonly observations: readonly (Observation & { readonly mode: ServiceMode })[];
+  readonly logs: readonly string[];
 }
 
 function environment(revision: string): ServiceLoadReport['environment'] {
@@ -141,195 +76,286 @@ function environment(revision: string): ServiceLoadReport['environment'] {
   });
 }
 
-function bodyFor(input: PortfolioCase): string {
-  return JSON.stringify({
-    snapshotId: input.request.snapshotId,
-    assetIn: input.request.assetIn,
-    assetOut: input.request.assetOut,
-    amountIn: input.request.amountIn.toString(10),
-    maxHops: input.request.maxHops,
-    maxRoutes: input.request.maxRoutes,
-    strategy: 'greedy-split',
-    effort: 'fast',
-    deadlineMs: QUOTE_DEADLINE_MS,
+function executionIdentity(
+  source: EvidenceSourceIdentity,
+  value: ServiceLoadReport['environment'],
+): ServiceExecutionIdentity {
+  return Object.freeze({
+    sourceRevision: source.revision,
+    sourceDigest: source.digest,
+    node: value.node,
+    platform: value.platform,
+    arch: value.arch,
+    cpu: value.cpu,
   });
 }
 
-function record(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : undefined;
-}
-
-async function invoke(
-  endpoint: string,
-  input: PortfolioCase,
-  expected: ExpectedResult,
-): Promise<Observation> {
-  const started = process.hrtime.bigint();
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: bodyFor(input),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
-    const elapsed = process.hrtime.bigint() - started;
-    let json: unknown;
-    try {
-      json = await response.json();
-    } catch {
-      return Object.freeze({
-        concurrency: 0,
-        caseId: input.caseId,
-        elapsedNanoseconds: elapsed.toString(10),
-        outcome: 'schema-failure',
-        status: response.status,
-        errorCode: null,
-        exactOutputPresent: false,
-        fingerprintPresent: false,
-        semanticMatch: false,
-        deadlineCompleted: false,
-      });
-    }
-    const value = record(json);
-    const exactOutputPresent = typeof value?.['amountOut'] === 'string'
-      && /^(?:0|[1-9][0-9]*)$/u.test(value['amountOut']);
-    const fingerprintPresent = typeof value?.['planFingerprint'] === 'string'
-      && /^sha256:[0-9a-f]{64}$/u.test(value['planFingerprint']);
-    const semanticMatch = value?.['amountOut'] === expected.amountOut
-      && value?.['planFingerprint'] === expected.planFingerprint;
-    if (response.ok) {
-      const valid = typeof value?.['requestId'] === 'string'
-        && value['schemaVersion'] === 'routelab.quote.v1'
-        && value['snapshotId'] === input.request.snapshotId
-        && exactOutputPresent
-        && fingerprintPresent
-        && typeof value['termination'] === 'string';
-      return Object.freeze({
-        concurrency: 0,
-        caseId: input.caseId,
-        elapsedNanoseconds: elapsed.toString(10),
-        outcome: valid ? 'completed' : 'schema-failure',
-        status: response.status,
-        errorCode: null,
-        exactOutputPresent,
-        fingerprintPresent,
-        semanticMatch,
-        deadlineCompleted: valid && value['termination'] !== 'deadline',
-      });
-    }
-    const error = record(value?.['error']);
-    const code = typeof error?.['code'] === 'string' ? error['code'] : null;
-    const valid = typeof value?.['requestId'] === 'string' && code !== null;
-    return Object.freeze({
-      concurrency: 0,
-      caseId: input.caseId,
-      elapsedNanoseconds: elapsed.toString(10),
-      outcome: valid ? 'typed-error' : 'schema-failure',
-      status: response.status,
-      errorCode: code,
-      exactOutputPresent,
-      fingerprintPresent,
-      semanticMatch: false,
-      deadlineCompleted: false,
-    });
-  } catch (error) {
-    const elapsed = process.hrtime.bigint() - started;
-    const timedOut = error instanceof DOMException && error.name === 'TimeoutError';
-    return Object.freeze({
-      concurrency: 0,
-      caseId: input.caseId,
-      elapsedNanoseconds: elapsed.toString(10),
-      outcome: timedOut ? 'timed-out' : 'schema-failure',
-      status: null,
-      errorCode: null,
-      exactOutputPresent: false,
-      fingerprintPresent: false,
-      semanticMatch: false,
-      deadlineCompleted: false,
-    });
-  }
-}
-
-async function runLane(
-  endpoint: string,
+function expectedResults(
   cases: readonly PortfolioCase[],
-  expected: ReadonlyMap<string, ExpectedResult>,
-  concurrency: number,
+  strategy: QuoteStrategy,
+  effort: QuoteEffort,
+): ReadonlyMap<string, ExpectedResult> {
+  return new Map(cases.map((input) => {
+    const result = quote(input.context, input.request, { strategy, effort });
+    if (!result.ok) throw new Error(`Expected load quote failed for ${input.caseId}.`);
+    return [input.caseId, Object.freeze({
+      amountOut: result.value.amountOut.toString(10),
+      planFingerprint: result.value.planFingerprint,
+    })] as const;
+  }));
+}
+
+async function settleMetrics(): Promise<void> {
+  await new Promise<void>((resolve) => setTimeout(resolve, 20));
+}
+
+async function runDeadlineLanes(
+  service: QuoteServiceProcess,
+  loaded: LoadedInputs,
   requests: number,
-): Promise<{ readonly elapsed: bigint; readonly observations: readonly Observation[] }> {
+  warmups: number,
+): Promise<{
+  readonly rows: readonly DeadlineLoadRow[];
+  readonly observations: readonly Observation[];
+}> {
+  const rows: DeadlineLoadRow[] = [];
   const observations: Observation[] = [];
-  let next = 0;
-  const started = process.hrtime.bigint();
-  const workers = Array.from({ length: concurrency }, async () => {
-    while (true) {
-      const index = next;
-      next += 1;
-      if (index >= requests) return;
-      const input = cases[index % cases.length];
-      if (input === undefined) throw new Error('Service load request corpus is empty.');
-      const expectedResult = expected.get(input.caseId);
-      if (expectedResult === undefined) throw new Error('Expected service quote is missing.');
-      const observation = await invoke(endpoint, input, expectedResult);
-      observations.push(Object.freeze({ ...observation, concurrency }));
-    }
+  for (const deadlineMs of DEADLINES_MS) {
+    const configuration = {
+      strategy: 'numerical-split' as const,
+      effort: 'balanced' as const,
+      deadlineMs,
+      timeoutMs: REQUEST_TIMEOUT_MS,
+    };
+    await runClientLane(service.endpoint, loaded.cases, undefined, 1, warmups, configuration);
+    await service.resetMetrics();
+    await settleMetrics();
+    const lane = await runClientLane(
+      service.endpoint,
+      loaded.cases,
+      undefined,
+      DEADLINE_CONCURRENCY,
+      requests,
+      configuration,
+    );
+    await settleMetrics();
+    const server = await service.readMetrics();
+    observations.push(...lane.observations);
+    rows.push(makeDeadlineLoadRow(deadlineMs, requests, lane.observations, server));
+  }
+  return Object.freeze({ rows: Object.freeze(rows), observations: Object.freeze(observations) });
+}
+
+async function runOverloadLane(
+  service: QuoteServiceProcess,
+  loaded: LoadedInputs,
+): Promise<{ readonly result: OverloadBurstResult; readonly observations: readonly Observation[] }> {
+  const requests = SERVICE_POLICY.workerCount
+    + SERVICE_POLICY.maxQueuedWork
+    + OVERLOAD_EXTRA_REQUESTS;
+  const selected = loaded.cases.slice(-1);
+  const configuration = {
+    strategy: 'numerical-split' as const,
+    effort: 'thorough' as const,
+    deadlineMs: QUOTE_DEADLINE_MS,
+    timeoutMs: REQUEST_TIMEOUT_MS,
+  };
+  const expected = expectedResults(selected, configuration.strategy, configuration.effort);
+  await runClientLane(service.endpoint, selected, expected, 1, 1, configuration);
+  await service.resetMetrics();
+  await settleMetrics();
+  const lane = await runClientLane(
+    service.endpoint,
+    selected,
+    expected,
+    requests,
+    requests,
+    configuration,
+  );
+  await settleMetrics();
+  const server = await service.readMetrics();
+  const overloaded = lane.observations.filter((value) =>
+    value.status === 503 && value.errorCode === 'overloaded'
+  );
+  const result: OverloadBurstResult = Object.freeze({
+    mode: 'worker',
+    requests,
+    activeCapacity: SERVICE_POLICY.workerCount,
+    queueCapacity: SERVICE_POLICY.maxQueuedWork,
+    acceptedCount: server.admissionAcceptedCount,
+    overloadedCount: overloaded.length,
+    retryAfterCount: overloaded.filter((value) => value.retryAfterPresent).length,
+    acceptedExactQuoteCount: lane.observations.filter((value) =>
+      value.outcome === 'completed' && value.exactValidationPassed && value.semanticMatch
+    ).length,
+    clientTimeoutCount: lane.observations.filter((value) => value.outcome === 'timed-out').length,
+    schemaOrInternalFailureCount: lane.observations.filter((value) =>
+      value.outcome === 'schema-failure'
+      || (value.outcome === 'typed-error' && value.errorCode !== 'overloaded')
+    ).length,
+    server,
   });
-  await Promise.all(workers);
+  return Object.freeze({ result, observations: lane.observations });
+}
+
+async function runMode(
+  mode: ServiceMode,
+  concurrencyLevels: readonly number[],
+  loaded: LoadedInputs,
+  requests: number,
+  warmups: number,
+  root: string,
+  includeSpecialLanes: boolean,
+): Promise<ModeRun> {
+  const expected = expectedResults(loaded.cases, 'greedy-split', 'fast');
+  const configuration = {
+    strategy: 'greedy-split' as const,
+    effort: 'fast' as const,
+    deadlineMs: QUOTE_DEADLINE_MS,
+    timeoutMs: REQUEST_TIMEOUT_MS,
+  };
+  const service = await startQuoteServiceProcess(root, mode);
+  const rows: ServiceLoadRow[] = [];
+  const observations: (Observation & { readonly mode: ServiceMode })[] = [];
+  let deadlineSweep: readonly DeadlineLoadRow[] = Object.freeze([]);
+  let overloadBurst: OverloadBurstResult | null = null;
+  try {
+    for (const concurrency of concurrencyLevels) {
+      await runClientLane(service.endpoint, loaded.cases, expected, 1, warmups, configuration);
+      await service.resetMetrics();
+      await settleMetrics();
+      const lane = await runClientLane(
+        service.endpoint,
+        loaded.cases,
+        expected,
+        concurrency,
+        requests,
+        configuration,
+      );
+      await settleMetrics();
+      const server = await service.readMetrics();
+      observations.push(...lane.observations.map((value) => Object.freeze({ ...value, mode })));
+      rows.push(makeServiceLoadRow(
+        mode,
+        concurrency,
+        requests,
+        lane.elapsed,
+        lane.observations,
+        server,
+      ));
+    }
+    if (mode === 'worker' && includeSpecialLanes) {
+      const deadlines = await runDeadlineLanes(service, loaded, DEADLINE_REQUESTS, FULL_WARMUPS);
+      deadlineSweep = deadlines.rows;
+      observations.push(...deadlines.observations.map((value) =>
+        Object.freeze({ ...value, mode })
+      ));
+      const overload = await runOverloadLane(service, loaded);
+      overloadBurst = overload.result;
+      observations.push(...overload.observations.map((value) =>
+        Object.freeze({ ...value, mode })
+      ));
+    }
+  } finally {
+    await service.shutdown();
+  }
   return Object.freeze({
-    elapsed: process.hrtime.bigint() - started,
+    rows: Object.freeze(rows),
+    deadlineSweep,
+    overloadBurst,
     observations: Object.freeze(observations),
+    logs: service.logs,
   });
 }
 
-function row(
-  mode: ServiceMode,
-  concurrency: number,
-  requests: number,
-  elapsed: bigint,
-  observations: readonly Observation[],
-  server: ServiceMetrics,
-): ServiceLoadRow {
-  const successfulMicros = observations
-    .filter((value) => value.outcome === 'completed')
-    .map((value) => Number(value.elapsedNanoseconds) / 1_000);
-  const errorMicros = observations
-    .filter((value) => value.outcome === 'typed-error' || value.outcome === 'schema-failure')
-    .map((value) => Number(value.elapsedNanoseconds) / 1_000);
+function improvementPpm(baseline: number, treatment: number): number | null {
+  return baseline <= 0 ? null : Math.floor((baseline - treatment) * 1_000_000 / baseline);
+}
+
+function workerDecision(
+  rows: readonly ServiceLoadRow[],
+  evaluated: boolean,
+): ServiceLoadReport['workerDecision'] {
+  if (!evaluated) return Object.freeze({
+    evaluated: false,
+    retained: false,
+    decision: 'not-evaluated',
+    gate: null,
+    reason: 'A worker decision requires the full same-run comparison.',
+  });
+  const same1 = rows.find((value) => value.mode === 'same-thread' && value.concurrency === 1);
+  const worker1 = rows.find((value) => value.mode === 'worker' && value.concurrency === 1);
+  const same16 = rows.find((value) => value.mode === 'same-thread' && value.concurrency === 16);
+  const worker16 = rows.find((value) => value.mode === 'worker' && value.concurrency === 16);
+  if (same1 === undefined || worker1 === undefined || same16 === undefined || worker16 === undefined) {
+    throw new Error('Worker retention requires concurrency 1 and 16 for both modes.');
+  }
+  const p95 = improvementPpm(
+    same16.successfulLatency?.p95Micros ?? 0,
+    worker16.successfulLatency?.p95Micros ?? 0,
+  );
+  const p99 = improvementPpm(
+    same16.successfulLatency?.p99Micros ?? 0,
+    worker16.successfulLatency?.p99Micros ?? 0,
+  );
+  const tail = (p99 ?? Number.NEGATIVE_INFINITY) > (p95 ?? Number.NEGATIVE_INFINITY)
+    ? { metric: 'p99' as const, value: p99 }
+    : { metric: 'p95' as const, value: p95 };
+  const eventLoop = improvementPpm(
+    same16.server.eventLoopDelayMaxMicros,
+    worker16.server.eventLoopDelayMaxMicros,
+  );
+  const throughputRatio = same16.throughputPerSecond <= 0
+    ? null
+    : Math.floor(worker16.throughputPerSecond * 1_000_000 / same16.throughputPerSecond);
+  const p50Overhead = worker1.successfulLatency === null || same1.successfulLatency === null
+    ? null
+    : worker1.successfulLatency.p50Micros - same1.successfulLatency.p50Micros;
+  const semanticAndSchemaRegressionFree = rows.every((value) =>
+    value.completed === value.requests
+    && value.responseSchemaFailures === 0
+    && value.semanticMatchCount === value.requests
+  );
+  const noLostRequests = rows.every((value) =>
+    value.completed + value.typedErrors + value.timedOut + value.responseSchemaFailures
+      === value.requests
+    && value.server.structuredCompletionCount === value.requests
+  );
+  const memoryReported = rows.every((value) =>
+    value.server.initialRssBytes > 0
+    && value.server.peakRssBytes >= value.server.initialRssBytes
+    && value.server.finalRssBytes > 0
+  );
+  const gate: WorkerRetentionGate = Object.freeze({
+    semanticAndSchemaRegressionFree,
+    tailLatencyMetric: tail.value === null ? null : tail.metric,
+    tailLatencyImprovementPpm: tail.value,
+    eventLoopMaxImprovementPpm: eventLoop,
+    tailOrEventLoopPassed: (tail.value ?? Number.NEGATIVE_INFINITY) >= 250_000
+      || (eventLoop ?? Number.NEGATIVE_INFINITY) >= 500_000,
+    concurrency16ThroughputRatioPpm: throughputRatio,
+    throughputPassed: (throughputRatio ?? 0) >= 900_000,
+    concurrency1P50OverheadMicros: p50Overhead,
+    concurrency1OverheadPassed: p50Overhead !== null && p50Overhead <= 2_000,
+    noLostRequests,
+    memoryReported,
+  });
+  const retained = Object.values(gate).filter((value) => typeof value === 'boolean')
+    .every((value) => value);
   return Object.freeze({
-    mode,
-    concurrency,
-    requests,
-    completed: observations.filter((value) => value.outcome === 'completed').length,
-    typedErrors: observations.filter((value) => value.outcome === 'typed-error').length,
-    timedOut: observations.filter((value) => value.outcome === 'timed-out').length,
-    responseSchemaFailures:
-      observations.filter((value) => value.outcome === 'schema-failure').length,
-    exactOutputPresenceCount:
-      observations.filter((value) => value.exactOutputPresent).length,
-    fingerprintPresenceCount:
-      observations.filter((value) => value.fingerprintPresent).length,
-    semanticMatchCount: observations.filter((value) => value.semanticMatch).length,
-    deadlineCompletionCount:
-      observations.filter((value) => value.deadlineCompleted).length,
-    deadlineCompletionRatePpm: successfulMicros.length === 0
-      ? null
-      : Math.floor(
-        observations.filter((value) => value.deadlineCompleted).length
-          * 1_000_000
-          / successfulMicros.length,
-      ),
-    successfulLatency: distribution(successfulMicros),
-    errorResponseLatency: distribution(errorMicros),
-    throughputPerSecond:
-      Number((BigInt(requests) * 1_000_000_000_000n) / elapsed) / 1_000,
-    server,
+    evaluated: true,
+    retained,
+    decision: retained ? 'retained' : 'rejected',
+    gate,
+    reason: retained
+      ? 'The frozen semantic, tail, throughput, c1 overhead, admission, and memory gates passed.'
+      : 'At least one frozen semantic, tail, throughput, c1 overhead, admission, or memory gate failed.',
   });
 }
 
 async function writeReport(
   report: ServiceLoadReport,
-  observations: readonly Observation[],
+  observations: readonly (Observation & { readonly mode: ServiceMode })[],
   serviceLogs: readonly string[],
   root: string,
 ): Promise<void> {
@@ -348,6 +374,37 @@ async function writeReport(
   ]);
 }
 
+function validateSpecialLanes(report: ServiceLoadReport, issues: string[]): void {
+  for (const value of report.deadlineSweep) {
+    const classified = Object.values(value.classifications).reduce((sum, count) => sum + count, 0);
+    if (classified !== value.requests) issues.push(`${value.deadlineMs}ms: classifications mismatch.`);
+    if (value.requests < 100) issues.push(`${value.deadlineMs}ms: insufficient rate observations.`);
+    if (
+      value.exactValidationCount
+      !== value.classifications['complete-exact-quote']
+        + value.classifications['validated-deadline-incumbent']
+    ) issues.push(`${value.deadlineMs}ms: exact validation count mismatch.`);
+    if (
+      value.server.admissionAcceptedCount + value.server.admissionRejectedCount !== value.requests
+      || value.server.structuredCompletionCount !== value.requests
+    ) issues.push(`${value.deadlineMs}ms: server admission counts mismatch.`);
+  }
+  const burst = report.overloadBurst;
+  if (burst !== null && (
+    burst.requests <= burst.activeCapacity + burst.queueCapacity
+    || burst.overloadedCount === 0
+    || burst.retryAfterCount !== burst.overloadedCount
+    || burst.acceptedExactQuoteCount !== burst.acceptedCount
+    || burst.clientTimeoutCount !== 0
+    || burst.schemaOrInternalFailureCount !== 0
+    || burst.acceptedCount + burst.overloadedCount !== burst.requests
+    || burst.server.maximumQueuedWork > burst.queueCapacity
+    || burst.server.admissionAcceptedCount !== burst.acceptedCount
+    || burst.server.admissionRejectedCount !== burst.overloadedCount
+    || burst.server.structuredCompletionCount !== burst.requests
+  )) issues.push('Overload burst did not satisfy its bounded admission contract.');
+}
+
 export function validateServiceLoadReport(report: ServiceLoadReport): readonly string[] {
   const issues: string[] = [];
   if (report.schemaVersion !== 'routelab.service-load-summary.v2') {
@@ -359,10 +416,7 @@ export function validateServiceLoadReport(report: ServiceLoadReport): readonly s
     if (keys.has(key)) issues.push(`${key}: duplicate row.`);
     keys.add(key);
     if (
-      value.completed
-        + value.typedErrors
-        + value.timedOut
-        + value.responseSchemaFailures
+      value.completed + value.typedErrors + value.timedOut + value.responseSchemaFailures
       !== value.requests
     ) issues.push(`${key}: client outcome counts do not reconcile.`);
     if (value.successfulLatency?.samples !== value.completed) {
@@ -379,29 +433,26 @@ export function validateServiceLoadReport(report: ServiceLoadReport): readonly s
       || value.deadlineCompletionCount > value.completed
     ) issues.push(`${key}: success validation counts exceed completed responses.`);
     if (
-      value.server.admissionAcceptedCount + value.server.admissionRejectedCount
-      !== value.requests
+      value.server.admissionAcceptedCount + value.server.admissionRejectedCount !== value.requests
+      || value.server.structuredCompletionCount !== value.requests
     ) issues.push(`${key}: server admission counts do not reconcile.`);
-    if (value.server.structuredCompletionCount !== value.requests) {
-      issues.push(`${key}: structured server completion count mismatch.`);
+  }
+  if (report.workerDecision.evaluated) {
+    if (report.comparisonIdentity === null) issues.push('Worker decision lacks comparison identity.');
+    else if (
+      JSON.stringify(report.comparisonIdentity.sameThread)
+      !== JSON.stringify(report.comparisonIdentity.worker)
+    ) issues.push('Comparison modes do not share source/environment identity.');
+    if (!report.rows.some((value) => value.mode === 'same-thread')
+      || !report.rows.some((value) => value.mode === 'worker')) {
+      issues.push('Worker decision lacks both comparison modes.');
     }
   }
-  if (
-    report.workerDecision.evaluated
-    && (!report.rows.some((value) => value.mode === 'same-thread')
-      || !report.rows.some((value) => value.mode === 'worker'))
-  ) issues.push('Worker decision lacks both comparison modes.');
+  validateSpecialLanes(report, issues);
   return Object.freeze(issues);
 }
 
-export async function runHttpLoad(
-  concurrencyLevels: readonly number[],
-  options: {
-    readonly smoke?: boolean;
-    readonly root?: string;
-    readonly mode?: ServiceMode;
-  } = {},
-): Promise<ServiceLoadReport> {
+function validateConcurrency(concurrencyLevels: readonly number[]): void {
   if (
     concurrencyLevels.length === 0
     || concurrencyLevels.some((value) =>
@@ -409,59 +460,58 @@ export async function runHttpLoad(
     )
     || new Set(concurrencyLevels).size !== concurrencyLevels.length
   ) throw new Error('Concurrency levels must be unique integers from 1 through 64.');
+}
+
+export async function runHttpLoad(
+  concurrencyLevels: readonly number[],
+  options: {
+    readonly smoke?: boolean;
+    readonly root?: string;
+    readonly mode?: ServiceLoadMode;
+  } = {},
+): Promise<ServiceLoadReport> {
+  validateConcurrency(concurrencyLevels);
   const root = options.root ?? process.cwd();
   const smoke = options.smoke ?? false;
   const mode = options.mode ?? 'same-thread';
   if (!smoke && mode === 'worker') {
-    throw new Error(
-      'Retained worker comparison requires a same-run baseline; prior reports are never reused.',
-    );
+    throw new Error('Retained worker evidence requires compare mode in one invocation.');
   }
-  const evidenceSource = smoke
-    ? inspectEvidenceSource(root)
-    : captureEvidenceSource(root);
+  if (!smoke && mode === 'compare' && (!concurrencyLevels.includes(1)
+    || !concurrencyLevels.includes(16))) {
+    throw new Error('Retained compare mode requires concurrency 1 and 16.');
+  }
+  const evidenceSource = smoke ? inspectEvidenceSource(root) : captureEvidenceSource(root);
+  const reportEnvironment = environment(evidenceSource.revision);
   const requests = smoke ? SMOKE_REQUESTS : FULL_REQUESTS;
   const warmups = smoke ? SMOKE_WARMUPS : FULL_WARMUPS;
   const loaded = await loadHistoricalPortfolioCases(root);
-  const expected = new Map(loaded.cases.map((input) => {
-    const result = quote(input.context, input.request, {
-      strategy: 'greedy-split',
-      effort: 'fast',
-    });
-    if (!result.ok) throw new Error(`Expected load quote failed for ${input.caseId}.`);
-    return [input.caseId, Object.freeze({
-      amountOut: result.value.amountOut.toString(10),
-      planFingerprint: result.value.planFingerprint,
-    })] as const;
-  }));
-  const service = await startQuoteServiceProcess(root, mode);
-  const rows: ServiceLoadRow[] = [];
-  const observations: Observation[] = [];
-  try {
-    for (const concurrency of concurrencyLevels) {
-      await runLane(service.endpoint, loaded.cases, expected, 1, warmups);
-      await service.resetMetrics();
-      await new Promise<void>((resolve) => setTimeout(resolve, 20));
-      const lane = await runLane(
-        service.endpoint,
-        loaded.cases,
-        expected,
-        concurrency,
-        requests,
-      );
-      await new Promise<void>((resolve) => setTimeout(resolve, 20));
-      const server = await service.readMetrics();
-      observations.push(...lane.observations);
-      rows.push(row(mode, concurrency, requests, lane.elapsed, lane.observations, server));
-    }
-  } finally {
-    await service.shutdown();
+  const modes: readonly ServiceMode[] = mode === 'compare'
+    ? Object.freeze(['same-thread', 'worker'])
+    : Object.freeze([mode]);
+  const runs: ModeRun[] = [];
+  for (const runModeName of modes) {
+    runs.push(await runMode(
+      runModeName,
+      concurrencyLevels,
+      loaded,
+      requests,
+      warmups,
+      root,
+      !smoke && mode === 'compare',
+    ));
   }
+  const rows = Object.freeze(runs.flatMap((value) => value.rows));
+  const identity = executionIdentity(evidenceSource, reportEnvironment);
+  const evaluated = !smoke && mode === 'compare';
   const report: ServiceLoadReport = Object.freeze({
     schemaVersion: 'routelab.service-load-summary.v2',
     evidenceSource,
     observedAt: new Date().toISOString(),
-    environment: environment(evidenceSource.revision),
+    environment: reportEnvironment,
+    comparisonIdentity: mode === 'compare'
+      ? Object.freeze({ sameThread: identity, worker: identity })
+      : null,
     corpus: Object.freeze({
       corpusId: loaded.corpus.corpusId,
       snapshotId: loaded.corpus.snapshotId,
@@ -470,7 +520,7 @@ export async function runHttpLoad(
       claim: 'synthetic exact-input requests derived from one historical pool-reserve snapshot',
     }),
     configuration: Object.freeze({
-      modes: Object.freeze([mode]),
+      modes,
       processModel: 'isolated-load-generator-and-server-processes',
       host: '127.0.0.1',
       requestsPerConcurrency: requests,
@@ -484,28 +534,132 @@ export async function runHttpLoad(
       workerMaximumActiveWork: SERVICE_POLICY.workerCount,
       maximumQueuedWork: SERVICE_POLICY.maxQueuedWork,
       workerCount: SERVICE_POLICY.workerCount,
+      deadlineConcurrency: DEADLINE_CONCURRENCY,
+      deadlineValuesMs: DEADLINES_MS,
+      deadlineRequestsPerValue: smoke ? 0 : DEADLINE_REQUESTS,
+      overloadBurstRequests: smoke
+        ? 0
+        : SERVICE_POLICY.workerCount + SERVICE_POLICY.maxQueuedWork + OVERLOAD_EXTRA_REQUESTS,
     }),
-    rows: Object.freeze(rows),
-    workerDecision: Object.freeze({
-      evaluated: false,
-      retained: false,
-      decision: 'not-evaluated',
-      reason: mode === 'worker'
-        ? 'Smoke-only worker operation does not support a retention decision.'
-        : 'Worker comparison is withheld until both modes run in one invocation.',
-    }),
+    rows,
+    deadlineSweep: Object.freeze(runs.flatMap((value) => value.deadlineSweep)),
+    overloadBurst: runs.find((value) => value.overloadBurst !== null)?.overloadBurst ?? null,
+    workerDecision: workerDecision(rows, evaluated),
   });
   const issues = validateServiceLoadReport(report);
   if (issues.length !== 0) throw new Error(`Service load report is invalid: ${issues.join(' ')}`);
-  if (!smoke) await writeReport(report, observations, service.logs, root);
+  const observations = Object.freeze(runs.flatMap((value) => value.observations));
+  const logs = Object.freeze(runs.flatMap((value) => value.logs));
+  if (!smoke) await writeReport(report, observations, logs, root);
   else {
     const raw = path.join(root, 'reports', 'raw');
     await mkdir(raw, { recursive: true });
     await writeFile(path.join(raw, 'service-v2-smoke-observations.json'), `${JSON.stringify({
       report,
       observations,
-      serviceLogs: service.logs,
+      serviceLogs: logs,
     })}\n`);
   }
   return report;
+}
+
+async function writeStandaloneRaw(root: string, name: string, value: unknown): Promise<void> {
+  const raw = path.join(root, 'reports', 'raw');
+  await mkdir(raw, { recursive: true });
+  await writeFile(path.join(raw, name), `${JSON.stringify(value)}\n`);
+}
+
+export async function runDeadlineSweep(
+  root = process.cwd(),
+  options: { readonly smoke?: boolean } = {},
+): Promise<readonly DeadlineLoadRow[]> {
+  const smoke = options.smoke ?? false;
+  const source = smoke ? inspectEvidenceSource(root) : captureEvidenceSource(root);
+  const loaded = await loadHistoricalPortfolioCases(root);
+  const service = await startQuoteServiceProcess(root, 'worker');
+  try {
+    const result = await runDeadlineLanes(
+      service,
+      loaded,
+      smoke ? 24 : DEADLINE_REQUESTS,
+      smoke ? SMOKE_WARMUPS : FULL_WARMUPS,
+    );
+    await writeStandaloneRaw(root, 'service-v2-deadline-observations.json', {
+      schemaVersion: 'routelab.service-deadline-observations.v1',
+      evidenceSource: source,
+      rows: result.rows,
+      observations: result.observations,
+    });
+    return result.rows;
+  } finally {
+    await service.shutdown();
+  }
+}
+
+export async function runOverloadBurst(
+  root = process.cwd(),
+  options: { readonly smoke?: boolean } = {},
+): Promise<OverloadBurstResult> {
+  const source = options.smoke ? inspectEvidenceSource(root) : captureEvidenceSource(root);
+  const loaded = await loadHistoricalPortfolioCases(root);
+  const service = await startQuoteServiceProcess(root, 'worker');
+  try {
+    const result = await runOverloadLane(service, loaded);
+    const shell: ServiceLoadReport = {
+      schemaVersion: 'routelab.service-load-summary.v2',
+      evidenceSource: source,
+      observedAt: new Date().toISOString(),
+      environment: environment(source.revision),
+      comparisonIdentity: null,
+      corpus: {
+        corpusId: loaded.corpus.corpusId,
+        snapshotId: loaded.corpus.snapshotId,
+        snapshotChecksum: loaded.corpus.snapshotChecksum,
+        requestCount: loaded.corpus.requestCount,
+        claim: 'synthetic exact-input requests derived from one historical pool-reserve snapshot',
+      },
+      configuration: {
+        modes: ['worker'],
+        processModel: 'isolated-load-generator-and-server-processes',
+        host: '127.0.0.1',
+        requestsPerConcurrency: 0,
+        warmupsPerConcurrency: 0,
+        requestTimeoutMs: REQUEST_TIMEOUT_MS,
+        quoteDeadlineMs: QUOTE_DEADLINE_MS,
+        strategy: 'greedy-split',
+        effort: 'fast',
+        caseCount: loaded.cases.length,
+        sameThreadMaximumActiveWork: SERVICE_POLICY.maxActiveWork,
+        workerMaximumActiveWork: SERVICE_POLICY.workerCount,
+        maximumQueuedWork: SERVICE_POLICY.maxQueuedWork,
+        workerCount: SERVICE_POLICY.workerCount,
+        deadlineConcurrency: DEADLINE_CONCURRENCY,
+        deadlineValuesMs: DEADLINES_MS,
+        deadlineRequestsPerValue: 0,
+        overloadBurstRequests: result.result.requests,
+      },
+      rows: [],
+      deadlineSweep: [],
+      overloadBurst: result.result,
+      workerDecision: {
+        evaluated: false,
+        retained: false,
+        decision: 'not-evaluated',
+        gate: null,
+        reason: 'Standalone overload behavior does not make a worker retention decision.',
+      },
+    };
+    const issues: string[] = [];
+    validateSpecialLanes(shell, issues);
+    if (issues.length !== 0) throw new Error(issues.join(' '));
+    await writeStandaloneRaw(root, 'service-v2-overload-observations.json', {
+      schemaVersion: 'routelab.service-overload-observations.v1',
+      evidenceSource: source,
+      result: result.result,
+      observations: result.observations,
+    });
+    return result.result;
+  } finally {
+    await service.shutdown();
+  }
 }

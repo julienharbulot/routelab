@@ -301,6 +301,10 @@ function diagnostics(
   numerical: readonly NumericalExactInputSplitDiagnostic[],
   strategy: QuoteStrategy,
 ): QuoteDiagnostics {
+  const attemptedProposals = numerical.filter(
+    ({ counters: value }) => value.numericalProposals > 0,
+  );
+  const convergedProposals = attemptedProposals.filter(({ converged }) => converged).length;
   const numericalOutcome = strategy !== 'numerical-split' || numerical.length === 0
     ? 'not-applicable' as const
     : numerical.some(({ status }) => status === 'improved')
@@ -315,9 +319,11 @@ function diagnostics(
     pathExpansions: counters.pathExpansions,
     candidateSetExpansions: counters.candidateSetExpansions,
     numericalProposals: numericCounter(counters, 'numericalProposals'),
+    numericalConvergedProposals: convergedProposals,
+    numericalFailedProposals: attemptedProposals.length - convergedProposals,
     numericalIterations: numericCounter(counters, 'numericalIterations'),
-    numericalConverged: strategy === 'numerical-split'
-      ? numerical.length > 0 && numerical.every(({ converged }) => converged)
+    allProposalsConverged: strategy === 'numerical-split'
+      ? attemptedProposals.length > 0 && attemptedProposals.every(({ converged }) => converged)
       : null,
     numericalFailures: numerical.filter(({ status }) => status === 'failed').length,
     numericalOutcome,

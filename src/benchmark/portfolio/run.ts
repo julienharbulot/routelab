@@ -26,7 +26,7 @@ export async function runPortfolioBenchmark(root = process.cwd()): Promise<Bench
   const qualityRows = runQuality(loaded.cases);
   const aggregates = aggregateQuality(qualityRows);
   const numericalComparisons = compareNumerical(qualityRows);
-  const referenceBeatenRows = qualityRows.filter((value) => value.referenceBeaten);
+  const largeBudgetBeatenRows = qualityRows.filter((value) => value.largeBudgetBeaten);
   const latency = await runLatency(loaded.cases, root);
   const requestOrder = loaded.cases.map((value) => ({
     caseId: value.caseId,
@@ -48,7 +48,7 @@ export async function runPortfolioBenchmark(root = process.cwd()): Promise<Bench
       profiles: benchmarkProfileConfiguration(),
       qualityModes: QUALITY_MODES,
       latencyCombinations: LATENCY_COMBINATIONS,
-      comparisonRule: 'best-observed-across-fixed-modes-including-bounded-reference',
+      comparisonRule: 'best-observed-exact-output-across-all-fixed-modes',
     }),
     digests: Object.freeze({
       requestOrderSha256: canonicalDigest(requestOrder),
@@ -59,12 +59,12 @@ export async function runPortfolioBenchmark(root = process.cwd()): Promise<Bench
     quality: Object.freeze({
       rowCount: qualityRows.length,
       exactReplaySuccessCount: qualityRows.filter((value) => value.exactReplayPassed).length,
-      referenceBeatenCount: referenceBeatenRows.length,
-      referenceBeatenRequestCount: new Set(
-        referenceBeatenRows.map((value) => value.caseId),
+      largeBudgetBeatenCount: largeBudgetBeatenRows.length,
+      largeBudgetBeatenRequestCount: new Set(
+        largeBudgetBeatenRows.map((value) => value.caseId),
       ).size,
-      referenceBeatenByMode: Object.freeze(QUALITY_MODES.flatMap((mode) => {
-        const count = referenceBeatenRows.filter((value) =>
+      largeBudgetBeatenByMode: Object.freeze(QUALITY_MODES.flatMap((mode) => {
+        const count = largeBudgetBeatenRows.filter((value) =>
           value.strategy === mode.strategy && value.profile === mode.profile
         ).length;
         return count === 0 ? [] : [Object.freeze({ ...mode, count })];

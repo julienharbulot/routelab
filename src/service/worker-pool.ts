@@ -1,7 +1,8 @@
 import { Worker } from 'node:worker_threads';
 
-import type { QuoteOptions, SerializedQuote } from '../index.ts';
+import type { QuoteOptions } from '../index.ts';
 import { SERVICE_POLICY } from './policy.ts';
+import { parseSerializedQuote } from './serialized-quote.ts';
 import type {
   ParsedServiceQuote,
   ServiceError,
@@ -15,6 +16,13 @@ interface WorkerSlot {
   busy: boolean;
   pending: {
     readonly requestId: number;
+    readonly expected: {
+      readonly snapshotId: string;
+      readonly snapshotChecksum: string;
+      readonly assetIn: string;
+      readonly assetOut: string;
+      readonly amountIn: string;
+    };
     readonly resolve: (value: ServiceExecutionResult) => void;
   } | null;
 }
@@ -22,7 +30,7 @@ interface WorkerSlot {
 interface WorkerResponse {
   readonly requestId: number;
   readonly ok: boolean;
-  readonly quote?: SerializedQuote;
+    readonly quote?: unknown;
   readonly error?: {
     readonly code: string;
     readonly message: string;
@@ -44,7 +52,7 @@ function response(value: unknown): WorkerResponse | undefined {
     || typeof input['ok'] !== 'boolean'
   ) return undefined;
   if (input['ok']) {
-    if (record(input['quote']) === undefined) return undefined;
+    if (input['quote'] === undefined) return undefined;
   } else {
     const error = record(input['error']);
     if (typeof error?.['code'] !== 'string' || typeof error['message'] !== 'string') {
@@ -165,10 +173,22 @@ export async function createWorkerQuoteExecutor(
         failClosed(slot, 'Quote worker returned an invalid response.');
         return;
       }
+      const quote = parsed.ok ? parseSerializedQuote(parsed.quote) : undefined;
+      if (parsed.ok && (
+        quote === undefined
+        || quote.snapshotId !== pending.expected.snapshotId
+        || quote.snapshotChecksum !== pending.expected.snapshotChecksum
+        || quote.assetIn !== pending.expected.assetIn
+        || quote.assetOut !== pending.expected.assetOut
+        || quote.amountIn !== pending.expected.amountIn
+      )) {
+        failClosed(slot, 'Quote worker returned a malformed or mismatched quote.');
+        return;
+      }
       slot.pending = null;
       slot.busy = false;
-      pending.resolve(parsed.ok && parsed.quote !== undefined
-        ? Object.freeze({ ok: true, value: parsed.quote })
+      pending.resolve(parsed.ok && quote !== undefined
+        ? Object.freeze({ ok: true, value: quote })
         : executionError(parsed.error));
     });
   }
@@ -177,7 +197,7 @@ export async function createWorkerQuoteExecutor(
     maximumActiveWork: workerCount,
     maximumQueuedWork: SERVICE_POLICY.maxQueuedWork,
     execute: async (
-      _snapshot: ServiceSnapshot,
+      snapshot: ServiceSnapshot,
       parsed: ParsedServiceQuote,
       options: QuoteOptions,
     ): Promise<ServiceExecutionResult> => {
@@ -188,7 +208,17 @@ export async function createWorkerQuoteExecutor(
       const requestId = nextRequest;
       slot.busy = true;
       return new Promise((resolve) => {
-        slot.pending = { requestId, resolve };
+        slot.pending = {
+          requestId,
+          expected: {
+            snapshotId: parsed.request.snapshotId,
+            snapshotChecksum: snapshot.snapshotChecksum,
+            assetIn: parsed.request.assetIn,
+            assetOut: parsed.request.assetOut,
+            amountIn: parsed.request.amountIn.toString(10),
+          },
+          resolve,
+        };
         try {
           slot.worker.postMessage({
             schemaVersion: 'routelab.worker-quote-request.v1',

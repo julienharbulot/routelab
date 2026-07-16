@@ -18,12 +18,12 @@ Every headline request uses `maxHops=2` and `maxRoutes=2`.
 best-single
 greedy-split / fast, balanced, thorough
 numerical-split / fast, balanced, thorough
-bounded numerical reference
+large-budget comparison
 ```
 
-The reference uses one frozen profile larger than public thorough effort with the same route restrictions. It is bounded and is not a global optimum. Its allocation grid is not nested with the public grids, so it is not assumed to dominate them. Regret is integer parts per million against the best exact output observed across every declared fixed mode; report-only bps are derived from ppm.
+The comparison uses one frozen profile larger than public thorough effort with the same route restrictions. It is bounded and is not a global optimum. Its allocation grid is not nested with the public grids, so it is not assumed to dominate them. Regret is integer parts per million against the best exact output observed across every declared fixed mode; equality with the large-budget mode remains a separate diagnostic and report-only bps are derived from ppm.
 
-For every mode, overall and by amount bucket and topology, the report records quote/no-route and fresh replay counts, equality with the reference, regret percentiles and thresholds, best-single and split improvement frequencies, median/maximum positive improvement ppm among improved requests, deterministic work, authorization rejections, numerical proposal failures and convergence, and reference-beaten counts. Numerical-versus-greedy comparisons add beats/ties/loses, positive improvement ppm, and additional work.
+For every mode, overall and by amount bucket and topology, the report records quote/no-route and fresh replay counts, equality with the large-budget mode, regret percentiles and thresholds, best-single and split improvement frequencies, median/maximum positive improvement ppm among improved requests, authorization rejections, and large-budget-beaten counts. Unlike work kinds are never added together: path expansions, candidate-set expansions, greedy option replays, final authorization replays, numerical proposals, numerical iterations, and numerical authorization replays each retain p50/p95 values. Proposal attempts reconcile into converged and failed proposals, with all-proposals-converged requests and exactly selected numerical improvements counted separately. Numerical-versus-greedy comparisons add beats/ties/loses and positive improvement ppm.
 
 Per-request exact rows are written only to ignored `reports/raw/portfolio-v2-rows.json`. The committed summary contains aggregates and canonical digests.
 
@@ -37,14 +37,14 @@ Timing is local observational evidence. It is not a semantic budget, production-
 
 ## Charts and committed outputs
 
-`reports/quality-vs-work.svg` plots deterministic work on the x-axis and p95 regret ppm on the y-axis for greedy and numerical modes across all three effort profiles. `reports/historical-regret-distribution.svg` plots the share within exact, 1, 10, and 100 bps.
+`reports/quality-by-effort.svg` uses categorical effort on the x-axis and p95 regret ppm on the y-axis for greedy and numerical modes across all three effort profiles. `reports/historical-regret-distribution.svg` plots the share within exact, 1, 10, and 100 bps.
 
 Committed benchmark outputs are:
 
 ```text
 reports/portfolio-v2.md
 reports/portfolio-v2-summary.json
-reports/quality-vs-work.svg
+reports/quality-by-effort.svg
 reports/historical-regret-distribution.svg
 ```
 

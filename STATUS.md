@@ -4,9 +4,9 @@
 
 Implemented: one-invocation service comparison, strict worker quote validation, deadline/overload lanes, categorical effort chart, structured counters, and proposal-level convergence.
 
-Evidence source: `8babed2e2a7d1101980757777e06043eea5bc4e9`; digest `sha256:cd363964aa8f3f5c3ea27b181720704f3adc9268d2ab207987c54053bc79980c` over 90 named paths.
+Evidence source: `a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4`; digest `sha256:a7ecadf66fa5b4fca088827d616071a984d28807b105c7f8aafb2c0d07b8adb7` over 90 named paths.
 
-Result: workers passed the frozen gate at c16, reducing p95 from 52.44 to 26.89 ms and raising throughput from 425.1 to 923.3/s while peak RSS rose from 250.8 to 409.0 MiB.
+Result: workers passed the frozen gate at c16, reducing p95 from 51.07 to 20.16 ms and raising throughput from 432.4 to 1,143.1/s while peak RSS rose from 250.3 to 409.3 MiB.
 
 Next: run the complete REL-002 gate and read-only review before beginning REL-003.
 

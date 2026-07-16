@@ -2,22 +2,22 @@
 
 The load generator and quote server run in separate processes over localhost. Same-thread mode retains 1 active synchronous quote; worker mode uses 4 fixed workers. Both modes retain at most 32 queued quotes, with typed 503 overload responses.
 
-Evidence source: 8babed2e2a7d1101980757777e06043eea5bc4e9; routelab.evidence-source-paths.v1 (90 named paths); sha256:cd363964aa8f3f5c3ea27b181720704f3adc9268d2ab207987c54053bc79980c.
+Evidence source: a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4; routelab.evidence-source-paths.v1 (90 named paths); sha256:a7ecadf66fa5b4fca088827d616071a984d28807b105c7f8aafb2c0d07b8adb7.
 
-| Mode | Concurrency | Requests | Completed/typed error/timeout/schema failure | Client success p50/p95/p99 ms | Error response p50/p95/p99 ms | req/s | Exact output/fingerprint/semantic match | Deadline completion | Quote service p50/p95/p99 ms | Event-loop p95/max ms | Accepted/rejected/overload | Max active/queued | Terminations | Route counts | RSS initial/peak/final MiB | Heap initial/peak/final MiB |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| same-thread | 1 | 1000 | 1000/0/0/0 | 3.49/6.13/7.32 | n/a | 257.8 | 1000/1000/1000 | 100.00% | 1.78/4.28/5.27 | 13.54/15.92 | 1000/0/0 | 1/0 | complete:1000 | 1:720, 2:280 | 119.2/180.0/180.0 | 19.0/53.1/22.9 |
-| same-thread | 4 | 1000 | 1000/0/0/0 | 8.50/15.52/16.75 | n/a | 433.4 | 1000/1000/1000 | 100.00% | 1.79/4.14/4.86 | 13.51/15.15 | 1000/0/0 | 1/2 | complete:1000 | 1:720, 2:280 | 180.5/234.5/234.5 | 27.3/85.3/58.6 |
-| same-thread | 16 | 1000 | 1000/0/0/0 | 37.97/52.44/56.73 | n/a | 425.1 | 1000/1000/1000 | 100.00% | 1.86/4.26/4.96 | 13.39/14.93 | 1000/0/0 | 1/14 | complete:1000 | 1:720, 2:280 | 238.1/250.8/250.8 | 72.1/95.5/44.7 |
-| worker | 1 | 1000 | 1000/0/0/0 | 3.67/7.17/10.13 | n/a | 232.3 | 1000/1000/1000 | 100.00% | 2.00/4.69/7.15 | 10.80/11.32 | 1000/0/0 | 1/0 | complete:1000 | 1:720, 2:280 | 217.1/283.4/283.4 | 13.8/22.0/22.0 |
-| worker | 4 | 1000 | 1000/0/0/0 | 4.97/9.73/13.77 | n/a | 694.1 | 1000/1000/1000 | 100.00% | 3.06/7.37/11.10 | 10.66/11.12 | 1000/0/0 | 4/0 | complete:1000 | 1:720, 2:280 | 284.2/377.7/377.7 | 19.6/33.6/24.5 |
-| worker | 16 | 1000 | 1000/0/0/0 | 16.46/26.89/36.27 | n/a | 923.3 | 1000/1000/1000 | 100.00% | 3.55/8.00/10.87 | 10.96/23.05 | 1000/0/0 | 4/12 | complete:1000 | 1:720, 2:280 | 377.7/409.0/409.0 | 25.7/36.7/33.2 |
+| Mode | Concurrency | Requests | Completed/typed error/timeout/schema failure | Client success p50/p95/p99 ms | Error response p50/p95/p99 ms | req/s | Exact output/fingerprint/semantic match | Deadline completion | Queue wait p50/p95/p99 ms | Quote service p50/p95/p99 ms | Event-loop p95/max ms | Accepted/rejected/overload | Max active/queued | Terminations | Route counts | RSS initial/peak/final MiB | Heap initial/peak/final MiB |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| same-thread | 1 | 1000 | 1000/0/0/0 | 3.52/6.27/7.60 | n/a | 254.3 | 1000/1000/1000 | 100.00% | 0.01/0.01/0.04 | 1.78/4.36/5.27 | 13.30/15.56 | 1000/0/0 | 1/0 | complete:1000 | 1:720, 2:280 | 117.5/180.6/180.6 | 14.7/55.2/25.1 |
+| same-thread | 4 | 1000 | 1000/0/0/0 | 8.93/16.62/22.21 | n/a | 401.5 | 1000/1000/1000 | 100.00% | 4.32/9.41/12.16 | 1.93/4.55/5.60 | 13.37/15.86 | 1000/0/0 | 1/2 | complete:1000 | 1:720, 2:280 | 181.4/238.1/238.1 | 29.5/87.0/71.8 |
+| same-thread | 16 | 1000 | 1000/0/0/0 | 37.35/51.07/53.63 | n/a | 432.4 | 1000/1000/1000 | 100.00% | 31.95/45.04/47.87 | 1.85/4.20/4.68 | 13.25/15.14 | 1000/0/0 | 1/14 | complete:1000 | 1:720, 2:280 | 239.1/250.3/250.3 | 32.6/96.0/45.2 |
+| worker | 1 | 1000 | 1000/0/0/0 | 3.57/6.21/7.46 | n/a | 252.4 | 1000/1000/1000 | 100.00% | 0.01/0.02/0.04 | 1.93/4.38/5.50 | 10.80/11.07 | 1000/0/0 | 1/0 | complete:1000 | 1:720, 2:280 | 215.1/282.6/282.6 | 13.8/21.5/20.4 |
+| worker | 4 | 1000 | 1000/0/0/0 | 4.56/8.34/11.48 | n/a | 780.1 | 1000/1000/1000 | 100.00% | 0.01/0.09/0.20 | 2.72/6.41/9.47 | 10.76/11.09 | 1000/0/0 | 4/0 | complete:1000 | 1:720, 2:280 | 282.9/376.0/376.0 | 21.7/33.1/26.6 |
+| worker | 16 | 1000 | 1000/0/0/0 | 13.59/20.16/25.42 | n/a | 1143.1 | 1000/1000/1000 | 100.00% | 8.30/12.63/14.17 | 2.93/6.45/7.07 | 10.67/18.78 | 1000/0/0 | 4/12 | complete:1000 | 1:720, 2:280 | 377.1/409.3/409.3 | 27.8/36.3/35.3 |
 
 ## Worker decision
 
 Decision: **retained**. The frozen semantic, tail, throughput, c1 overhead, admission, and memory gates passed.
 
-Frozen gate measurements: semantic/schema=true; tail=p95 487262 ppm; event-loop max=-544420 ppm; c16 throughput ratio=2171905 ppm; c1 p50 overhead=182 µs; no lost requests=true; memory reported=true.
+Frozen gate measurements: semantic/schema=true; tail=p95 605204 ppm; event-loop max=-240241 ppm; c16 throughput ratio=2643394 ppm; c1 p50 overhead=54 µs; no lost requests=true; memory reported=true.
 
 The frozen retention thresholds are: no semantic/schema regression; at least 25% c16 p95 or p99 improvement, or at least 50% event-loop max improvement; c16 throughput at least 90% of baseline; c1 p50 overhead no more than 2 ms; no lost requests; and reported memory cost.
 
@@ -25,9 +25,9 @@ The frozen retention thresholds are: no semantic/schema regression; at least 25%
 
 | Deadline | Requests | Complete/deadline incumbent/before plan/overload/timeout/failure | Exact valid | Complete p50/p95/p99 ms | Deadline incumbent p50/p95/p99 ms | Error p50/p95/p99 ms |
 |---:|---:|---:|---:|---:|---:|---:|
-| 25 ms | 200 | 31/161/8/0/0/0 | 192 | 23.47/27.09/n/a | 27.24/28.73/n/a | 28.37/29.24/n/a |
-| 50 ms | 200 | 153/47/0/0/0/0 | 200 | 40.85/51.49/n/a | 52.05/53.22/n/a | n/a |
-| 100 ms | 200 | 200/0/0/0/0/0 | 200 | 49.41/72.39/n/a | n/a | n/a |
+| 25 ms | 200 | 40/146/14/0/0/0 | 186 | 23.61/27.58/n/a | 27.27/30.37/n/a | 26.98/28.12/n/a |
+| 50 ms | 200 | 158/42/0/0/0/0 | 200 | 42.64/50.99/n/a | 52.02/53.36/n/a | n/a |
+| 100 ms | 200 | 200/0/0/0/0/0 | 200 | 46.73/71.31/n/a | n/a | n/a |
 
 Deadline outcomes are classified separately from the normal successful-latency distribution. Every complete or deadline-incumbent quote counted above passed exact replay and fingerprint validation in the load-generator process.
 
@@ -37,12 +37,12 @@ The deterministic 52-request burst exceeded 4 active plus 32 queued work slots: 
 
 ## Method and limitations
 
-The load-generator process owns concurrency scheduling, client timeouts, end-to-end latency, response validation, and client aggregation. The server child alone owns admission, structured completion logs, quote execution, event-loop delay, and server memory metrics.
+The load-generator process owns concurrency scheduling, client timeouts, end-to-end latency, response validation, and client aggregation. The server child alone owns admission, queue-wait and quote-service distributions, structured completion logs, quote execution, event-loop delay, and server memory metrics.
 
 Each normal retained row rotates all 396 requests in deterministic corpus order, uses 50 warmups and 1000 measured requests, greedy-split/fast, a 5000 ms end-to-end quote deadline, and a 10000 ms client timeout. Same-thread is shut down before worker mode starts; no prior report is read as a baseline. Successful and error-response latency are separate; p99 is omitted below 1,000 observations. Server event-loop and memory metrics come only from the server process.
 
 The requests are synthetic exact-input requests derived from one historical pool-reserve snapshot, not historical order flow or representative demand. This local result is not a production-capacity or statistical-significance claim. No live upstream, transaction submission, signing, custody, execution, or settlement is involved.
 
-Environment: v24.18.0; linux/x64; 13th Gen Intel(R) Core(TM) i9-13900H; source revision 8babed2e2a7d1101980757777e06043eea5bc4e9; observed 2026-07-16T03:27:16.386Z.
+Environment: v24.18.0; linux/x64; 13th Gen Intel(R) Core(TM) i9-13900H; source revision a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4; observed 2026-07-16T03:40:12.099Z.
 
 ![Service latency](service-latency.svg)

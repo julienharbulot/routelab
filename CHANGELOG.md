@@ -17,12 +17,13 @@
   snapshot. All 3,168 returned mode/request plans passed fresh exact replay; fast numerical split
   beat/tied/lost fast greedy split on 19/377/0 requests.
 - Retained benchmark and service reports identify source commit
-  `8babed2e2a7d1101980757777e06043eea5bc4e9` and source-tree digest
-  `sha256:cd363964aa8f3f5c3ea27b181720704f3adc9268d2ab207987c54053bc79980c`.
+  `a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4` and source-tree digest
+  `sha256:a7ecadf66fa5b4fca088827d616071a984d28807b105c7f8aafb2c0d07b8adb7`.
 - All 6,000 normal service responses matched exact output and fingerprint. At concurrency 16,
-  workers changed p95 from 52.44 to 26.89 ms and throughput from 425.1 to 923.3 requests/s while
-  peak server RSS rose from 250.8 to 409.0 MiB, passing the frozen retention gate.
-- Deadline lanes at 25/50/100 ms returned 192/200/200 exactly validated quotes and 8/0/0
+  workers changed p95 from 51.07 to 20.16 ms and throughput from 432.4 to 1,143.1 requests/s while
+  peak server RSS rose from 250.3 to 409.3 MiB, passing the frozen retention gate. Queue-wait and
+  quote-service distributions are reported separately.
+- Deadline lanes at 25/50/100 ms returned 186/200/200 exactly validated quotes and 14/0/0
   deadline-before-plan errors. The 52-request overload burst accepted 36 exact quotes and returned
   16 typed 503 overloads, all with `Retry-After`.
 

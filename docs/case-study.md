@@ -50,17 +50,18 @@ adding unlike work units.
 ## Service decision
 
 The load generator and server ran in separate processes from clean source commit
-`8babed2e2a7d1101980757777e06043eea5bc4e9`. Same-thread mode shut down before four-worker mode
+`a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4`. Same-thread mode shut down before four-worker mode
 started, and no prior report supplied a baseline. All 6,000 normal responses matched exact output
 and fingerprint.
 
-At concurrency 16, workers changed p95 latency from 52.44 to 26.89 ms and throughput from 425.1 to
-923.3 requests/s. The cost was explicit: peak server RSS rose from 250.8 to 409.0 MiB, and maximum
-event-loop delay was worse in that lane. Workers were retained because the predeclared semantic,
-tail-latency, throughput, c1-overhead, admission, and memory-reporting gate passed.
+At concurrency 16, workers changed p95 latency from 51.07 to 20.16 ms and throughput from 432.4 to
+1,143.1 requests/s. Queue-wait p95 fell from 45.04 to 12.64 ms even though quote-service p95 rose
+from 4.20 to 6.45 ms. The cost was explicit: peak server RSS rose from 250.3 to 409.3 MiB, and
+maximum event-loop delay was worse in that lane. Workers were retained because the predeclared
+semantic, tail-latency, throughput, c1-overhead, admission, and memory-reporting gate passed.
 
-At concurrency 16, the 25/50/100 ms lanes returned 192/200/200 exactly validated quotes, including
-deadline incumbents, plus 8/0/0 deadline-before-plan errors and no schema/internal failures. A
+At concurrency 16, the 25/50/100 ms lanes returned 186/200/200 exactly validated quotes, including
+deadline incumbents, plus 14/0/0 deadline-before-plan errors and no schema/internal failures. A
 52-request burst filled all 4 active and 32 queued slots; 36 accepted requests remained exact and
 16 received typed 503 overload responses with `Retry-After`.
 

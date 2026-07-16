@@ -2,7 +2,7 @@
   "schemaVersion": "routelab.portfolio-benchmark-summary.v2",
   "evidenceSource": {
     "schemaVersion": "routelab.evidence-source.v1",
-    "revision": "8babed2e2a7d1101980757777e06043eea5bc4e9",
+    "revision": "a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4",
     "pathSet": {
       "schemaVersion": "routelab.evidence-source-paths.v1",
       "paths": [
@@ -98,7 +98,7 @@
         "tsconfig.json"
       ]
     },
-    "digest": "sha256:cd363964aa8f3f5c3ea27b181720704f3adc9268d2ab207987c54053bc79980c"
+    "digest": "sha256:a7ecadf66fa5b4fca088827d616071a984d28807b105c7f8aafb2c0d07b8adb7"
   },
   "corpus": {
     "schemaVersion": "routelab.synthetic-request-corpus-verification-summary.v1",
@@ -3481,12 +3481,12 @@
     ]
   },
   "environment": {
-    "observedAt": "2026-07-16T03:26:53.208Z",
+    "observedAt": "2026-07-16T03:39:49.091Z",
     "node": "v24.18.0",
     "platform": "linux",
     "arch": "x64",
     "cpu": "13th Gen Intel(R) Core(TM) i9-13900H",
-    "commit": "8babed2e2a7d1101980757777e06043eea5bc4e9"
+    "commit": "a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4"
   },
   "latency": [
     {
@@ -3498,14 +3498,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 46,
-        "p95Micros": 73,
-        "p99Micros": 177,
-        "minMicros": 32,
-        "maxMicros": 1501
+        "p50Micros": 48,
+        "p95Micros": 92,
+        "p99Micros": 183,
+        "minMicros": 34,
+        "maxMicros": 1461
       },
       "noRoute": null,
-      "throughputPerSecond": 18588.989
+      "throughputPerSecond": 17248.243
     },
     {
       "strategy": "greedy-split",
@@ -3516,14 +3516,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 1645,
-        "p95Micros": 3902,
-        "p99Micros": 4517,
-        "minMicros": 608,
-        "maxMicros": 5383
+        "p50Micros": 1680,
+        "p95Micros": 4027,
+        "p99Micros": 4536,
+        "minMicros": 632,
+        "maxMicros": 5086
       },
       "noRoute": null,
-      "throughputPerSecond": 540.315
+      "throughputPerSecond": 525.932
     },
     {
       "strategy": "numerical-split",
@@ -3534,14 +3534,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 3023,
-        "p95Micros": 7543,
-        "p99Micros": 8616,
-        "minMicros": 1082,
-        "maxMicros": 9895
+        "p50Micros": 3084,
+        "p95Micros": 7466,
+        "p99Micros": 8637,
+        "minMicros": 1086,
+        "maxMicros": 11607
       },
       "noRoute": null,
-      "throughputPerSecond": 284.381
+      "throughputPerSecond": 282.782
     },
     {
       "strategy": "greedy-split",
@@ -3552,14 +3552,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 3268,
-        "p95Micros": 7770,
-        "p99Micros": 8537,
-        "minMicros": 1217,
-        "maxMicros": 9476
+        "p50Micros": 3317,
+        "p95Micros": 7800,
+        "p99Micros": 8600,
+        "minMicros": 1171,
+        "maxMicros": 9820
       },
       "noRoute": null,
-      "throughputPerSecond": 273.083
+      "throughputPerSecond": 271.022
     },
     {
       "strategy": "numerical-split",
@@ -3570,14 +3570,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 6007,
-        "p95Micros": 14633,
-        "p99Micros": 15829,
-        "minMicros": 2158,
-        "maxMicros": 17907
+        "p50Micros": 5970,
+        "p95Micros": 14791,
+        "p99Micros": 16041,
+        "minMicros": 2195,
+        "maxMicros": 17851
       },
       "noRoute": null,
-      "throughputPerSecond": 146.093
+      "throughputPerSecond": 146.909
     }
   ]
 }

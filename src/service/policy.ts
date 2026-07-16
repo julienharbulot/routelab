@@ -7,4 +7,8 @@ export const SERVICE_POLICY = Object.freeze({
   maxHops: 3,
   maxRoutes: 3,
   maxDeadlineMs: 5_000,
+  maxActiveWork: 1,
+  maxQueuedWork: 32,
+  overloadRetryAfterSeconds: 1,
+  workerCount: 4,
 });

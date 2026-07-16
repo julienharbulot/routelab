@@ -140,7 +140,7 @@ export type QuoteResult =
 
 `RoutingContext` should be nominal or otherwise opaque so callers cannot fabricate one.
 
-`quote()` is synchronous in v0.1 because the retained core is CPU-bound and synchronous. The HTTP benchmark must measure the event-loop consequence rather than hiding it. Worker isolation is a later measured decision.
+`quote()` remains synchronous and CPU-bound. The HTTP boundary therefore uses a measured fixed worker pool: each worker prepares immutable snapshots once, messages carry canonical decimal strings, and the main server retains bounded admission and queue/deadline policy. The isolated same-thread baseline remains in the service report.
 
 The default is `greedy-split` with `balanced` effort. Numerical routing is explicit and benchmarked.
 
@@ -208,11 +208,13 @@ The HTTP server owns:
 - maximum hops/routes;
 - allowed effort profiles;
 - maximum deadline;
+- maximum active and queued work;
+- typed overload behavior;
 - diagnostics exposure.
 
 The service does not accept raw internal work caps.
 
-The server stays local/offline for v0.1. A network adapter may be added later without changing the router.
+The default CLI service uses four fixed workers because the predeclared local retention gate passed. Same-thread mode remains available for measurement. The server stays local/offline for v0.1; a network adapter may be added later without changing the router.
 
 ## NEAR Intents boundary
 

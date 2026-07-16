@@ -4,9 +4,6 @@ RouteLab v0.1 is a compact exact-input liquidity-routing portfolio project. The 
 
 ## Release-candidate work
 
-- Base quality evidence on all 396 synthetic requests derived from the retained historical reserve snapshot, separated from hand-readable correctness fixtures.
-- Report quality against deterministic work with stratification by amount tier and topology.
-- Isolate the HTTP server from the load generator, add bounded admission control, and retain worker threads only if the measured gate justifies them.
 - Align the offline NEAR Intents parser and unsigned solver draft with current official request/event shapes.
 - Complete clean-clone, packed-consumer, CI, and release-note proof before an owner-approved tag.
 

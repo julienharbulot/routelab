@@ -167,24 +167,6 @@ export interface LatencyRow {
   readonly throughputPerSecond: number;
 }
 
-export interface HttpLoadRow {
-  readonly concurrency: number;
-  readonly requests: number;
-  readonly completed: number;
-  readonly failed: number;
-  readonly timedOut: number;
-  readonly p50Micros: number;
-  readonly p95Micros: number;
-  readonly p99Micros: number | null;
-  readonly throughputPerSecond: number;
-  readonly deadlineCompletionRate: number;
-  readonly eventLoopDelayMeanMicros: number;
-  readonly eventLoopDelayMaxMicros: number;
-  readonly initialRssBytes: number;
-  readonly peakRssBytes: number;
-  readonly rssDeltaBytes: number;
-}
-
 export interface BenchmarkEnvironment {
   readonly observedAt: string;
   readonly node: string;

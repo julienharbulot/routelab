@@ -9,6 +9,7 @@ RouteLab is an exact-input TypeScript liquidity router for immutable snapshots o
 - At fast effort, numerical split beat/tied/lost greedy split on 19/377/0 requests.
 - Thorough numerical split had p95 regret of 640 ppm (6.40 bps) against the best observed declared fixed mode.
 - On the recorded local run, fast greedy split had 1,550 µs p50 and 4,033 µs p99 in-process latency over 1,000 rotating requests.
+- At HTTP concurrency 16, the retained four-worker mode reduced p95 from 46.08 ms to 19.30 ms and raised throughput from 480.1 to 1,189.2 requests/s, with all 3,000 worker responses matching expected exact outputs and fingerprints.
 
 See the [full benchmark report](reports/portfolio-v2.md).
 
@@ -83,18 +84,21 @@ The CLI loads symbols and decimals from a dataset manifest beside the snapshot. 
 pnpm serve
 ```
 
-The loopback service prepares the retained snapshot at startup and exposes `GET /health`,
+The loopback service prepares the retained snapshot once in each of four fixed workers and exposes `GET /health`,
 `GET /v1/snapshots`, and `POST /v1/quote`. Its boundary limits the body to 32 KiB, requires
 canonical decimal amount strings, bounds all identifiers and route controls, and never accepts
-internal work caps. Run `pnpm serve:smoke`, `pnpm test:api`, or `pnpm load:smoke` for local checks.
+internal work caps. Admission is bounded to four active and 32 queued quotes with typed overloads;
+use `pnpm serve -- --mode same-thread` for the measured one-active baseline. Run
+`pnpm serve:smoke`, `pnpm test:api`, or `pnpm load:smoke` for local checks.
 
 ## Benchmark evidence
 
 `pnpm benchmark` regenerates deterministic quality and 1,000-sample in-process latency evidence;
 `pnpm benchmark:verify` freshly replays every reported success. `pnpm load --
---concurrency 1,4,16` measures the actual same-thread HTTP service. Raw observations are ignored.
+--mode same-thread --concurrency 1,4,16` measures the isolated baseline, while `--mode worker`
+performs the retained fixed-worker comparison. Raw observations are ignored.
 
-See the concise [portfolio report](reports/portfolio-v2.md), [load report](reports/load-v1.md),
+See the concise [portfolio report](reports/portfolio-v2.md), [service report](reports/service-v2.md),
 and [benchmark methodology](docs/benchmark.md). The curated inputs and one local machine are not
 representative demand or a production-capacity claim.
 
@@ -136,7 +140,7 @@ The package consumer check packs a tarball, installs it into a clean temporary E
 - Route discovery, split cardinality, allocation work, and numerical work are bounded. RouteLab does not claim unrestricted global optimality.
 - The retained dataset is one 54-pool allowlist snapshot at Ethereum block 19,000,000. Its synthetic request corpus is not historical or representative demand.
 - The project uses snapshots and localhost only; it does not submit transactions, sign messages, hold funds, connect to a relay, or settle trades.
-- The HTTP service is synchronous and same-thread. The retained concurrency report shows event-loop queueing; worker isolation is not included.
+- The HTTP boundary uses a fixed four-worker pool selected by the documented local retention gate; it is not a production-capacity claim or an adaptive scheduler.
 - Timing is observational and excluded from plan fingerprints; no production-latency claim is made.
 
 See [architecture](docs/architecture.md), [benchmark design](docs/benchmark.md), [accepted invariants](docs/invariants.md), [roadmap](docs/roadmap.md), and [current status](STATUS.md).

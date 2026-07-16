@@ -54,4 +54,4 @@ Each remains below 250 KiB. Raw rows, latency observations, and temporary output
 
 `pnpm benchmark:verify` re-verifies corpus identity and count, reruns deterministic quality, freshly exact-replays every success, checks exact allocation conservation, reconciles all aggregates and digests, enforces the best-observed comparison rule, validates latency sample counts, rejects tracked raw data, and byte-compares deterministic Markdown and SVG rendering. It also checks chart titles, axes, series, and a non-degenerate quality metric.
 
-`pnpm benchmark:extended` is a lightweight full-corpus fast-strategy traversal. The current [portfolio report](../reports/portfolio-v2.md) and [same-thread HTTP load report](../reports/load-v1.md) are local v0.1 evidence.
+`pnpm benchmark:extended` is a lightweight full-corpus fast-strategy traversal. The current [portfolio report](../reports/portfolio-v2.md) and [isolated HTTP service report](../reports/service-v2.md) are local v0.1 evidence.

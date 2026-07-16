@@ -5,9 +5,15 @@ import {
   closeQuoteHttpService,
   createQuoteHttpService,
 } from '../src/service/index.ts';
+import { createWorkerQuoteExecutor } from '../src/service/worker-pool.ts';
 
 const args = process.argv.slice(2).filter((value) => value !== '--');
 const smoke = args.includes('--smoke');
+const modeIndex = args.indexOf('--mode');
+const mode = modeIndex === -1 ? 'worker' : args[modeIndex + 1];
+if (mode !== 'same-thread' && mode !== 'worker') {
+  throw new Error('--mode must be same-thread or worker.');
+}
 const portIndex = args.indexOf('--port');
 const rawPort = portIndex === -1 ? (smoke ? '0' : '8787') : args[portIndex + 1];
 if (rawPort === undefined || !/^(?:0|[1-9][0-9]*)$/u.test(rawPort)) {
@@ -23,9 +29,10 @@ const raw = JSON.parse(await readFile(
   'utf8',
 )) as unknown;
 const logs: string[] = [];
+const executor = mode === 'worker' ? await createWorkerQuoteExecutor([raw]) : undefined;
 const service = createQuoteHttpService([raw], smoke
   ? (line) => logs.push(line)
-  : undefined);
+  : (line) => process.stdout.write(`${line}\n`), executor);
 await new Promise<void>((resolve, reject) => {
   service.server.once('error', reject);
   service.server.listen(port, '127.0.0.1', () => {
@@ -57,9 +64,13 @@ if (smoke) {
   if (!health.ok || !snapshots.ok || !quote.ok || logs.length !== 3) {
     throw new Error('Quote service smoke check failed.');
   }
-  process.stdout.write(`quote service smoke passed on loopback (${logs.length} structured completions)\n`);
+  process.stdout.write(
+    `quote service smoke passed on loopback in ${mode} mode (${logs.length} structured completions)\n`,
+  );
 } else {
-  process.stdout.write(`RouteLab quote service listening on http://127.0.0.1:${address.port}\n`);
+  process.stdout.write(
+    `RouteLab quote service listening on http://127.0.0.1:${address.port} in ${mode} mode\n`,
+  );
   let stopping = false;
   const stop = (signal: string): void => {
     if (stopping) return;

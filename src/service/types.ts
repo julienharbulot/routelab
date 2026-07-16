@@ -54,6 +54,7 @@ export interface ServiceMetrics {
   readonly structuredCompletionCount: number;
   readonly terminationCounts: Readonly<Record<string, number>>;
   readonly routeCountCounts: Readonly<Record<string, number>>;
+  readonly queueWait: ServiceLatencyDistribution | null;
   readonly quoteService: ServiceLatencyDistribution | null;
   readonly eventLoopDelayP95Micros: number;
   readonly eventLoopDelayMaxMicros: number;

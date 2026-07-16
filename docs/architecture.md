@@ -217,7 +217,7 @@ The HTTP server owns:
 
 The service does not accept raw internal work caps.
 
-The default CLI service uses four fixed workers and same-thread mode remains available for measurement. The earlier worker evidence combined different runs, so it is no longer used to justify retention. Until one invocation measures both modes, retained worker comparison fails closed rather than reading a previous report. The server stays local/offline for v0.1; a network adapter may be added later without changing the router.
+The default CLI service uses four fixed workers and same-thread mode remains available for measurement. The retained comparison runs both modes sequentially in one invocation without reading a previous report; workers passed the frozen gate with their peak-RSS and event-loop costs reported. The server stays local/offline for v0.1; a network adapter may be added later without changing the router.
 
 ## NEAR Intents boundary
 

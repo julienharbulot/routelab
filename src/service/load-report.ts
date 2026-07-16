@@ -18,6 +18,13 @@ function service(row: ServiceLoadRow): string {
     : `${milliseconds(value.p50Micros)}/${milliseconds(value.p95Micros)}/${milliseconds(value.p99Micros)}`;
 }
 
+function queueWait(row: ServiceLoadRow): string {
+  const value = row.server.queueWait;
+  return value === null
+    ? 'n/a'
+    : `${milliseconds(value.p50Micros)}/${milliseconds(value.p95Micros)}/${milliseconds(value.p99Micros)}`;
+}
+
 function errorLatency(row: ServiceLoadRow): string {
   const value = row.errorResponseLatency;
   return value === null
@@ -51,7 +58,7 @@ function deadlineTable(report: ServiceLoadReport): string {
 
 export function renderServiceMarkdown(report: ServiceLoadReport): string {
   const rows = report.rows.map((row) =>
-    `| ${row.mode} | ${row.concurrency} | ${row.requests} | ${row.completed}/${row.typedErrors}/${row.timedOut}/${row.responseSchemaFailures} | ${successful(row)} | ${errorLatency(row)} | ${row.throughputPerSecond.toFixed(1)} | ${row.exactOutputPresenceCount}/${row.fingerprintPresenceCount}/${row.semanticMatchCount} | ${row.deadlineCompletionRatePpm === null ? 'n/a' : `${(row.deadlineCompletionRatePpm / 10_000).toFixed(2)}%`} | ${service(row)} | ${(row.server.eventLoopDelayP95Micros / 1_000).toFixed(2)}/${(row.server.eventLoopDelayMaxMicros / 1_000).toFixed(2)} | ${row.server.admissionAcceptedCount}/${row.server.admissionRejectedCount}/${row.server.overloadCount} | ${row.server.maximumActiveWork}/${row.server.maximumQueuedWork} | ${counts(row.server.terminationCounts)} | ${counts(row.server.routeCountCounts)} | ${(row.server.initialRssBytes / 1_048_576).toFixed(1)}/${(row.server.peakRssBytes / 1_048_576).toFixed(1)}/${(row.server.finalRssBytes / 1_048_576).toFixed(1)} | ${(row.server.initialHeapUsedBytes / 1_048_576).toFixed(1)}/${(row.server.peakHeapUsedBytes / 1_048_576).toFixed(1)}/${(row.server.finalHeapUsedBytes / 1_048_576).toFixed(1)} |`,
+    `| ${row.mode} | ${row.concurrency} | ${row.requests} | ${row.completed}/${row.typedErrors}/${row.timedOut}/${row.responseSchemaFailures} | ${successful(row)} | ${errorLatency(row)} | ${row.throughputPerSecond.toFixed(1)} | ${row.exactOutputPresenceCount}/${row.fingerprintPresenceCount}/${row.semanticMatchCount} | ${row.deadlineCompletionRatePpm === null ? 'n/a' : `${(row.deadlineCompletionRatePpm / 10_000).toFixed(2)}%`} | ${queueWait(row)} | ${service(row)} | ${(row.server.eventLoopDelayP95Micros / 1_000).toFixed(2)}/${(row.server.eventLoopDelayMaxMicros / 1_000).toFixed(2)} | ${row.server.admissionAcceptedCount}/${row.server.admissionRejectedCount}/${row.server.overloadCount} | ${row.server.maximumActiveWork}/${row.server.maximumQueuedWork} | ${counts(row.server.terminationCounts)} | ${counts(row.server.routeCountCounts)} | ${(row.server.initialRssBytes / 1_048_576).toFixed(1)}/${(row.server.peakRssBytes / 1_048_576).toFixed(1)}/${(row.server.finalRssBytes / 1_048_576).toFixed(1)} | ${(row.server.initialHeapUsedBytes / 1_048_576).toFixed(1)}/${(row.server.peakHeapUsedBytes / 1_048_576).toFixed(1)}/${(row.server.finalHeapUsedBytes / 1_048_576).toFixed(1)} |`,
   );
   const comparisonScope = report.configuration.modes.length === 1
     ? `This retained run contains ${report.configuration.modes[0]} mode only. Worker retention is not evaluated until both modes run sequentially in one invocation.`
@@ -63,8 +70,8 @@ export function renderServiceMarkdown(report: ServiceLoadReport): string {
     '',
     `Evidence source: ${report.evidenceSource.revision}; ${report.evidenceSource.pathSet.schemaVersion} (${report.evidenceSource.pathSet.paths.length} named paths); ${report.evidenceSource.digest}.`,
     '',
-    '| Mode | Concurrency | Requests | Completed/typed error/timeout/schema failure | Client success p50/p95/p99 ms | Error response p50/p95/p99 ms | req/s | Exact output/fingerprint/semantic match | Deadline completion | Quote service p50/p95/p99 ms | Event-loop p95/max ms | Accepted/rejected/overload | Max active/queued | Terminations | Route counts | RSS initial/peak/final MiB | Heap initial/peak/final MiB |',
-    '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
+    '| Mode | Concurrency | Requests | Completed/typed error/timeout/schema failure | Client success p50/p95/p99 ms | Error response p50/p95/p99 ms | req/s | Exact output/fingerprint/semantic match | Deadline completion | Queue wait p50/p95/p99 ms | Quote service p50/p95/p99 ms | Event-loop p95/max ms | Accepted/rejected/overload | Max active/queued | Terminations | Route counts | RSS initial/peak/final MiB | Heap initial/peak/final MiB |',
+    '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
     ...rows,
     '',
     '## Worker decision',
@@ -91,7 +98,7 @@ export function renderServiceMarkdown(report: ServiceLoadReport): string {
     '',
     '## Method and limitations',
     '',
-    'The load-generator process owns concurrency scheduling, client timeouts, end-to-end latency, response validation, and client aggregation. The server child alone owns admission, structured completion logs, quote execution, event-loop delay, and server memory metrics.',
+    'The load-generator process owns concurrency scheduling, client timeouts, end-to-end latency, response validation, and client aggregation. The server child alone owns admission, queue-wait and quote-service distributions, structured completion logs, quote execution, event-loop delay, and server memory metrics.',
     '',
     `Each normal retained row rotates all ${report.configuration.caseCount} requests in deterministic corpus order, uses ${report.configuration.warmupsPerConcurrency} warmups and ${report.configuration.requestsPerConcurrency} measured requests, ${report.configuration.strategy}/${report.configuration.effort}, a ${report.configuration.quoteDeadlineMs} ms end-to-end quote deadline, and a ${report.configuration.requestTimeoutMs} ms client timeout. Same-thread is shut down before worker mode starts; no prior report is read as a baseline. Successful and error-response latency are separate; p99 is omitted below 1,000 observations. Server event-loop and memory metrics come only from the server process.`,
     '',

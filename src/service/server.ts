@@ -56,6 +56,7 @@ interface MutableMetrics {
   structuredCompletionCount: number;
   terminationCounts: Record<string, number>;
   routeCountCounts: Record<string, number>;
+  queueWaitMicros: number[];
   quoteServiceMicros: number[];
 }
 
@@ -223,6 +224,7 @@ function freshMetrics(): MutableMetrics {
     structuredCompletionCount: 0,
     terminationCounts: {},
     routeCountCounts: {},
+    queueWaitMicros: [],
     quoteServiceMicros: [],
   };
 }
@@ -292,6 +294,7 @@ export function createQuoteHttpService(
       const quoteStarted = process.hrtime.bigint();
       const queueWaitNanoseconds = quoteStarted - job.enqueuedAt;
       const queueWaitMicros = Number(queueWaitNanoseconds / 1_000n);
+      metrics.queueWaitMicros.push(queueWaitMicros);
       const requestedDeadline = job.parsed.options.deadlineMs;
       let deadlineMs: number | undefined;
       if (requestedDeadline !== undefined) {
@@ -626,6 +629,7 @@ export function createQuoteHttpService(
       structuredCompletionCount: metrics.structuredCompletionCount,
       terminationCounts: Object.freeze({ ...metrics.terminationCounts }),
       routeCountCounts: Object.freeze({ ...metrics.routeCountCounts }),
+      queueWait: latency(metrics.queueWaitMicros),
       quoteService: latency(metrics.quoteServiceMicros),
       eventLoopDelayP95Micros: Math.round(eventLoop.percentile(95) / 1_000),
       eventLoopDelayMaxMicros: Math.round(eventLoop.max / 1_000),

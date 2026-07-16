@@ -303,6 +303,7 @@ void test('bounded admission returns typed overload with Retry-After', async () 
     controlled.releaseOne();
     assert.equal((await second).status, 200);
     assert.equal(service.readMetrics().overloadCount, 1);
+    assert.equal(service.readMetrics().queueWait?.samples, 2);
   } finally {
     await closeQuoteHttpService(service);
   }

@@ -387,6 +387,7 @@ function validateSpecialLanes(report: ServiceLoadReport, issues: string[]): void
     if (
       value.server.admissionAcceptedCount + value.server.admissionRejectedCount !== value.requests
       || value.server.structuredCompletionCount !== value.requests
+      || value.server.queueWait?.samples !== value.server.admissionAcceptedCount
     ) issues.push(`${value.deadlineMs}ms: server admission counts mismatch.`);
   }
   const burst = report.overloadBurst;
@@ -401,6 +402,7 @@ function validateSpecialLanes(report: ServiceLoadReport, issues: string[]): void
     || burst.server.maximumQueuedWork > burst.queueCapacity
     || burst.server.admissionAcceptedCount !== burst.acceptedCount
     || burst.server.admissionRejectedCount !== burst.overloadedCount
+    || burst.server.queueWait?.samples !== burst.acceptedCount
     || burst.server.structuredCompletionCount !== burst.requests
   )) issues.push('Overload burst did not satisfy its bounded admission contract.');
 }
@@ -435,6 +437,7 @@ export function validateServiceLoadReport(report: ServiceLoadReport): readonly s
     if (
       value.server.admissionAcceptedCount + value.server.admissionRejectedCount !== value.requests
       || value.server.structuredCompletionCount !== value.requests
+      || value.server.queueWait?.samples !== value.server.admissionAcceptedCount
     ) issues.push(`${key}: server admission counts do not reconcile.`);
   }
   if (report.workerDecision.evaluated) {

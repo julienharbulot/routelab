@@ -101,6 +101,7 @@ void test('deadline outcomes classify separately and reconcile exact validation'
     structuredCompletionCount: 6,
     terminationCounts: {},
     routeCountCounts: {},
+    queueWait: null,
     quoteService: null,
     eventLoopDelayP95Micros: 0,
     eventLoopDelayMaxMicros: 0,

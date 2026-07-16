@@ -2,7 +2,7 @@
   "schemaVersion": "routelab.portfolio-benchmark-summary.v2",
   "evidenceSource": {
     "schemaVersion": "routelab.evidence-source.v1",
-    "revision": "1ba8d1e11f29fbab11d2667dfb5654df3d877702",
+    "revision": "8babed2e2a7d1101980757777e06043eea5bc4e9",
     "pathSet": {
       "schemaVersion": "routelab.evidence-source-paths.v1",
       "paths": [
@@ -10,6 +10,8 @@
         "cli/benchmark-extended.ts",
         "cli/benchmark.ts",
         "cli/demo.ts",
+        "cli/load-deadlines.ts",
+        "cli/load-overload.ts",
         "cli/load.ts",
         "cli/quote.ts",
         "cli/serve.ts",
@@ -74,12 +76,15 @@
         "src/search/simple-paths/traversal.ts",
         "src/serialization/canonical-snapshot/index.ts",
         "src/service/index.ts",
+        "src/service/load-client.ts",
         "src/service/load-report.ts",
+        "src/service/load-types.ts",
         "src/service/load.ts",
         "src/service/parse.ts",
         "src/service/policy.ts",
         "src/service/process.ts",
         "src/service/quote-worker.ts",
+        "src/service/serialized-quote.ts",
         "src/service/server.ts",
         "src/service/types.ts",
         "src/service/verify.ts",
@@ -93,7 +98,7 @@
         "tsconfig.json"
       ]
     },
-    "digest": "sha256:b89118f07fe728acc5ea53debea423865d10d47aa09b123585e88e75d4021f29"
+    "digest": "sha256:cd363964aa8f3f5c3ea27b181720704f3adc9268d2ab207987c54053bc79980c"
   },
   "corpus": {
     "schemaVersion": "routelab.synthetic-request-corpus-verification-summary.v1",
@@ -174,7 +179,7 @@
           "convergenceTolerance": 3.552713678800501e-15
         }
       },
-      "reference": {
+      "large-budget": {
         "greedyParts": 128,
         "workCaps": {
           "maxPathExpansions": 1000000,
@@ -225,8 +230,8 @@
         "profile": "thorough"
       },
       {
-        "strategy": "bounded-reference",
-        "profile": "reference"
+        "strategy": "large-budget-comparison",
+        "profile": "large-budget"
       }
     ],
     "latencyCombinations": [
@@ -251,20 +256,20 @@
         "profile": "balanced"
       }
     ],
-    "comparisonRule": "best-observed-across-fixed-modes-including-bounded-reference"
+    "comparisonRule": "best-observed-exact-output-across-all-fixed-modes"
   },
   "digests": {
     "requestOrderSha256": "sha256:31e9eaeec7242c204b97679a36a1862aa66bbd0f3da400b7b9cc6a69279d9c96",
-    "qualityRowsSha256": "sha256:0b068559182a37dc4fc4ff4bbaea332a79779693a193596d39eaef97af89de05",
-    "qualityAggregatesSha256": "sha256:b697af51d1a0db7ab288661c96a42a6cd1e2e92c61420c57a26bdbafc10e2024",
-    "numericalComparisonsSha256": "sha256:3bc277a9808fcd605f62a7a7da792e5eb558ac57698dab8fa03eaa13fbdf36a1"
+    "qualityRowsSha256": "sha256:5637570dd11d2bb6d5ab5dfa0bc999c0fcd50825ac9b12ddbf51428bf2c849c1",
+    "qualityAggregatesSha256": "sha256:dc198764cb7808ff2455cf44d5916f078b758b6a7f706e35d2a12a35cf7b0547",
+    "numericalComparisonsSha256": "sha256:0d0418b20655a603c22793f85375f19f237f4f61a72d689b1759e42e0a87d129"
   },
   "quality": {
     "rowCount": 3168,
     "exactReplaySuccessCount": 3168,
-    "referenceBeatenCount": 306,
-    "referenceBeatenRequestCount": 221,
-    "referenceBeatenByMode": [
+    "largeBudgetBeatenCount": 306,
+    "largeBudgetBeatenRequestCount": 221,
+    "largeBudgetBeatenByMode": [
       {
         "strategy": "greedy-split",
         "profile": "fast",
@@ -306,7 +311,7 @@
         "quoteCount": 396,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 396,
-        "exactReferenceEqualityCount": 100,
+        "exactLargeBudgetEqualityCount": 100,
         "regretP50Ppm": 348,
         "regretP90Ppm": 7549,
         "regretP95Ppm": 20762,
@@ -320,14 +325,44 @@
         "splitImprovementRatePpm": 0,
         "medianImprovementPpm": null,
         "maximumImprovementPpm": null,
-        "workP50": 95,
-        "workP95": 111,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 0,
+            "p95": 0
+          },
+          "greedyOptionReplays": {
+            "p50": 0,
+            "p95": 0
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "amountBucket",
@@ -338,7 +373,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 31,
+        "exactLargeBudgetEqualityCount": 31,
         "regretP50Ppm": 566,
         "regretP90Ppm": 28562,
         "regretP95Ppm": 62085,
@@ -352,14 +387,44 @@
         "splitImprovementRatePpm": 0,
         "medianImprovementPpm": null,
         "maximumImprovementPpm": null,
-        "workP50": 95,
-        "workP95": 111,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 0,
+            "p95": 0
+          },
+          "greedyOptionReplays": {
+            "p50": 0,
+            "p95": 0
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "amountBucket",
@@ -370,7 +435,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 31,
+        "exactLargeBudgetEqualityCount": 31,
         "regretP50Ppm": 362,
         "regretP90Ppm": 6434,
         "regretP95Ppm": 10423,
@@ -384,14 +449,44 @@
         "splitImprovementRatePpm": 0,
         "medianImprovementPpm": null,
         "maximumImprovementPpm": null,
-        "workP50": 95,
-        "workP95": 111,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 0,
+            "p95": 0
+          },
+          "greedyOptionReplays": {
+            "p50": 0,
+            "p95": 0
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "amountBucket",
@@ -402,7 +497,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 38,
+        "exactLargeBudgetEqualityCount": 38,
         "regretP50Ppm": 228,
         "regretP90Ppm": 2467,
         "regretP95Ppm": 3838,
@@ -416,14 +511,44 @@
         "splitImprovementRatePpm": 0,
         "medianImprovementPpm": null,
         "maximumImprovementPpm": null,
-        "workP50": 95,
-        "workP95": 111,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 0,
+            "p95": 0
+          },
+          "greedyOptionReplays": {
+            "p50": 0,
+            "p95": 0
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "topology",
@@ -434,7 +559,7 @@
         "quoteCount": 324,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 324,
-        "exactReferenceEqualityCount": 78,
+        "exactLargeBudgetEqualityCount": 78,
         "regretP50Ppm": 335,
         "regretP90Ppm": 6853,
         "regretP95Ppm": 10143,
@@ -448,14 +573,44 @@
         "splitImprovementRatePpm": 0,
         "medianImprovementPpm": null,
         "maximumImprovementPpm": null,
-        "workP50": 110,
-        "workP95": 111,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 97,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 0,
+            "p95": 0
+          },
+          "greedyOptionReplays": {
+            "p50": 0,
+            "p95": 0
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "topology",
@@ -466,7 +621,7 @@
         "quoteCount": 72,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 72,
-        "exactReferenceEqualityCount": 22,
+        "exactLargeBudgetEqualityCount": 22,
         "regretP50Ppm": 564,
         "regretP90Ppm": 20762,
         "regretP95Ppm": 56521,
@@ -480,14 +635,44 @@
         "splitImprovementRatePpm": 0,
         "medianImprovementPpm": null,
         "maximumImprovementPpm": null,
-        "workP50": 84,
-        "workP95": 100,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 78,
+            "p95": 95
+          },
+          "candidateSetExpansions": {
+            "p50": 0,
+            "p95": 0
+          },
+          "greedyOptionReplays": {
+            "p50": 0,
+            "p95": 0
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "overall",
@@ -498,7 +683,7 @@
         "quoteCount": 396,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 396,
-        "exactReferenceEqualityCount": 105,
+        "exactLargeBudgetEqualityCount": 105,
         "regretP50Ppm": 82,
         "regretP90Ppm": 2216,
         "regretP95Ppm": 5736,
@@ -512,14 +697,44 @@
         "splitImprovementRatePpm": 270202,
         "medianImprovementPpm": 2059,
         "maximumImprovementPpm": 52069,
-        "workP50": 622,
-        "workP95": 1156,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 406,
+            "p95": 880
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 2
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 2
       },
       {
         "dimension": "amountBucket",
@@ -530,7 +745,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 35,
+        "exactLargeBudgetEqualityCount": 35,
         "regretP50Ppm": 103,
         "regretP90Ppm": 2898,
         "regretP95Ppm": 62085,
@@ -544,14 +759,44 @@
         "splitImprovementRatePpm": 348484,
         "medianImprovementPpm": 3868,
         "maximumImprovementPpm": 52069,
-        "workP50": 622,
-        "workP95": 1156,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 406,
+            "p95": 880
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 2
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 2
       },
       {
         "dimension": "amountBucket",
@@ -562,7 +807,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 32,
+        "exactLargeBudgetEqualityCount": 32,
         "regretP50Ppm": 43,
         "regretP90Ppm": 2195,
         "regretP95Ppm": 3605,
@@ -576,14 +821,44 @@
         "splitImprovementRatePpm": 318181,
         "medianImprovementPpm": 1973,
         "maximumImprovementPpm": 45991,
-        "workP50": 622,
-        "workP95": 1156,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 406,
+            "p95": 880
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "amountBucket",
@@ -594,7 +869,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 38,
+        "exactLargeBudgetEqualityCount": 38,
         "regretP50Ppm": 102,
         "regretP90Ppm": 1256,
         "regretP95Ppm": 2786,
@@ -608,14 +883,44 @@
         "splitImprovementRatePpm": 143939,
         "medianImprovementPpm": 905,
         "maximumImprovementPpm": 38363,
-        "workP50": 622,
-        "workP95": 1156,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 406,
+            "p95": 880
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "topology",
@@ -626,7 +931,7 @@
         "quoteCount": 324,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 324,
-        "exactReferenceEqualityCount": 80,
+        "exactLargeBudgetEqualityCount": 80,
         "regretP50Ppm": 77,
         "regretP90Ppm": 2082,
         "regretP95Ppm": 3838,
@@ -640,14 +945,44 @@
         "splitImprovementRatePpm": 268518,
         "medianImprovementPpm": 1544,
         "maximumImprovementPpm": 38363,
-        "workP50": 642,
-        "workP95": 1156,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 97,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 434,
+            "p95": 880
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 1
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 1
       },
       {
         "dimension": "topology",
@@ -658,7 +993,7 @@
         "quoteCount": 72,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 72,
-        "exactReferenceEqualityCount": 25,
+        "exactLargeBudgetEqualityCount": 25,
         "regretP50Ppm": 228,
         "regretP90Ppm": 2786,
         "regretP95Ppm": 56521,
@@ -672,14 +1007,44 @@
         "splitImprovementRatePpm": 277777,
         "medianImprovementPpm": 4433,
         "maximumImprovementPpm": 52069,
-        "workP50": 284,
-        "workP95": 425,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 78,
+            "p95": 95
+          },
+          "candidateSetExpansions": {
+            "p50": 20,
+            "p95": 30
+          },
+          "greedyOptionReplays": {
+            "p50": 160,
+            "p95": 240
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 1
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 1
       },
       {
         "dimension": "overall",
@@ -690,7 +1055,7 @@
         "quoteCount": 396,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 396,
-        "exactReferenceEqualityCount": 113,
+        "exactLargeBudgetEqualityCount": 113,
         "regretP50Ppm": 38,
         "regretP90Ppm": 1312,
         "regretP95Ppm": 4016,
@@ -704,14 +1069,44 @@
         "splitImprovementRatePpm": 391414,
         "medianImprovementPpm": 2050,
         "maximumImprovementPpm": 54550,
-        "workP50": 1070,
-        "workP95": 2036,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 806,
+            "p95": 1760
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 4
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 4
       },
       {
         "dimension": "amountBucket",
@@ -722,7 +1117,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 38,
+        "exactLargeBudgetEqualityCount": 38,
         "regretP50Ppm": 35,
         "regretP90Ppm": 1700,
         "regretP95Ppm": 30461,
@@ -736,14 +1131,44 @@
         "splitImprovementRatePpm": 537878,
         "medianImprovementPpm": 4175,
         "maximumImprovementPpm": 54550,
-        "workP50": 1070,
-        "workP95": 2036,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 806,
+            "p95": 1760
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 3
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 3
       },
       {
         "dimension": "amountBucket",
@@ -754,7 +1179,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 36,
+        "exactLargeBudgetEqualityCount": 36,
         "regretP50Ppm": 20,
         "regretP90Ppm": 1372,
         "regretP95Ppm": 2582,
@@ -768,14 +1193,44 @@
         "splitImprovementRatePpm": 386363,
         "medianImprovementPpm": 2050,
         "maximumImprovementPpm": 46964,
-        "workP50": 1070,
-        "workP95": 2036,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 806,
+            "p95": 1760
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 1
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 1
       },
       {
         "dimension": "amountBucket",
@@ -786,7 +1241,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 39,
+        "exactLargeBudgetEqualityCount": 39,
         "regretP50Ppm": 83,
         "regretP90Ppm": 751,
         "regretP95Ppm": 1698,
@@ -800,14 +1255,44 @@
         "splitImprovementRatePpm": 250000,
         "medianImprovementPpm": 713,
         "maximumImprovementPpm": 38363,
-        "workP50": 1070,
-        "workP95": 2036,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 806,
+            "p95": 1760
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "topology",
@@ -818,7 +1303,7 @@
         "quoteCount": 324,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 324,
-        "exactReferenceEqualityCount": 86,
+        "exactLargeBudgetEqualityCount": 86,
         "regretP50Ppm": 37,
         "regretP90Ppm": 1068,
         "regretP95Ppm": 2906,
@@ -832,14 +1317,44 @@
         "splitImprovementRatePpm": 398148,
         "medianImprovementPpm": 1454,
         "maximumImprovementPpm": 38363,
-        "workP50": 1090,
-        "workP95": 2036,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 97,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 866,
+            "p95": 1760
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 3
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 3
       },
       {
         "dimension": "topology",
@@ -850,7 +1365,7 @@
         "quoteCount": 72,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 72,
-        "exactReferenceEqualityCount": 27,
+        "exactLargeBudgetEqualityCount": 27,
         "regretP50Ppm": 46,
         "regretP90Ppm": 2366,
         "regretP95Ppm": 27493,
@@ -864,14 +1379,44 @@
         "splitImprovementRatePpm": 361111,
         "medianImprovementPpm": 5407,
         "maximumImprovementPpm": 54550,
-        "workP50": 444,
-        "workP95": 706,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 78,
+            "p95": 95
+          },
+          "candidateSetExpansions": {
+            "p50": 20,
+            "p95": 30
+          },
+          "greedyOptionReplays": {
+            "p50": 320,
+            "p95": 480
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 1
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 1
       },
       {
         "dimension": "overall",
@@ -882,7 +1427,7 @@
         "quoteCount": 396,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 396,
-        "exactReferenceEqualityCount": 182,
+        "exactLargeBudgetEqualityCount": 182,
         "regretP50Ppm": 3,
         "regretP90Ppm": 270,
         "regretP95Ppm": 891,
@@ -896,14 +1441,44 @@
         "splitImprovementRatePpm": 585858,
         "medianImprovementPpm": 1000,
         "maximumImprovementPpm": 88359,
-        "workP50": 3758,
-        "workP95": 7316,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 3206,
+            "p95": 7040
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 23
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 23
       },
       {
         "dimension": "amountBucket",
@@ -914,7 +1489,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 67,
+        "exactLargeBudgetEqualityCount": 67,
         "regretP50Ppm": 0,
         "regretP90Ppm": 65,
         "regretP95Ppm": 272,
@@ -928,14 +1503,44 @@
         "splitImprovementRatePpm": 750000,
         "medianImprovementPpm": 1340,
         "maximumImprovementPpm": 88359,
-        "workP50": 3758,
-        "workP95": 7316,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 3206,
+            "p95": 7040
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 19
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 19
       },
       {
         "dimension": "amountBucket",
@@ -946,7 +1551,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 60,
+        "exactLargeBudgetEqualityCount": 60,
         "regretP50Ppm": 3,
         "regretP90Ppm": 569,
         "regretP95Ppm": 2582,
@@ -960,14 +1565,44 @@
         "splitImprovementRatePpm": 545454,
         "medianImprovementPpm": 1078,
         "maximumImprovementPpm": 46964,
-        "workP50": 3758,
-        "workP95": 7316,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 3206,
+            "p95": 7040
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 2
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 2
       },
       {
         "dimension": "amountBucket",
@@ -978,7 +1613,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 55,
+        "exactLargeBudgetEqualityCount": 55,
         "regretP50Ppm": 20,
         "regretP90Ppm": 362,
         "regretP95Ppm": 814,
@@ -992,14 +1627,44 @@
         "splitImprovementRatePpm": 462121,
         "medianImprovementPpm": 704,
         "maximumImprovementPpm": 39125,
-        "workP50": 3758,
-        "workP95": 7316,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 3206,
+            "p95": 7040
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 2
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 2
       },
       {
         "dimension": "topology",
@@ -1010,7 +1675,7 @@
         "quoteCount": 324,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 324,
-        "exactReferenceEqualityCount": 145,
+        "exactLargeBudgetEqualityCount": 145,
         "regretP50Ppm": 3,
         "regretP90Ppm": 243,
         "regretP95Ppm": 676,
@@ -1024,14 +1689,44 @@
         "splitImprovementRatePpm": 595679,
         "medianImprovementPpm": 828,
         "maximumImprovementPpm": 69915,
-        "workP50": 3778,
-        "workP95": 7316,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 97,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 3458,
+            "p95": 7040
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 15
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 15
       },
       {
         "dimension": "topology",
@@ -1042,7 +1737,7 @@
         "quoteCount": 72,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 72,
-        "exactReferenceEqualityCount": 37,
+        "exactLargeBudgetEqualityCount": 37,
         "regretP50Ppm": 1,
         "regretP90Ppm": 564,
         "regretP95Ppm": 2582,
@@ -1056,14 +1751,44 @@
         "splitImprovementRatePpm": 541666,
         "medianImprovementPpm": 2371,
         "maximumImprovementPpm": 88359,
-        "workP50": 1404,
-        "workP95": 2386,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 78,
+            "p95": 95
+          },
+          "candidateSetExpansions": {
+            "p50": 20,
+            "p95": 30
+          },
+          "greedyOptionReplays": {
+            "p50": 1280,
+            "p95": 1920
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalIterations": {
+            "p50": 0,
+            "p95": 0
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 0,
+        "numericalProposalAttemptedCount": 0,
+        "numericalProposalConvergedCount": 0,
+        "numericalProposalFailedCount": 0,
         "numericalRequestCount": 0,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": null,
-        "referenceBeatenCount": 8
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 8
       },
       {
         "dimension": "overall",
@@ -1074,7 +1799,7 @@
         "quoteCount": 396,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 396,
-        "exactReferenceEqualityCount": 102,
+        "exactLargeBudgetEqualityCount": 102,
         "regretP50Ppm": 77,
         "regretP90Ppm": 2123,
         "regretP95Ppm": 4016,
@@ -1088,14 +1813,44 @@
         "splitImprovementRatePpm": 318181,
         "medianImprovementPpm": 1421,
         "maximumImprovementPpm": 52069,
-        "workP50": 1126,
-        "workP95": 2150,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 406,
+            "p95": 880
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 448,
+            "p95": 880
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 8903,
+        "numericalProposalAttemptedCount": 10758,
+        "numericalProposalConvergedCount": 1855,
+        "numericalProposalFailedCount": 8903,
         "numericalRequestCount": 396,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": 0,
-        "referenceBeatenCount": 10
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 19,
+        "largeBudgetBeatenCount": 10
       },
       {
         "dimension": "amountBucket",
@@ -1106,7 +1861,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 35,
+        "exactLargeBudgetEqualityCount": 35,
         "regretP50Ppm": 103,
         "regretP90Ppm": 2898,
         "regretP95Ppm": 62085,
@@ -1120,14 +1875,44 @@
         "splitImprovementRatePpm": 348484,
         "medianImprovementPpm": 3868,
         "maximumImprovementPpm": 52069,
-        "workP50": 1126,
-        "workP95": 2150,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 406,
+            "p95": 880
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 448,
+            "p95": 880
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 2827,
+        "numericalProposalAttemptedCount": 3586,
+        "numericalProposalConvergedCount": 759,
+        "numericalProposalFailedCount": 2827,
         "numericalRequestCount": 132,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": 0,
-        "referenceBeatenCount": 2
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 2
       },
       {
         "dimension": "amountBucket",
@@ -1138,7 +1923,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 31,
+        "exactLargeBudgetEqualityCount": 31,
         "regretP50Ppm": 40,
         "regretP90Ppm": 2195,
         "regretP95Ppm": 3605,
@@ -1152,14 +1937,44 @@
         "splitImprovementRatePpm": 348484,
         "medianImprovementPpm": 1432,
         "maximumImprovementPpm": 45991,
-        "workP50": 1126,
-        "workP95": 2150,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 406,
+            "p95": 880
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 448,
+            "p95": 880
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 2969,
+        "numericalProposalAttemptedCount": 3586,
+        "numericalProposalConvergedCount": 617,
+        "numericalProposalFailedCount": 2969,
         "numericalRequestCount": 132,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": 0,
-        "referenceBeatenCount": 2
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 4,
+        "largeBudgetBeatenCount": 2
       },
       {
         "dimension": "amountBucket",
@@ -1170,7 +1985,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 36,
+        "exactLargeBudgetEqualityCount": 36,
         "regretP50Ppm": 97,
         "regretP90Ppm": 1104,
         "regretP95Ppm": 2334,
@@ -1184,14 +1999,44 @@
         "splitImprovementRatePpm": 257575,
         "medianImprovementPpm": 333,
         "maximumImprovementPpm": 38363,
-        "workP50": 1126,
-        "workP95": 2149,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 406,
+            "p95": 880
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 448,
+            "p95": 880
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 3107,
+        "numericalProposalAttemptedCount": 3586,
+        "numericalProposalConvergedCount": 479,
+        "numericalProposalFailedCount": 3107,
         "numericalRequestCount": 132,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": 0,
-        "referenceBeatenCount": 6
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 15,
+        "largeBudgetBeatenCount": 6
       },
       {
         "dimension": "topology",
@@ -1202,7 +2047,7 @@
         "quoteCount": 324,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 324,
-        "exactReferenceEqualityCount": 79,
+        "exactLargeBudgetEqualityCount": 79,
         "regretP50Ppm": 68,
         "regretP90Ppm": 1921,
         "regretP95Ppm": 3797,
@@ -1216,14 +2061,44 @@
         "splitImprovementRatePpm": 317901,
         "medianImprovementPpm": 1222,
         "maximumImprovementPpm": 38363,
-        "workP50": 1148,
-        "workP95": 2150,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 97,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 434,
+            "p95": 880
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 448,
+            "p95": 880
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 8191,
+        "numericalProposalAttemptedCount": 9888,
+        "numericalProposalConvergedCount": 1697,
+        "numericalProposalFailedCount": 8191,
         "numericalRequestCount": 324,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": 0,
-        "referenceBeatenCount": 6
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 16,
+        "largeBudgetBeatenCount": 6
       },
       {
         "dimension": "topology",
@@ -1234,7 +2109,7 @@
         "quoteCount": 72,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 72,
-        "exactReferenceEqualityCount": 23,
+        "exactLargeBudgetEqualityCount": 23,
         "regretP50Ppm": 210,
         "regretP90Ppm": 2786,
         "regretP95Ppm": 56521,
@@ -1248,14 +2123,44 @@
         "splitImprovementRatePpm": 319444,
         "medianImprovementPpm": 3920,
         "maximumImprovementPpm": 52069,
-        "workP50": 466,
-        "workP95": 696,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 78,
+            "p95": 95
+          },
+          "candidateSetExpansions": {
+            "p50": 20,
+            "p95": 30
+          },
+          "greedyOptionReplays": {
+            "p50": 160,
+            "p95": 240
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 10,
+            "p95": 15
+          },
+          "numericalIterations": {
+            "p50": 160,
+            "p95": 240
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 712,
+        "numericalProposalAttemptedCount": 870,
+        "numericalProposalConvergedCount": 158,
+        "numericalProposalFailedCount": 712,
         "numericalRequestCount": 72,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": 0,
-        "referenceBeatenCount": 4
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 3,
+        "largeBudgetBeatenCount": 4
       },
       {
         "dimension": "overall",
@@ -1266,7 +2171,7 @@
         "quoteCount": 396,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 396,
-        "exactReferenceEqualityCount": 59,
+        "exactLargeBudgetEqualityCount": 59,
         "regretP50Ppm": 0,
         "regretP90Ppm": 426,
         "regretP95Ppm": 1700,
@@ -1280,14 +2185,44 @@
         "splitImprovementRatePpm": 808080,
         "medianImprovementPpm": 420,
         "maximumImprovementPpm": 84363,
-        "workP50": 2927,
-        "workP95": 5692,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 806,
+            "p95": 1760
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 1792,
+            "p95": 3520
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 2
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 5661,
+        "numericalProposalAttemptedCount": 10758,
+        "numericalProposalConvergedCount": 5097,
+        "numericalProposalFailedCount": 5661,
         "numericalRequestCount": 396,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": 0,
-        "referenceBeatenCount": 189
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 240,
+        "largeBudgetBeatenCount": 189
       },
       {
         "dimension": "amountBucket",
@@ -1298,7 +2233,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 26,
+        "exactLargeBudgetEqualityCount": 26,
         "regretP50Ppm": 0,
         "regretP90Ppm": 953,
         "regretP95Ppm": 30461,
@@ -1312,14 +2247,44 @@
         "splitImprovementRatePpm": 772727,
         "medianImprovementPpm": 995,
         "maximumImprovementPpm": 84363,
-        "workP50": 2925,
-        "workP95": 5689,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 806,
+            "p95": 1760
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 1792,
+            "p95": 3520
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 2
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 1890,
+        "numericalProposalAttemptedCount": 3586,
+        "numericalProposalConvergedCount": 1696,
+        "numericalProposalFailedCount": 1890,
         "numericalRequestCount": 132,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": 0,
-        "referenceBeatenCount": 51
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 61,
+        "largeBudgetBeatenCount": 51
       },
       {
         "dimension": "amountBucket",
@@ -1330,7 +2295,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 20,
+        "exactLargeBudgetEqualityCount": 20,
         "regretP50Ppm": 0,
         "regretP90Ppm": 462,
         "regretP95Ppm": 1237,
@@ -1344,14 +2309,44 @@
         "splitImprovementRatePpm": 825757,
         "medianImprovementPpm": 420,
         "maximumImprovementPpm": 46964,
-        "workP50": 2926,
-        "workP95": 5692,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 806,
+            "p95": 1760
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 1792,
+            "p95": 3520
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 3
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 1872,
+        "numericalProposalAttemptedCount": 3586,
+        "numericalProposalConvergedCount": 1714,
+        "numericalProposalFailedCount": 1872,
         "numericalRequestCount": 132,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": 0,
-        "referenceBeatenCount": 66
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 83,
+        "largeBudgetBeatenCount": 66
       },
       {
         "dimension": "amountBucket",
@@ -1362,7 +2357,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 13,
+        "exactLargeBudgetEqualityCount": 13,
         "regretP50Ppm": 0,
         "regretP90Ppm": 232,
         "regretP95Ppm": 426,
@@ -1376,14 +2371,44 @@
         "splitImprovementRatePpm": 825757,
         "medianImprovementPpm": 228,
         "maximumImprovementPpm": 39144,
-        "workP50": 2929,
-        "workP95": 5692,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 806,
+            "p95": 1760
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 1792,
+            "p95": 3520
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 2
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 1899,
+        "numericalProposalAttemptedCount": 3586,
+        "numericalProposalConvergedCount": 1687,
+        "numericalProposalFailedCount": 1899,
         "numericalRequestCount": 132,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": 0,
-        "referenceBeatenCount": 72
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 96,
+        "largeBudgetBeatenCount": 72
       },
       {
         "dimension": "topology",
@@ -1394,7 +2419,7 @@
         "quoteCount": 324,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 324,
-        "exactReferenceEqualityCount": 43,
+        "exactLargeBudgetEqualityCount": 43,
         "regretP50Ppm": 0,
         "regretP90Ppm": 365,
         "regretP95Ppm": 1444,
@@ -1408,14 +2433,44 @@
         "splitImprovementRatePpm": 830246,
         "medianImprovementPpm": 368,
         "maximumImprovementPpm": 39144,
-        "workP50": 2950,
-        "workP95": 5692,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 97,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 866,
+            "p95": 1760
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 1792,
+            "p95": 3520
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 2
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 5206,
+        "numericalProposalAttemptedCount": 9888,
+        "numericalProposalConvergedCount": 4682,
+        "numericalProposalFailedCount": 5206,
         "numericalRequestCount": 324,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": 0,
-        "referenceBeatenCount": 157
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 203,
+        "largeBudgetBeatenCount": 157
       },
       {
         "dimension": "topology",
@@ -1426,7 +2481,7 @@
         "quoteCount": 72,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 72,
-        "exactReferenceEqualityCount": 16,
+        "exactLargeBudgetEqualityCount": 16,
         "regretP50Ppm": 0,
         "regretP90Ppm": 663,
         "regretP95Ppm": 3605,
@@ -1440,14 +2495,44 @@
         "splitImprovementRatePpm": 708333,
         "medianImprovementPpm": 1307,
         "maximumImprovementPpm": 84363,
-        "workP50": 1112,
-        "workP95": 1699,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 78,
+            "p95": 95
+          },
+          "candidateSetExpansions": {
+            "p50": 20,
+            "p95": 30
+          },
+          "greedyOptionReplays": {
+            "p50": 320,
+            "p95": 480
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 10,
+            "p95": 15
+          },
+          "numericalIterations": {
+            "p50": 640,
+            "p95": 960
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 2
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 455,
+        "numericalProposalAttemptedCount": 870,
+        "numericalProposalConvergedCount": 415,
+        "numericalProposalFailedCount": 455,
         "numericalRequestCount": 72,
-        "numericalConvergedCount": 0,
-        "numericalConvergenceRatePpm": 0,
-        "referenceBeatenCount": 32
+        "allProposalsConvergedRequestCount": 0,
+        "exactNumericalImprovementSelectedCount": 37,
+        "largeBudgetBeatenCount": 32
       },
       {
         "dimension": "overall",
@@ -1458,7 +2543,7 @@
         "quoteCount": 396,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 396,
-        "exactReferenceEqualityCount": 180,
+        "exactLargeBudgetEqualityCount": 180,
         "regretP50Ppm": 0,
         "regretP90Ppm": 148,
         "regretP95Ppm": 640,
@@ -1472,14 +2557,44 @@
         "splitImprovementRatePpm": 724747,
         "medianImprovementPpm": 616,
         "maximumImprovementPpm": 88359,
-        "workP50": 7424,
-        "workP95": 14520,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 3206,
+            "p95": 7040
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 3584,
+            "p95": 7040
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 2
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 2028,
+        "numericalProposalAttemptedCount": 10758,
+        "numericalProposalConvergedCount": 8730,
+        "numericalProposalFailedCount": 2028,
         "numericalRequestCount": 396,
-        "numericalConvergedCount": 35,
-        "numericalConvergenceRatePpm": 88383,
-        "referenceBeatenCount": 78
+        "allProposalsConvergedRequestCount": 35,
+        "exactNumericalImprovementSelectedCount": 83,
+        "largeBudgetBeatenCount": 78
       },
       {
         "dimension": "amountBucket",
@@ -1490,7 +2605,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 61,
+        "exactLargeBudgetEqualityCount": 61,
         "regretP50Ppm": 0,
         "regretP90Ppm": 65,
         "regretP95Ppm": 272,
@@ -1504,14 +2619,44 @@
         "splitImprovementRatePpm": 780303,
         "medianImprovementPpm": 1222,
         "maximumImprovementPpm": 88359,
-        "workP50": 7422,
-        "workP95": 14520,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 3206,
+            "p95": 7040
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 3584,
+            "p95": 7040
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 943,
+        "numericalProposalAttemptedCount": 3586,
+        "numericalProposalConvergedCount": 2643,
+        "numericalProposalFailedCount": 943,
         "numericalRequestCount": 132,
-        "numericalConvergedCount": 2,
-        "numericalConvergenceRatePpm": 15151,
-        "referenceBeatenCount": 27
+        "allProposalsConvergedRequestCount": 2,
+        "exactNumericalImprovementSelectedCount": 9,
+        "largeBudgetBeatenCount": 27
       },
       {
         "dimension": "amountBucket",
@@ -1522,7 +2667,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 61,
+        "exactLargeBudgetEqualityCount": 61,
         "regretP50Ppm": 0,
         "regretP90Ppm": 89,
         "regretP95Ppm": 2582,
@@ -1536,14 +2681,44 @@
         "splitImprovementRatePpm": 666666,
         "medianImprovementPpm": 669,
         "maximumImprovementPpm": 46965,
-        "workP50": 7422,
-        "workP95": 14519,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 3206,
+            "p95": 7040
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 3584,
+            "p95": 7040
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 627,
+        "numericalProposalAttemptedCount": 3586,
+        "numericalProposalConvergedCount": 2959,
+        "numericalProposalFailedCount": 627,
         "numericalRequestCount": 132,
-        "numericalConvergedCount": 8,
-        "numericalConvergenceRatePpm": 60606,
-        "referenceBeatenCount": 18
+        "allProposalsConvergedRequestCount": 8,
+        "exactNumericalImprovementSelectedCount": 25,
+        "largeBudgetBeatenCount": 18
       },
       {
         "dimension": "amountBucket",
@@ -1554,7 +2729,7 @@
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 58,
+        "exactLargeBudgetEqualityCount": 58,
         "regretP50Ppm": 0,
         "regretP90Ppm": 211,
         "regretP95Ppm": 262,
@@ -1568,14 +2743,44 @@
         "splitImprovementRatePpm": 727272,
         "medianImprovementPpm": 344,
         "maximumImprovementPpm": 39144,
-        "workP50": 7424,
-        "workP95": 14521,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 3206,
+            "p95": 7040
+          },
+          "finalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 3584,
+            "p95": 7040
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 3
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 458,
+        "numericalProposalAttemptedCount": 3586,
+        "numericalProposalConvergedCount": 3128,
+        "numericalProposalFailedCount": 458,
         "numericalRequestCount": 132,
-        "numericalConvergedCount": 25,
-        "numericalConvergenceRatePpm": 189393,
-        "referenceBeatenCount": 33
+        "allProposalsConvergedRequestCount": 25,
+        "exactNumericalImprovementSelectedCount": 49,
+        "largeBudgetBeatenCount": 33
       },
       {
         "dimension": "topology",
@@ -1586,7 +2791,7 @@
         "quoteCount": 324,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 324,
-        "exactReferenceEqualityCount": 147,
+        "exactLargeBudgetEqualityCount": 147,
         "regretP50Ppm": 0,
         "regretP90Ppm": 87,
         "regretP95Ppm": 250,
@@ -1600,14 +2805,44 @@
         "splitImprovementRatePpm": 734567,
         "medianImprovementPpm": 573,
         "maximumImprovementPpm": 69915,
-        "workP50": 7452,
-        "workP95": 14521,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 97,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 3458,
+            "p95": 7040
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 3584,
+            "p95": 7040
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 2
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 1827,
+        "numericalProposalAttemptedCount": 9888,
+        "numericalProposalConvergedCount": 8061,
+        "numericalProposalFailedCount": 1827,
         "numericalRequestCount": 324,
-        "numericalConvergedCount": 23,
-        "numericalConvergenceRatePpm": 70987,
-        "referenceBeatenCount": 60
+        "allProposalsConvergedRequestCount": 23,
+        "exactNumericalImprovementSelectedCount": 69,
+        "largeBudgetBeatenCount": 60
       },
       {
         "dimension": "topology",
@@ -1618,7 +2853,7 @@
         "quoteCount": 72,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 72,
-        "exactReferenceEqualityCount": 33,
+        "exactLargeBudgetEqualityCount": 33,
         "regretP50Ppm": 0,
         "regretP90Ppm": 418,
         "regretP95Ppm": 2582,
@@ -1632,25 +2867,55 @@
         "splitImprovementRatePpm": 680555,
         "medianImprovementPpm": 1340,
         "maximumImprovementPpm": 88359,
-        "workP50": 2713,
-        "workP95": 4352,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 78,
+            "p95": 95
+          },
+          "candidateSetExpansions": {
+            "p50": 20,
+            "p95": 30
+          },
+          "greedyOptionReplays": {
+            "p50": 1280,
+            "p95": 1920
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 10,
+            "p95": 15
+          },
+          "numericalIterations": {
+            "p50": 1280,
+            "p95": 1920
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 201,
+        "numericalProposalAttemptedCount": 870,
+        "numericalProposalConvergedCount": 669,
+        "numericalProposalFailedCount": 201,
         "numericalRequestCount": 72,
-        "numericalConvergedCount": 12,
-        "numericalConvergenceRatePpm": 166666,
-        "referenceBeatenCount": 18
+        "allProposalsConvergedRequestCount": 12,
+        "exactNumericalImprovementSelectedCount": 14,
+        "largeBudgetBeatenCount": 18
       },
       {
         "dimension": "overall",
         "group": "all",
-        "strategy": "bounded-reference",
-        "profile": "reference",
+        "strategy": "large-budget-comparison",
+        "profile": "large-budget",
         "requestCount": 396,
         "quoteCount": 396,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 396,
-        "exactReferenceEqualityCount": 396,
+        "exactLargeBudgetEqualityCount": 396,
         "regretP50Ppm": 0,
         "regretP90Ppm": 52,
         "regretP95Ppm": 207,
@@ -1664,25 +2929,55 @@
         "splitImprovementRatePpm": 747474,
         "medianImprovementPpm": 669,
         "maximumImprovementPpm": 96172,
-        "workP50": 14589,
-        "workP95": 28591,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 6406,
+            "p95": 14080
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 7168,
+            "p95": 14080
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 3796,
+        "numericalProposalAttemptedCount": 10758,
+        "numericalProposalConvergedCount": 6962,
+        "numericalProposalFailedCount": 3796,
         "numericalRequestCount": 396,
-        "numericalConvergedCount": 5,
-        "numericalConvergenceRatePpm": 12626,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 5,
+        "exactNumericalImprovementSelectedCount": 35,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "amountBucket",
         "group": "max-reserve-1-in-100000",
-        "strategy": "bounded-reference",
-        "profile": "reference",
+        "strategy": "large-budget-comparison",
+        "profile": "large-budget",
         "requestCount": 132,
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 132,
+        "exactLargeBudgetEqualityCount": 132,
         "regretP50Ppm": 0,
         "regretP90Ppm": 35,
         "regretP95Ppm": 148,
@@ -1696,25 +2991,55 @@
         "splitImprovementRatePpm": 765151,
         "medianImprovementPpm": 1307,
         "maximumImprovementPpm": 96172,
-        "workP50": 14589,
-        "workP95": 28579,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 6406,
+            "p95": 14080
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 7168,
+            "p95": 14080
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 1584,
+        "numericalProposalAttemptedCount": 3586,
+        "numericalProposalConvergedCount": 2002,
+        "numericalProposalFailedCount": 1584,
         "numericalRequestCount": 132,
-        "numericalConvergedCount": 1,
-        "numericalConvergenceRatePpm": 7575,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 1,
+        "exactNumericalImprovementSelectedCount": 0,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "amountBucket",
         "group": "max-reserve-1-in-10000",
-        "strategy": "bounded-reference",
-        "profile": "reference",
+        "strategy": "large-budget-comparison",
+        "profile": "large-budget",
         "requestCount": 132,
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 132,
+        "exactLargeBudgetEqualityCount": 132,
         "regretP50Ppm": 0,
         "regretP90Ppm": 47,
         "regretP95Ppm": 89,
@@ -1728,25 +3053,55 @@
         "splitImprovementRatePpm": 765151,
         "medianImprovementPpm": 884,
         "maximumImprovementPpm": 46964,
-        "workP50": 14588,
-        "workP95": 28589,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 6406,
+            "p95": 14080
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 7168,
+            "p95": 14080
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 1276,
+        "numericalProposalAttemptedCount": 3586,
+        "numericalProposalConvergedCount": 2310,
+        "numericalProposalFailedCount": 1276,
         "numericalRequestCount": 132,
-        "numericalConvergedCount": 2,
-        "numericalConvergenceRatePpm": 15151,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 2,
+        "exactNumericalImprovementSelectedCount": 11,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "amountBucket",
         "group": "max-reserve-1-in-1000",
-        "strategy": "bounded-reference",
-        "profile": "reference",
+        "strategy": "large-budget-comparison",
+        "profile": "large-budget",
         "requestCount": 132,
         "quoteCount": 132,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 132,
-        "exactReferenceEqualityCount": 132,
+        "exactLargeBudgetEqualityCount": 132,
         "regretP50Ppm": 0,
         "regretP90Ppm": 109,
         "regretP95Ppm": 319,
@@ -1760,25 +3115,55 @@
         "splitImprovementRatePpm": 712121,
         "medianImprovementPpm": 304,
         "maximumImprovementPpm": 39144,
-        "workP50": 14590,
-        "workP95": 28592,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 88,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 6406,
+            "p95": 14080
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 7168,
+            "p95": 14080
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 936,
+        "numericalProposalAttemptedCount": 3586,
+        "numericalProposalConvergedCount": 2650,
+        "numericalProposalFailedCount": 936,
         "numericalRequestCount": 132,
-        "numericalConvergedCount": 2,
-        "numericalConvergenceRatePpm": 15151,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 2,
+        "exactNumericalImprovementSelectedCount": 24,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "topology",
         "group": "direct-edge-present",
-        "strategy": "bounded-reference",
-        "profile": "reference",
+        "strategy": "large-budget-comparison",
+        "profile": "large-budget",
         "requestCount": 324,
         "quoteCount": 324,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 324,
-        "exactReferenceEqualityCount": 324,
+        "exactLargeBudgetEqualityCount": 324,
         "regretP50Ppm": 0,
         "regretP90Ppm": 52,
         "regretP95Ppm": 124,
@@ -1792,25 +3177,55 @@
         "splitImprovementRatePpm": 759259,
         "medianImprovementPpm": 583,
         "maximumImprovementPpm": 69915,
-        "workP50": 14619,
-        "workP95": 28592,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 97,
+            "p95": 101
+          },
+          "candidateSetExpansions": {
+            "p50": 56,
+            "p95": 110
+          },
+          "greedyOptionReplays": {
+            "p50": 6914,
+            "p95": 14080
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 28,
+            "p95": 55
+          },
+          "numericalIterations": {
+            "p50": 7168,
+            "p95": 14080
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 1
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 3447,
+        "numericalProposalAttemptedCount": 9888,
+        "numericalProposalConvergedCount": 6441,
+        "numericalProposalFailedCount": 3447,
         "numericalRequestCount": 324,
-        "numericalConvergedCount": 2,
-        "numericalConvergenceRatePpm": 6172,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 2,
+        "exactNumericalImprovementSelectedCount": 32,
+        "largeBudgetBeatenCount": 0
       },
       {
         "dimension": "topology",
         "group": "direct-edge-absent-common-neighbor-present",
-        "strategy": "bounded-reference",
-        "profile": "reference",
+        "strategy": "large-budget-comparison",
+        "profile": "large-budget",
         "requestCount": 72,
         "quoteCount": 72,
         "noRouteCount": 0,
         "exactReplaySuccessCount": 72,
-        "exactReferenceEqualityCount": 72,
+        "exactLargeBudgetEqualityCount": 72,
         "regretP50Ppm": 0,
         "regretP90Ppm": 148,
         "regretP95Ppm": 272,
@@ -1824,14 +3239,44 @@
         "splitImprovementRatePpm": 694444,
         "medianImprovementPpm": 1769,
         "maximumImprovementPpm": 96172,
-        "workP50": 5272,
-        "workP95": 8512,
+        "counterPercentiles": {
+          "pathExpansions": {
+            "p50": 78,
+            "p95": 95
+          },
+          "candidateSetExpansions": {
+            "p50": 20,
+            "p95": 30
+          },
+          "greedyOptionReplays": {
+            "p50": 2560,
+            "p95": 3840
+          },
+          "finalAuthorizationReplays": {
+            "p50": 1,
+            "p95": 1
+          },
+          "numericalProposals": {
+            "p50": 10,
+            "p95": 15
+          },
+          "numericalIterations": {
+            "p50": 2560,
+            "p95": 3840
+          },
+          "numericalAuthorizationReplays": {
+            "p50": 0,
+            "p95": 0
+          }
+        },
         "authorizationRejectionCount": 0,
-        "numericalProposalFailureCount": 349,
+        "numericalProposalAttemptedCount": 870,
+        "numericalProposalConvergedCount": 521,
+        "numericalProposalFailedCount": 349,
         "numericalRequestCount": 72,
-        "numericalConvergedCount": 3,
-        "numericalConvergenceRatePpm": 41666,
-        "referenceBeatenCount": 0
+        "allProposalsConvergedRequestCount": 3,
+        "exactNumericalImprovementSelectedCount": 3,
+        "largeBudgetBeatenCount": 0
       }
     ],
     "numericalComparisons": [
@@ -1844,8 +3289,7 @@
         "tiesGreedy": 377,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 24,
-        "maximumPositiveImprovementPpm": 7216,
-        "totalAdditionalWork": 194174
+        "maximumPositiveImprovementPpm": 7216
       },
       {
         "dimension": "amountBucket",
@@ -1856,8 +3300,7 @@
         "tiesGreedy": 132,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": null,
-        "maximumPositiveImprovementPpm": null,
-        "totalAdditionalWork": 64684
+        "maximumPositiveImprovementPpm": null
       },
       {
         "dimension": "amountBucket",
@@ -1868,8 +3311,7 @@
         "tiesGreedy": 128,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 6,
-        "maximumPositiveImprovementPpm": 52,
-        "totalAdditionalWork": 64743
+        "maximumPositiveImprovementPpm": 52
       },
       {
         "dimension": "amountBucket",
@@ -1880,8 +3322,7 @@
         "tiesGreedy": 117,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 33,
-        "maximumPositiveImprovementPpm": 7216,
-        "totalAdditionalWork": 64747
+        "maximumPositiveImprovementPpm": 7216
       },
       {
         "dimension": "topology",
@@ -1892,8 +3333,7 @@
         "tiesGreedy": 308,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 24,
-        "maximumPositiveImprovementPpm": 7216,
-        "totalAdditionalWork": 178460
+        "maximumPositiveImprovementPpm": 7216
       },
       {
         "dimension": "topology",
@@ -1904,8 +3344,7 @@
         "tiesGreedy": 69,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 17,
-        "maximumPositiveImprovementPpm": 564,
-        "totalAdditionalWork": 15714
+        "maximumPositiveImprovementPpm": 564
       },
       {
         "dimension": "overall",
@@ -1916,8 +3355,7 @@
         "tiesGreedy": 156,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 43,
-        "maximumPositiveImprovementPpm": 29247,
-        "totalAdditionalWork": 714767
+        "maximumPositiveImprovementPpm": 29247
       },
       {
         "dimension": "amountBucket",
@@ -1928,8 +3366,7 @@
         "tiesGreedy": 71,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 38,
-        "maximumPositiveImprovementPpm": 29247,
-        "totalAdditionalWork": 238070
+        "maximumPositiveImprovementPpm": 29247
       },
       {
         "dimension": "amountBucket",
@@ -1940,8 +3377,7 @@
         "tiesGreedy": 49,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 35,
-        "maximumPositiveImprovementPpm": 6996,
-        "totalAdditionalWork": 238279
+        "maximumPositiveImprovementPpm": 6996
       },
       {
         "dimension": "amountBucket",
@@ -1952,8 +3388,7 @@
         "tiesGreedy": 36,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 85,
-        "maximumPositiveImprovementPpm": 7684,
-        "totalAdditionalWork": 238418
+        "maximumPositiveImprovementPpm": 7684
       },
       {
         "dimension": "topology",
@@ -1964,8 +3399,7 @@
         "tiesGreedy": 121,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 40,
-        "maximumPositiveImprovementPpm": 7684,
-        "totalAdditionalWork": 656995
+        "maximumPositiveImprovementPpm": 7684
       },
       {
         "dimension": "topology",
@@ -1976,8 +3410,7 @@
         "tiesGreedy": 35,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 136,
-        "maximumPositiveImprovementPpm": 29247,
-        "totalAdditionalWork": 57772
+        "maximumPositiveImprovementPpm": 29247
       },
       {
         "dimension": "overall",
@@ -1988,8 +3421,7 @@
         "tiesGreedy": 314,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 33,
-        "maximumPositiveImprovementPpm": 1948,
-        "totalAdditionalWork": 1410679
+        "maximumPositiveImprovementPpm": 1948
       },
       {
         "dimension": "amountBucket",
@@ -2000,8 +3432,7 @@
         "tiesGreedy": 124,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 1,
-        "maximumPositiveImprovementPpm": 4,
-        "totalAdditionalWork": 469833
+        "maximumPositiveImprovementPpm": 4
       },
       {
         "dimension": "amountBucket",
@@ -2012,8 +3443,7 @@
         "tiesGreedy": 107,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 27,
-        "maximumPositiveImprovementPpm": 647,
-        "totalAdditionalWork": 470363
+        "maximumPositiveImprovementPpm": 647
       },
       {
         "dimension": "amountBucket",
@@ -2024,8 +3454,7 @@
         "tiesGreedy": 83,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 83,
-        "maximumPositiveImprovementPpm": 1948,
-        "totalAdditionalWork": 470483
+        "maximumPositiveImprovementPpm": 1948
       },
       {
         "dimension": "topology",
@@ -2036,8 +3465,7 @@
         "tiesGreedy": 256,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 33,
-        "maximumPositiveImprovementPpm": 1948,
-        "totalAdditionalWork": 1296660
+        "maximumPositiveImprovementPpm": 1948
       },
       {
         "dimension": "topology",
@@ -2048,18 +3476,17 @@
         "tiesGreedy": 58,
         "losesGreedy": 0,
         "medianPositiveImprovementPpm": 2,
-        "maximumPositiveImprovementPpm": 564,
-        "totalAdditionalWork": 114019
+        "maximumPositiveImprovementPpm": 564
       }
     ]
   },
   "environment": {
-    "observedAt": "2026-07-16T02:05:21.780Z",
+    "observedAt": "2026-07-16T03:26:53.208Z",
     "node": "v24.18.0",
     "platform": "linux",
     "arch": "x64",
     "cpu": "13th Gen Intel(R) Core(TM) i9-13900H",
-    "commit": "1ba8d1e11f29fbab11d2667dfb5654df3d877702"
+    "commit": "8babed2e2a7d1101980757777e06043eea5bc4e9"
   },
   "latency": [
     {
@@ -2071,14 +3498,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 49,
-        "p95Micros": 71,
-        "p99Micros": 125,
-        "minMicros": 34,
-        "maxMicros": 1179
+        "p50Micros": 46,
+        "p95Micros": 73,
+        "p99Micros": 177,
+        "minMicros": 32,
+        "maxMicros": 1501
       },
       "noRoute": null,
-      "throughputPerSecond": 18482.12
+      "throughputPerSecond": 18588.989
     },
     {
       "strategy": "greedy-split",
@@ -2089,14 +3516,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 1640,
-        "p95Micros": 3887,
-        "p99Micros": 4458,
-        "minMicros": 628,
-        "maxMicros": 5416
+        "p50Micros": 1645,
+        "p95Micros": 3902,
+        "p99Micros": 4517,
+        "minMicros": 608,
+        "maxMicros": 5383
       },
       "noRoute": null,
-      "throughputPerSecond": 536.365
+      "throughputPerSecond": 540.315
     },
     {
       "strategy": "numerical-split",
@@ -2107,14 +3534,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 3073,
-        "p95Micros": 7546,
-        "p99Micros": 8778,
-        "minMicros": 1121,
-        "maxMicros": 9523
+        "p50Micros": 3023,
+        "p95Micros": 7543,
+        "p99Micros": 8616,
+        "minMicros": 1082,
+        "maxMicros": 9895
       },
       "noRoute": null,
-      "throughputPerSecond": 284.562
+      "throughputPerSecond": 284.381
     },
     {
       "strategy": "greedy-split",
@@ -2125,14 +3552,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 3152,
-        "p95Micros": 7442,
-        "p99Micros": 8008,
-        "minMicros": 1149,
-        "maxMicros": 11364
+        "p50Micros": 3268,
+        "p95Micros": 7770,
+        "p99Micros": 8537,
+        "minMicros": 1217,
+        "maxMicros": 9476
       },
       "noRoute": null,
-      "throughputPerSecond": 283.605
+      "throughputPerSecond": 273.083
     },
     {
       "strategy": "numerical-split",
@@ -2143,14 +3570,14 @@
       "noRouteCount": 0,
       "quote": {
         "samples": 1000,
-        "p50Micros": 5978,
-        "p95Micros": 14589,
-        "p99Micros": 15658,
-        "minMicros": 2119,
-        "maxMicros": 17682
+        "p50Micros": 6007,
+        "p95Micros": 14633,
+        "p99Micros": 15829,
+        "minMicros": 2158,
+        "maxMicros": 17907
       },
       "noRoute": null,
-      "throughputPerSecond": 147.667
+      "throughputPerSecond": 146.093
     }
   ]
 }

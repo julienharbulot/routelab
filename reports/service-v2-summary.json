@@ -2,7 +2,7 @@
   "schemaVersion": "routelab.service-load-summary.v2",
   "evidenceSource": {
     "schemaVersion": "routelab.evidence-source.v1",
-    "revision": "1ba8d1e11f29fbab11d2667dfb5654df3d877702",
+    "revision": "8babed2e2a7d1101980757777e06043eea5bc4e9",
     "pathSet": {
       "schemaVersion": "routelab.evidence-source-paths.v1",
       "paths": [
@@ -10,6 +10,8 @@
         "cli/benchmark-extended.ts",
         "cli/benchmark.ts",
         "cli/demo.ts",
+        "cli/load-deadlines.ts",
+        "cli/load-overload.ts",
         "cli/load.ts",
         "cli/quote.ts",
         "cli/serve.ts",
@@ -74,12 +76,15 @@
         "src/search/simple-paths/traversal.ts",
         "src/serialization/canonical-snapshot/index.ts",
         "src/service/index.ts",
+        "src/service/load-client.ts",
         "src/service/load-report.ts",
+        "src/service/load-types.ts",
         "src/service/load.ts",
         "src/service/parse.ts",
         "src/service/policy.ts",
         "src/service/process.ts",
         "src/service/quote-worker.ts",
+        "src/service/serialized-quote.ts",
         "src/service/server.ts",
         "src/service/types.ts",
         "src/service/verify.ts",
@@ -93,15 +98,33 @@
         "tsconfig.json"
       ]
     },
-    "digest": "sha256:b89118f07fe728acc5ea53debea423865d10d47aa09b123585e88e75d4021f29"
+    "digest": "sha256:cd363964aa8f3f5c3ea27b181720704f3adc9268d2ab207987c54053bc79980c"
   },
-  "observedAt": "2026-07-16T02:05:46.882Z",
+  "observedAt": "2026-07-16T03:27:16.386Z",
   "environment": {
     "node": "v24.18.0",
     "platform": "linux",
     "arch": "x64",
     "cpu": "13th Gen Intel(R) Core(TM) i9-13900H",
-    "commit": "1ba8d1e11f29fbab11d2667dfb5654df3d877702"
+    "commit": "8babed2e2a7d1101980757777e06043eea5bc4e9"
+  },
+  "comparisonIdentity": {
+    "sameThread": {
+      "sourceRevision": "8babed2e2a7d1101980757777e06043eea5bc4e9",
+      "sourceDigest": "sha256:cd363964aa8f3f5c3ea27b181720704f3adc9268d2ab207987c54053bc79980c",
+      "node": "v24.18.0",
+      "platform": "linux",
+      "arch": "x64",
+      "cpu": "13th Gen Intel(R) Core(TM) i9-13900H"
+    },
+    "worker": {
+      "sourceRevision": "8babed2e2a7d1101980757777e06043eea5bc4e9",
+      "sourceDigest": "sha256:cd363964aa8f3f5c3ea27b181720704f3adc9268d2ab207987c54053bc79980c",
+      "node": "v24.18.0",
+      "platform": "linux",
+      "arch": "x64",
+      "cpu": "13th Gen Intel(R) Core(TM) i9-13900H"
+    }
   },
   "corpus": {
     "corpusId": "ethereum-mainnet-uniswap-v2-block-19000000-core12-v1-synthetic-exhaustive-v1",
@@ -112,7 +135,8 @@
   },
   "configuration": {
     "modes": [
-      "same-thread"
+      "same-thread",
+      "worker"
     ],
     "processModel": "isolated-load-generator-and-server-processes",
     "host": "127.0.0.1",
@@ -126,7 +150,15 @@
     "sameThreadMaximumActiveWork": 1,
     "workerMaximumActiveWork": 4,
     "maximumQueuedWork": 32,
-    "workerCount": 4
+    "workerCount": 4,
+    "deadlineConcurrency": 16,
+    "deadlineValuesMs": [
+      25,
+      50,
+      100
+    ],
+    "deadlineRequestsPerValue": 200,
+    "overloadBurstRequests": 52
   },
   "rows": [
     {
@@ -144,20 +176,20 @@
       "deadlineCompletionRatePpm": 1000000,
       "successfulLatency": {
         "samples": 1000,
-        "p50Micros": 3531,
-        "p95Micros": 6071,
-        "p99Micros": 6799,
-        "maxMicros": 9639
+        "p50Micros": 3487,
+        "p95Micros": 6126,
+        "p99Micros": 7318,
+        "maxMicros": 11504
       },
       "errorResponseLatency": null,
-      "throughputPerSecond": 261.269,
+      "throughputPerSecond": 257.788,
       "server": {
-        "initialRssBytes": 125173760,
-        "peakRssBytes": 188088320,
-        "finalRssBytes": 188088320,
-        "initialHeapUsedBytes": 17109592,
-        "peakHeapUsedBytes": 54816080,
-        "finalHeapUsedBytes": 23273616,
+        "initialRssBytes": 124997632,
+        "peakRssBytes": 188731392,
+        "finalRssBytes": 188731392,
+        "initialHeapUsedBytes": 19955280,
+        "peakHeapUsedBytes": 55632592,
+        "finalHeapUsedBytes": 24045704,
         "admissionAcceptedCount": 1000,
         "admissionRejectedCount": 0,
         "overloadCount": 0,
@@ -173,13 +205,13 @@
         },
         "quoteService": {
           "samples": 1000,
-          "p50Micros": 1811,
-          "p95Micros": 4248,
-          "p99Micros": 4853,
-          "maxMicros": 5751
+          "p50Micros": 1780,
+          "p95Micros": 4275,
+          "p99Micros": 5271,
+          "maxMicros": 9444
         },
-        "eventLoopDelayP95Micros": 12960,
-        "eventLoopDelayMaxMicros": 16368
+        "eventLoopDelayP95Micros": 13541,
+        "eventLoopDelayMaxMicros": 15917
       }
     },
     {
@@ -197,20 +229,20 @@
       "deadlineCompletionRatePpm": 1000000,
       "successfulLatency": {
         "samples": 1000,
-        "p50Micros": 8865,
-        "p95Micros": 16426,
-        "p99Micros": 18604,
-        "maxMicros": 20414
+        "p50Micros": 8496,
+        "p95Micros": 15521,
+        "p99Micros": 16745,
+        "maxMicros": 23633
       },
       "errorResponseLatency": null,
-      "throughputPerSecond": 414.284,
+      "throughputPerSecond": 433.409,
       "server": {
-        "initialRssBytes": 188579840,
-        "peakRssBytes": 251002880,
-        "finalRssBytes": 251002880,
-        "initialHeapUsedBytes": 27805968,
-        "peakHeapUsedBytes": 89859648,
-        "finalHeapUsedBytes": 75809192,
+        "initialRssBytes": 189222912,
+        "peakRssBytes": 245911552,
+        "finalRssBytes": 245911552,
+        "initialHeapUsedBytes": 28644488,
+        "peakHeapUsedBytes": 89411440,
+        "finalHeapUsedBytes": 61458400,
         "admissionAcceptedCount": 1000,
         "admissionRejectedCount": 0,
         "overloadCount": 0,
@@ -226,13 +258,13 @@
         },
         "quoteService": {
           "samples": 1000,
-          "p50Micros": 1853,
-          "p95Micros": 4453,
-          "p99Micros": 5072,
-          "maxMicros": 6486
+          "p50Micros": 1792,
+          "p95Micros": 4145,
+          "p99Micros": 4857,
+          "maxMicros": 7147
         },
-        "eventLoopDelayP95Micros": 13648,
-        "eventLoopDelayMaxMicros": 15163
+        "eventLoopDelayP95Micros": 13509,
+        "eventLoopDelayMaxMicros": 15147
       }
     },
     {
@@ -250,20 +282,20 @@
       "deadlineCompletionRatePpm": 1000000,
       "successfulLatency": {
         "samples": 1000,
-        "p50Micros": 36188,
-        "p95Micros": 48936,
-        "p99Micros": 51375,
-        "maxMicros": 53116
+        "p50Micros": 37972,
+        "p95Micros": 52444,
+        "p99Micros": 56735,
+        "maxMicros": 61473
       },
       "errorResponseLatency": null,
-      "throughputPerSecond": 450.708,
+      "throughputPerSecond": 425.13,
       "server": {
-        "initialRssBytes": 251002880,
-        "peakRssBytes": 263454720,
-        "finalRssBytes": 263454720,
-        "initialHeapUsedBytes": 30424600,
-        "peakHeapUsedBytes": 100337376,
-        "finalHeapUsedBytes": 47072048,
+        "initialRssBytes": 249679872,
+        "peakRssBytes": 262950912,
+        "finalRssBytes": 262950912,
+        "initialHeapUsedBytes": 75605288,
+        "peakHeapUsedBytes": 100182248,
+        "finalHeapUsedBytes": 46859928,
         "admissionAcceptedCount": 1000,
         "admissionRejectedCount": 0,
         "overloadCount": 0,
@@ -279,20 +311,417 @@
         },
         "quoteService": {
           "samples": 1000,
-          "p50Micros": 1777,
-          "p95Micros": 4049,
-          "p99Micros": 4541,
-          "maxMicros": 5205
+          "p50Micros": 1859,
+          "p95Micros": 4262,
+          "p99Micros": 4960,
+          "maxMicros": 5967
         },
-        "eventLoopDelayP95Micros": 13124,
-        "eventLoopDelayMaxMicros": 14361
+        "eventLoopDelayP95Micros": 13394,
+        "eventLoopDelayMaxMicros": 14926
+      }
+    },
+    {
+      "mode": "worker",
+      "concurrency": 1,
+      "requests": 1000,
+      "completed": 1000,
+      "typedErrors": 0,
+      "timedOut": 0,
+      "responseSchemaFailures": 0,
+      "exactOutputPresenceCount": 1000,
+      "fingerprintPresenceCount": 1000,
+      "semanticMatchCount": 1000,
+      "deadlineCompletionCount": 1000,
+      "deadlineCompletionRatePpm": 1000000,
+      "successfulLatency": {
+        "samples": 1000,
+        "p50Micros": 3669,
+        "p95Micros": 7171,
+        "p99Micros": 10128,
+        "maxMicros": 13802
+      },
+      "errorResponseLatency": null,
+      "throughputPerSecond": 232.326,
+      "server": {
+        "initialRssBytes": 227684352,
+        "peakRssBytes": 297152512,
+        "finalRssBytes": 297152512,
+        "initialHeapUsedBytes": 14511952,
+        "peakHeapUsedBytes": 23023936,
+        "finalHeapUsedBytes": 23024080,
+        "admissionAcceptedCount": 1000,
+        "admissionRejectedCount": 0,
+        "overloadCount": 0,
+        "maximumActiveWork": 1,
+        "maximumQueuedWork": 0,
+        "structuredCompletionCount": 1000,
+        "terminationCounts": {
+          "complete": 1000
+        },
+        "routeCountCounts": {
+          "1": 720,
+          "2": 280
+        },
+        "quoteService": {
+          "samples": 1000,
+          "p50Micros": 2001,
+          "p95Micros": 4691,
+          "p99Micros": 7154,
+          "maxMicros": 11190
+        },
+        "eventLoopDelayP95Micros": 10805,
+        "eventLoopDelayMaxMicros": 11321
+      }
+    },
+    {
+      "mode": "worker",
+      "concurrency": 4,
+      "requests": 1000,
+      "completed": 1000,
+      "typedErrors": 0,
+      "timedOut": 0,
+      "responseSchemaFailures": 0,
+      "exactOutputPresenceCount": 1000,
+      "fingerprintPresenceCount": 1000,
+      "semanticMatchCount": 1000,
+      "deadlineCompletionCount": 1000,
+      "deadlineCompletionRatePpm": 1000000,
+      "successfulLatency": {
+        "samples": 1000,
+        "p50Micros": 4967,
+        "p95Micros": 9734,
+        "p99Micros": 13766,
+        "maxMicros": 17074
+      },
+      "errorResponseLatency": null,
+      "throughputPerSecond": 694.088,
+      "server": {
+        "initialRssBytes": 297971712,
+        "peakRssBytes": 396079104,
+        "finalRssBytes": 396079104,
+        "initialHeapUsedBytes": 20528056,
+        "peakHeapUsedBytes": 35207584,
+        "finalHeapUsedBytes": 25730192,
+        "admissionAcceptedCount": 1000,
+        "admissionRejectedCount": 0,
+        "overloadCount": 0,
+        "maximumActiveWork": 4,
+        "maximumQueuedWork": 0,
+        "structuredCompletionCount": 1000,
+        "terminationCounts": {
+          "complete": 1000
+        },
+        "routeCountCounts": {
+          "1": 720,
+          "2": 280
+        },
+        "quoteService": {
+          "samples": 1000,
+          "p50Micros": 3064,
+          "p95Micros": 7369,
+          "p99Micros": 11099,
+          "maxMicros": 16069
+        },
+        "eventLoopDelayP95Micros": 10658,
+        "eventLoopDelayMaxMicros": 11117
+      }
+    },
+    {
+      "mode": "worker",
+      "concurrency": 16,
+      "requests": 1000,
+      "completed": 1000,
+      "typedErrors": 0,
+      "timedOut": 0,
+      "responseSchemaFailures": 0,
+      "exactOutputPresenceCount": 1000,
+      "fingerprintPresenceCount": 1000,
+      "semanticMatchCount": 1000,
+      "deadlineCompletionCount": 1000,
+      "deadlineCompletionRatePpm": 1000000,
+      "successfulLatency": {
+        "samples": 1000,
+        "p50Micros": 16463,
+        "p95Micros": 26890,
+        "p99Micros": 36265,
+        "maxMicros": 43593
+      },
+      "errorResponseLatency": null,
+      "throughputPerSecond": 923.342,
+      "server": {
+        "initialRssBytes": 396079104,
+        "peakRssBytes": 428847104,
+        "finalRssBytes": 428847104,
+        "initialHeapUsedBytes": 26964424,
+        "peakHeapUsedBytes": 38454928,
+        "finalHeapUsedBytes": 34860960,
+        "admissionAcceptedCount": 1000,
+        "admissionRejectedCount": 0,
+        "overloadCount": 0,
+        "maximumActiveWork": 4,
+        "maximumQueuedWork": 12,
+        "structuredCompletionCount": 1000,
+        "terminationCounts": {
+          "complete": 1000
+        },
+        "routeCountCounts": {
+          "1": 720,
+          "2": 280
+        },
+        "quoteService": {
+          "samples": 1000,
+          "p50Micros": 3546,
+          "p95Micros": 7996,
+          "p99Micros": 10866,
+          "maxMicros": 22353
+        },
+        "eventLoopDelayP95Micros": 10961,
+        "eventLoopDelayMaxMicros": 23052
       }
     }
   ],
+  "deadlineSweep": [
+    {
+      "mode": "worker",
+      "concurrency": 16,
+      "deadlineMs": 25,
+      "requests": 200,
+      "classifications": {
+        "complete-exact-quote": 31,
+        "validated-deadline-incumbent": 161,
+        "deadline-before-plan": 8,
+        "overload": 0,
+        "client-timeout": 0,
+        "schema-or-internal-failure": 0
+      },
+      "exactValidationCount": 192,
+      "completeQuoteLatency": {
+        "samples": 31,
+        "p50Micros": 23473,
+        "p95Micros": 27094,
+        "p99Micros": null,
+        "maxMicros": 30078
+      },
+      "deadlineIncumbentLatency": {
+        "samples": 161,
+        "p50Micros": 27239,
+        "p95Micros": 28732,
+        "p99Micros": null,
+        "maxMicros": 31099
+      },
+      "errorResponseLatency": {
+        "samples": 8,
+        "p50Micros": 28369,
+        "p95Micros": 29241,
+        "p99Micros": null,
+        "maxMicros": 29241
+      },
+      "server": {
+        "initialRssBytes": 431468544,
+        "peakRssBytes": 439496704,
+        "finalRssBytes": 439496704,
+        "initialHeapUsedBytes": 36186896,
+        "peakHeapUsedBytes": 40910864,
+        "finalHeapUsedBytes": 32340088,
+        "admissionAcceptedCount": 200,
+        "admissionRejectedCount": 0,
+        "overloadCount": 0,
+        "maximumActiveWork": 4,
+        "maximumQueuedWork": 12,
+        "structuredCompletionCount": 200,
+        "terminationCounts": {
+          "complete": 31,
+          "deadline": 161
+        },
+        "routeCountCounts": {
+          "1": 124,
+          "2": 68
+        },
+        "quoteService": {
+          "samples": 192,
+          "p50Micros": 6489,
+          "p95Micros": 10820,
+          "p99Micros": null,
+          "maxMicros": 17999
+        },
+        "eventLoopDelayP95Micros": 11043,
+        "eventLoopDelayMaxMicros": 13566
+      }
+    },
+    {
+      "mode": "worker",
+      "concurrency": 16,
+      "deadlineMs": 50,
+      "requests": 200,
+      "classifications": {
+        "complete-exact-quote": 153,
+        "validated-deadline-incumbent": 47,
+        "deadline-before-plan": 0,
+        "overload": 0,
+        "client-timeout": 0,
+        "schema-or-internal-failure": 0
+      },
+      "exactValidationCount": 200,
+      "completeQuoteLatency": {
+        "samples": 153,
+        "p50Micros": 40853,
+        "p95Micros": 51488,
+        "p99Micros": null,
+        "maxMicros": 56553
+      },
+      "deadlineIncumbentLatency": {
+        "samples": 47,
+        "p50Micros": 52047,
+        "p95Micros": 53223,
+        "p99Micros": null,
+        "maxMicros": 55399
+      },
+      "errorResponseLatency": null,
+      "server": {
+        "initialRssBytes": 505749504,
+        "peakRssBytes": 607821824,
+        "finalRssBytes": 607821824,
+        "initialHeapUsedBytes": 33654976,
+        "peakHeapUsedBytes": 38639144,
+        "finalHeapUsedBytes": 38639144,
+        "admissionAcceptedCount": 200,
+        "admissionRejectedCount": 0,
+        "overloadCount": 0,
+        "maximumActiveWork": 4,
+        "maximumQueuedWork": 12,
+        "structuredCompletionCount": 200,
+        "terminationCounts": {
+          "complete": 153,
+          "deadline": 47
+        },
+        "routeCountCounts": {
+          "1": 41,
+          "2": 159
+        },
+        "quoteService": {
+          "samples": 200,
+          "p50Micros": 10494,
+          "p95Micros": 17422,
+          "p99Micros": null,
+          "maxMicros": 23635
+        },
+        "eventLoopDelayP95Micros": 10764,
+        "eventLoopDelayMaxMicros": 10928
+      }
+    },
+    {
+      "mode": "worker",
+      "concurrency": 16,
+      "deadlineMs": 100,
+      "requests": 200,
+      "classifications": {
+        "complete-exact-quote": 200,
+        "validated-deadline-incumbent": 0,
+        "deadline-before-plan": 0,
+        "overload": 0,
+        "client-timeout": 0,
+        "schema-or-internal-failure": 0
+      },
+      "exactValidationCount": 200,
+      "completeQuoteLatency": {
+        "samples": 200,
+        "p50Micros": 49414,
+        "p95Micros": 72387,
+        "p99Micros": null,
+        "maxMicros": 84763
+      },
+      "deadlineIncumbentLatency": null,
+      "errorResponseLatency": null,
+      "server": {
+        "initialRssBytes": 605818880,
+        "peakRssBytes": 623386624,
+        "finalRssBytes": 607281152,
+        "initialHeapUsedBytes": 39904976,
+        "peakHeapUsedBytes": 44888952,
+        "finalHeapUsedBytes": 44888952,
+        "admissionAcceptedCount": 200,
+        "admissionRejectedCount": 0,
+        "overloadCount": 0,
+        "maximumActiveWork": 4,
+        "maximumQueuedWork": 12,
+        "structuredCompletionCount": 200,
+        "terminationCounts": {
+          "complete": 200
+        },
+        "routeCountCounts": {
+          "1": 25,
+          "2": 175
+        },
+        "quoteService": {
+          "samples": 200,
+          "p50Micros": 11252,
+          "p95Micros": 24985,
+          "p99Micros": null,
+          "maxMicros": 32174
+        },
+        "eventLoopDelayP95Micros": 10928,
+        "eventLoopDelayMaxMicros": 11100
+      }
+    }
+  ],
+  "overloadBurst": {
+    "mode": "worker",
+    "requests": 52,
+    "activeCapacity": 4,
+    "queueCapacity": 32,
+    "acceptedCount": 36,
+    "overloadedCount": 16,
+    "retryAfterCount": 16,
+    "acceptedExactQuoteCount": 36,
+    "clientTimeoutCount": 0,
+    "schemaOrInternalFailureCount": 0,
+    "server": {
+      "initialRssBytes": 607281152,
+      "peakRssBytes": 610230272,
+      "finalRssBytes": 610230272,
+      "initialHeapUsedBytes": 44932600,
+      "peakHeapUsedBytes": 46196048,
+      "finalHeapUsedBytes": 46196048,
+      "admissionAcceptedCount": 36,
+      "admissionRejectedCount": 16,
+      "overloadCount": 16,
+      "maximumActiveWork": 4,
+      "maximumQueuedWork": 32,
+      "structuredCompletionCount": 52,
+      "terminationCounts": {
+        "complete": 36
+      },
+      "routeCountCounts": {
+        "2": 36
+      },
+      "quoteService": {
+        "samples": 36,
+        "p50Micros": 19548,
+        "p95Micros": 23038,
+        "p99Micros": null,
+        "maxMicros": 23971
+      },
+      "eventLoopDelayP95Micros": 10895,
+      "eventLoopDelayMaxMicros": 10904
+    }
+  },
   "workerDecision": {
-    "evaluated": false,
-    "retained": false,
-    "decision": "not-evaluated",
-    "reason": "Worker comparison is withheld until both modes run in one invocation."
+    "evaluated": true,
+    "retained": true,
+    "decision": "retained",
+    "gate": {
+      "semanticAndSchemaRegressionFree": true,
+      "tailLatencyMetric": "p95",
+      "tailLatencyImprovementPpm": 487262,
+      "eventLoopMaxImprovementPpm": -544420,
+      "tailOrEventLoopPassed": true,
+      "concurrency16ThroughputRatioPpm": 2171905,
+      "throughputPassed": true,
+      "concurrency1P50OverheadMicros": 182,
+      "concurrency1OverheadPassed": true,
+      "noLostRequests": true,
+      "memoryReported": true
+    },
+    "reason": "The frozen semantic, tail, throughput, c1 overhead, admission, and memory gates passed."
   }
 }

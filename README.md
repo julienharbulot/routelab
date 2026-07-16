@@ -14,8 +14,9 @@ immutable snapshot -> prepare -> bounded search/allocation -> exact replay
 - All 3,168 returned mode/request plans passed fresh exact replay.
 - At fast effort, numerical split beat/tied/lost greedy split on 19/377/0 requests.
 - Thorough numerical split had p95 regret of 640 ppm (6.40 bps) against the best observed declared fixed mode.
-- On the recorded local run, fast greedy split had 1,640 µs p50 and 4,458 µs p99 in-process latency over 1,000 rotating requests.
-- The clean-source same-thread service baseline completed all 3,000 requests with exact output/fingerprint parity; at concurrency 16 it recorded 48.94 ms p95 and 450.7 requests/s. The prior cross-run worker comparison is withdrawn pending a same-run replacement.
+- On the recorded local run, fast greedy split had 1,645 µs p50 and 4,517 µs p99 in-process latency over 1,000 rotating requests.
+- In one clean-source comparison, all 6,000 normal responses matched exact output and fingerprint. At concurrency 16, four workers changed p95 latency from 52.44 to 26.89 ms and throughput from 425.1 to 923.3 requests/s, while peak server RSS rose from 250.8 to 409.0 MiB; this passed the frozen retention gate.
+- At concurrency 16, 25/50/100 ms deadline lanes produced 192/200/200 exactly validated quotes (including deadline incumbents), with 8/0/0 deadline-before-plan responses and no internal/schema failures. A 52-request burst filled 4 active plus 32 queued slots and returned 16 typed overloads with `Retry-After`.
 
 See the [full benchmark report](reports/portfolio-v2.md).
 
@@ -96,16 +97,18 @@ The loopback service prepares the retained snapshot once in each of four fixed w
 `GET /v1/snapshots`, and `POST /v1/quote`. Its boundary limits the body to 32 KiB, requires
 canonical decimal amount strings, bounds all identifiers and route controls, and never accepts
 internal work caps. Admission is bounded to four active and 32 queued quotes with typed overloads;
-use `pnpm serve -- --mode same-thread` for the measured one-active baseline. Worker operation remains
-available, but its retain/reject decision awaits the same-run comparison in REL-002. Run
+use `pnpm serve -- --mode same-thread` for the measured one-active baseline. The fixed workers are
+retained because the same-run semantic, tail-latency, throughput, c1-overhead, admission, and memory
+gate passed; the memory increase and worse c16 event-loop maximum remain visible costs. Run
 `pnpm serve:smoke`, `pnpm test:api`, or `pnpm load:smoke` for local checks.
 
 ## Benchmark evidence
 
 `pnpm benchmark` regenerates deterministic quality and 1,000-sample in-process latency evidence;
-`pnpm benchmark:verify` freshly replays every reported success. `pnpm load --
---mode same-thread --concurrency 1,4,16` measures the isolated baseline. A retained `--mode worker`
-run fails closed instead of reading an older baseline; REL-002 will add one same-run comparison.
+`pnpm benchmark:verify` freshly replays every reported success. The quality chart uses categorical
+effort, and the machine summary keeps unlike work counters separate. `pnpm load --
+--mode compare --concurrency 1,4,16` measures same-thread and worker modes sequentially without
+reading an older baseline; `pnpm load:deadlines` and `pnpm load:overload` rerun the special lanes.
 `pnpm service:verify` checks the committed service rendering and source identity. Raw observations are ignored.
 
 See the concise [portfolio report](reports/portfolio-v2.md), [service report](reports/service-v2.md),
@@ -156,10 +159,10 @@ The package consumer check packs a tarball, installs it into a clean temporary E
 - Route discovery, split cardinality, allocation work, and numerical work are bounded. RouteLab does not claim unrestricted global optimality.
 - The retained dataset is one 54-pool allowlist snapshot at Ethereum block 19,000,000. Its synthetic request corpus is not historical or representative demand.
 - The project uses snapshots and localhost only; it does not submit transactions, sign messages, hold funds, connect to a relay, or settle trades.
-- The HTTP boundary defaults to a fixed four-worker pool, but its prior cross-run retention result is withdrawn until REL-002 performs a same-run comparison; it is not a production-capacity claim or an adaptive scheduler.
+- The HTTP boundary defaults to the retained fixed four-worker pool; its local comparison is not a production-capacity claim or an adaptive scheduler, and peak RSS increased materially.
 - Timing is observational and excluded from plan fingerprints; no production-latency claim is made.
 
-See [architecture](docs/architecture.md), [benchmark design](docs/benchmark.md), [accepted invariants](docs/invariants.md), [roadmap](docs/roadmap.md), and [current status](STATUS.md).
+See [architecture](docs/architecture.md), [benchmark design](docs/benchmark.md), [case study](docs/case-study.md), [accepted invariants](docs/invariants.md), [roadmap](docs/roadmap.md), and [current status](STATUS.md).
 
 ## License
 

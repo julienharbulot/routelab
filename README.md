@@ -14,7 +14,7 @@ immutable snapshot -> prepare -> bounded search/allocation -> exact replay
 - All 3,168 returned mode/request plans passed fresh exact replay.
 - At fast effort, numerical split beat/tied/lost greedy split on 19/377/0 requests.
 - Thorough numerical split had p95 regret of 640 ppm (6.40 bps) against the best observed declared fixed mode.
-- On the recorded local run, fast greedy split had 1,617 µs p50 and 4,551 µs p99 in-process latency over 1,000 rotating requests.
+- On the recorded local run, fast greedy split had 1,640 µs p50 and 4,458 µs p99 in-process latency over 1,000 rotating requests.
 - The clean-source same-thread service baseline completed all 3,000 requests with exact output/fingerprint parity; at concurrency 16 it recorded 48.94 ms p95 and 450.7 requests/s. The prior cross-run worker comparison is withdrawn pending a same-run replacement.
 
 See the [full benchmark report](reports/portfolio-v2.md).

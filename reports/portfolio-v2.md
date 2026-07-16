@@ -4,7 +4,7 @@ All 396 requests are synthetic exact-input requests derived from one historical 
 
 Every one of the 3168 returned mode/request plans passed a fresh exact replay. 306 fixed-mode results across 221 requests beat the large-budget comparison. The 128-part comparison allocation grid and public effort grids are not nested, so a larger grid does not prove dominance; regret therefore uses the best exact result observed across every declared fixed mode.
 
-Evidence source: a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4; routelab.evidence-source-paths.v1 (90 named paths); sha256:a7ecadf66fa5b4fca088827d616071a984d28807b105c7f8aafb2c0d07b8adb7.
+Evidence source: 79642a2c88f07800344252e0990d0f433ab22c63; routelab.evidence-source-paths.v1 (90 named paths); sha256:36e5cfb6625c9f9c4be1288c8f23595f4179b7d71db57a1dec188b5d32e00499.
 
 At fast effort, numerical split beat/tied/lost greedy split on 19/377/0 requests.
 
@@ -90,11 +90,11 @@ Regret uses integer parts per million (ppm) against the best observed exact outp
 
 | Mode | Warmups | Samples | Quote samples; p50/p95/p99 µs; min/max | No-route samples; p50/p95/p99 µs; min/max | Calls/s |
 |---|---:|---:|---:|---:|---:|
-| best-single | 50 | 1000 | 1000; 48/92/183; 34/1461 | n/a | 17248.2 |
-| greedy-split/fast | 50 | 1000 | 1000; 1680/4027/4536; 632/5086 | n/a | 525.9 |
-| numerical-split/fast | 50 | 1000 | 1000; 3084/7466/8637; 1086/11607 | n/a | 282.8 |
-| greedy-split/balanced | 50 | 1000 | 1000; 3317/7800/8600; 1171/9820 | n/a | 271.0 |
-| numerical-split/balanced | 50 | 1000 | 1000; 5970/14791/16041; 2195/17851 | n/a | 146.9 |
+| best-single | 50 | 1000 | 1000; 46/78/144; 32/1275 | n/a | 18783.1 |
+| greedy-split/fast | 50 | 1000 | 1000; 1706/3993/4564; 651/5541 | n/a | 512.7 |
+| numerical-split/fast | 50 | 1000 | 1000; 3113/7674/8974; 1094/13900 | n/a | 278.4 |
+| greedy-split/balanced | 50 | 1000 | 1000; 3206/7612/8225; 1190/10496 | n/a | 278.5 |
+| numerical-split/balanced | 50 | 1000 | 1000; 6137/15503/17962; 2187/20940 | n/a | 140.7 |
 
 Fast effort is measured for all strategies, with balanced effort also measured for greedy and numerical split. Deterministic quality covers every effort. The corpus is connected with diameter two, so it contains no expected no-route request and the no-route latency distributions are explicitly `n/a`.
 
@@ -110,4 +110,4 @@ The large-budget mode uses one frozen, larger bounded profile with the same rout
 
 Canonical digests: request order sha256:31e9eaeec7242c204b97679a36a1862aa66bbd0f3da400b7b9cc6a69279d9c96; quality rows sha256:5637570dd11d2bb6d5ab5dfa0bc999c0fcd50825ac9b12ddbf51428bf2c849c1; aggregates sha256:dc198764cb7808ff2455cf44d5916f078b758b6a7f706e35d2a12a35cf7b0547; numerical comparisons sha256:0d0418b20655a603c22793f85375f19f237f4f61a72d689b1759e42e0a87d129.
 
-Environment: v24.18.0; linux/x64; 13th Gen Intel(R) Core(TM) i9-13900H; source revision a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4; observed 2026-07-16T03:39:49.091Z.
+Environment: v24.18.0; linux/x64; 13th Gen Intel(R) Core(TM) i9-13900H; source revision 79642a2c88f07800344252e0990d0f433ab22c63; observed 2026-07-16T03:52:31.948Z.

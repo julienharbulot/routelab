@@ -6,7 +6,11 @@ Liquidity is fragmented across pools. A direct swap can lose to a multi-hop path
 pool-disjoint routes can reduce price impact. The harder requirement is safety under bounded work:
 the system must never publish an approximate or partially checked financial result.
 
-## Design decision
+The v0.1 model is deliberately small: immutable snapshots of two-asset constant-product pools and
+exact-input requests. It is large enough to demonstrate nonlinear price impact, route interaction,
+and operational limits without pretending to execute live trades.
+
+## Exact replay is authoritative
 
 RouteLab separates proposal from authorization:
 
@@ -27,13 +31,31 @@ All amounts, reserves, fees, allocations, and outputs remain `bigint`. Numerical
 allocation, but only fresh replay against the requested immutable snapshot can replace the exact
 incumbent. Deadline or work exhaustion therefore returns a validated plan or a typed no-plan error.
 
-## Implemented system
+## Bounded routes and splits
+
+Route discovery enumerates simple paths under explicit hop and expansion limits. Candidate split
+sets contain pool-disjoint routes, preventing two legs from silently depending on the same reserve
+state. When a route has several hops, each later hop sees the reserve transition produced by the
+earlier hop.
+
+The router establishes an exact incumbent before advanced work. Candidate allocations are
+nonnegative and reconstruct to the exact input total. A candidate can replace the incumbent only
+after a fresh replay against the requested snapshot ID and checksum.
+
+The public system includes:
 
 - bounded multi-hop and pool-disjoint split discovery;
 - best-single, greedy-split, and path-shadow-price allocation;
 - deterministic decimal-string serialization and plan fingerprints;
 - one library facade, readable CLI, local HTTP service, and fixture-only NEAR adapter;
 - bounded HTTP admission with fixed workers, deadline propagation, and typed overloads.
+
+## Greedy and numerical allocation
+
+Greedy allocation searches an integer grid and retains the best exactly replayed plan it observes.
+The numerical strategy uses path shadow prices to propose a continuous allocation, reconstructs it
+to exact integers, and subjects that proposal to the same authorization replay. Approximate numbers
+can suggest a better split; they never determine a published output.
 
 ## Quality evidence
 
@@ -50,18 +72,18 @@ adding unlike work units.
 ## Service decision
 
 The load generator and server ran in separate processes from clean source commit
-`a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4`. Same-thread mode shut down before four-worker mode
+`79642a2c88f07800344252e0990d0f433ab22c63`. Same-thread mode shut down before four-worker mode
 started, and no prior report supplied a baseline. All 6,000 normal responses matched exact output
 and fingerprint.
 
-At concurrency 16, workers changed p95 latency from 51.07 to 20.16 ms and throughput from 432.4 to
-1,143.1 requests/s. Queue-wait p95 fell from 45.04 to 12.64 ms even though quote-service p95 rose
-from 4.20 to 6.45 ms. The cost was explicit: peak server RSS rose from 250.3 to 409.3 MiB, and
+At concurrency 16, workers changed p95 latency from 51.12 to 23.04 ms and throughput from 434.2 to
+1,044.3 requests/s. Queue-wait p95 fell from 45.22 to 14.67 ms even though quote-service p95 rose
+from 4.14 to 7.04 ms. The cost was explicit: peak server RSS rose from 249.7 to 402.8 MiB, and
 maximum event-loop delay was worse in that lane. Workers were retained because the predeclared
 semantic, tail-latency, throughput, c1-overhead, admission, and memory-reporting gate passed.
 
-At concurrency 16, the 25/50/100 ms lanes returned 186/200/200 exactly validated quotes, including
-deadline incumbents, plus 14/0/0 deadline-before-plan errors and no schema/internal failures. A
+At concurrency 16, the 25/50/100 ms lanes returned 181/200/200 exactly validated quotes, including
+deadline incumbents, plus 19/0/0 deadline-before-plan errors and no schema/internal failures. A
 52-request burst filled all 4 active and 32 queued slots; 36 accepted requests remained exact and
 16 received typed 503 overload responses with `Retry-After`.
 
@@ -72,12 +94,35 @@ product justified. The project restarted from the valuable numerical runtime, ke
 and differential tests, and rebuilt only the package, benchmark, service, and fixture boundary.
 That choice made the financial guarantees and engineering tradeoffs easier to inspect.
 
-## Protocol boundary and limitations
+This was a product decision, not an attempt to hide history: delete process that did not protect a
+user, preserve the exact financial core, and retain only evidence needed to explain quality and
+service tradeoffs.
 
-The NEAR adapter is offline and unsigned. It maps exact-input quote fields and solver event IDs but
-does not authenticate, connect to a relay, inspect balances, sign, submit, execute, or settle.
+## Unsigned NEAR boundary
+
+The NEAR adapter is offline and unsigned. The public exact-input parser follows the documented
+Message Bus fields and normalizes an omitted `min_deadline_ms` to 60,000 ms. The solver-event path
+requires and preserves `quote_id`, but its output remains a RouteLab-specific draft.
+
+An official response requires signed protocol data. RouteLab does not fabricate a quote hash,
+nonce, signature, public key, or claim that the draft can be submitted. It does not authenticate,
+connect to a relay, inspect balances, sign, execute, or settle.
+
+## Limitations
 
 The evidence uses one constant-product snapshot, synthetic request sizes, bounded two-hop/two-route
 headline cases, and one local machine. It excludes gas, live state, transaction feasibility,
 concentrated liquidity, and unrestricted optimality. The latency numbers are local measurements,
 not production-capacity claims.
+
+The larger-budget profile is only another bounded comparison mode. The 396 requests cover one
+snapshot-derived Cartesian corpus rather than historical orders. Worker results use four fixed
+workers on one machine and should be remeasured for any deployment target.
+
+## What production work would come next
+
+The first production step would be versioned, incremental snapshot publication with explicit
+freshness and rollback behavior. After that, a separate live integration could add balance-aware
+quoting and signed testnet responses behind the existing boundary. Both require operational and
+security work that would weaken this portfolio release if simulated without credentials, funded
+accounts, or real deployment evidence.

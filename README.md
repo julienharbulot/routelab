@@ -14,9 +14,9 @@ immutable snapshot -> prepare -> bounded search/allocation -> exact replay
 - All 3,168 returned mode/request plans passed fresh exact replay.
 - At fast effort, numerical split beat/tied/lost greedy split on 19/377/0 requests.
 - Thorough numerical split had p95 regret of 640 ppm (6.40 bps) against the best observed declared fixed mode.
-- On the recorded local run, fast greedy split had 1,680 µs p50 and 4,536 µs p99 in-process latency over 1,000 rotating requests.
-- In one clean-source comparison, all 6,000 normal responses matched exact output and fingerprint. At concurrency 16, four workers changed p95 latency from 51.07 to 20.16 ms and throughput from 432.4 to 1,143.1 requests/s, while peak server RSS rose from 250.3 to 409.3 MiB; this passed the frozen retention gate.
-- At concurrency 16, 25/50/100 ms deadline lanes produced 186/200/200 exactly validated quotes (including deadline incumbents), with 14/0/0 deadline-before-plan responses and no internal/schema failures. A 52-request burst filled 4 active plus 32 queued slots and returned 16 typed overloads with `Retry-After`.
+- On the recorded local run, fast greedy split had 1,706 µs p50 and 4,564 µs p99 in-process latency over 1,000 rotating requests.
+- In one clean-source comparison, all 6,000 normal responses matched exact output and fingerprint. At concurrency 16, four workers changed p95 latency from 51.12 to 23.04 ms and throughput from 434.2 to 1,044.3 requests/s, while peak server RSS rose from 249.7 to 402.8 MiB; this passed the frozen retention gate.
+- At concurrency 16, 25/50/100 ms deadline lanes produced 181/200/200 exactly validated quotes (including deadline incumbents), with 19/0/0 deadline-before-plan responses and no internal/schema failures. A 52-request burst filled 4 active plus 32 queued slots and returned 16 typed overloads with `Retry-After`.
 
 See the [full benchmark report](reports/portfolio-v2.md).
 
@@ -163,7 +163,7 @@ The package consumer check packs a tarball, installs it into a clean temporary E
 - The HTTP boundary defaults to the retained fixed four-worker pool; its local comparison is not a production-capacity claim or an adaptive scheduler, and peak RSS increased materially.
 - Timing is observational and excluded from plan fingerprints; no production-latency claim is made.
 
-See [architecture](docs/architecture.md), [benchmark design](docs/benchmark.md), [case study](docs/case-study.md), [accepted invariants](docs/invariants.md), [roadmap](docs/roadmap.md), and [current status](STATUS.md).
+See [architecture](docs/architecture.md), [benchmark design](docs/benchmark.md), [case study](docs/case-study.md), [release notes](docs/release-notes-v0.1.0.md), [portfolio notes](docs/portfolio-notes.md), [accepted invariants](docs/invariants.md), [roadmap](docs/roadmap.md), and [current status](STATUS.md).
 
 ## License
 

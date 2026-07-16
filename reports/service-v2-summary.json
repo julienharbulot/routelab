@@ -2,7 +2,7 @@
   "schemaVersion": "routelab.service-load-summary.v2",
   "evidenceSource": {
     "schemaVersion": "routelab.evidence-source.v1",
-    "revision": "a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4",
+    "revision": "79642a2c88f07800344252e0990d0f433ab22c63",
     "pathSet": {
       "schemaVersion": "routelab.evidence-source-paths.v1",
       "paths": [
@@ -98,28 +98,28 @@
         "tsconfig.json"
       ]
     },
-    "digest": "sha256:a7ecadf66fa5b4fca088827d616071a984d28807b105c7f8aafb2c0d07b8adb7"
+    "digest": "sha256:36e5cfb6625c9f9c4be1288c8f23595f4179b7d71db57a1dec188b5d32e00499"
   },
-  "observedAt": "2026-07-16T03:40:12.099Z",
+  "observedAt": "2026-07-16T03:53:00.266Z",
   "environment": {
     "node": "v24.18.0",
     "platform": "linux",
     "arch": "x64",
     "cpu": "13th Gen Intel(R) Core(TM) i9-13900H",
-    "commit": "a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4"
+    "commit": "79642a2c88f07800344252e0990d0f433ab22c63"
   },
   "comparisonIdentity": {
     "sameThread": {
-      "sourceRevision": "a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4",
-      "sourceDigest": "sha256:a7ecadf66fa5b4fca088827d616071a984d28807b105c7f8aafb2c0d07b8adb7",
+      "sourceRevision": "79642a2c88f07800344252e0990d0f433ab22c63",
+      "sourceDigest": "sha256:36e5cfb6625c9f9c4be1288c8f23595f4179b7d71db57a1dec188b5d32e00499",
       "node": "v24.18.0",
       "platform": "linux",
       "arch": "x64",
       "cpu": "13th Gen Intel(R) Core(TM) i9-13900H"
     },
     "worker": {
-      "sourceRevision": "a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4",
-      "sourceDigest": "sha256:a7ecadf66fa5b4fca088827d616071a984d28807b105c7f8aafb2c0d07b8adb7",
+      "sourceRevision": "79642a2c88f07800344252e0990d0f433ab22c63",
+      "sourceDigest": "sha256:36e5cfb6625c9f9c4be1288c8f23595f4179b7d71db57a1dec188b5d32e00499",
       "node": "v24.18.0",
       "platform": "linux",
       "arch": "x64",
@@ -176,20 +176,20 @@
       "deadlineCompletionRatePpm": 1000000,
       "successfulLatency": {
         "samples": 1000,
-        "p50Micros": 3517,
-        "p95Micros": 6273,
-        "p99Micros": 7604,
-        "maxMicros": 9323
+        "p50Micros": 3392,
+        "p95Micros": 5875,
+        "p99Micros": 6581,
+        "maxMicros": 11520
       },
       "errorResponseLatency": null,
-      "throughputPerSecond": 254.306,
+      "throughputPerSecond": 268.6,
       "server": {
-        "initialRssBytes": 123207680,
-        "peakRssBytes": 189399040,
-        "finalRssBytes": 189399040,
-        "initialHeapUsedBytes": 15445720,
-        "peakHeapUsedBytes": 57918952,
-        "finalHeapUsedBytes": 26347056,
+        "initialRssBytes": 123535360,
+        "peakRssBytes": 188907520,
+        "finalRssBytes": 188907520,
+        "initialHeapUsedBytes": 17137408,
+        "peakHeapUsedBytes": 55636688,
+        "finalHeapUsedBytes": 24097504,
         "admissionAcceptedCount": 1000,
         "admissionRejectedCount": 0,
         "overloadCount": 0,
@@ -205,20 +205,20 @@
         },
         "queueWait": {
           "samples": 1000,
-          "p50Micros": 7,
+          "p50Micros": 6,
           "p95Micros": 14,
-          "p99Micros": 42,
-          "maxMicros": 185
+          "p99Micros": 35,
+          "maxMicros": 100
         },
         "quoteService": {
           "samples": 1000,
-          "p50Micros": 1781,
-          "p95Micros": 4360,
-          "p99Micros": 5270,
-          "maxMicros": 7417
+          "p50Micros": 1715,
+          "p95Micros": 4094,
+          "p99Micros": 4628,
+          "maxMicros": 6527
         },
-        "eventLoopDelayP95Micros": 13304,
-        "eventLoopDelayMaxMicros": 15557
+        "eventLoopDelayP95Micros": 13132,
+        "eventLoopDelayMaxMicros": 15942
       }
     },
     {
@@ -236,20 +236,20 @@
       "deadlineCompletionRatePpm": 1000000,
       "successfulLatency": {
         "samples": 1000,
-        "p50Micros": 8927,
-        "p95Micros": 16624,
-        "p99Micros": 22214,
-        "maxMicros": 32167
+        "p50Micros": 8536,
+        "p95Micros": 15284,
+        "p99Micros": 17266,
+        "maxMicros": 23144
       },
       "errorResponseLatency": null,
-      "throughputPerSecond": 401.525,
+      "throughputPerSecond": 432.581,
       "server": {
-        "initialRssBytes": 190218240,
-        "peakRssBytes": 249692160,
-        "finalRssBytes": 249692160,
-        "initialHeapUsedBytes": 30933048,
-        "peakHeapUsedBytes": 91251640,
-        "finalHeapUsedBytes": 75279328,
+        "initialRssBytes": 189562880,
+        "peakRssBytes": 245923840,
+        "finalRssBytes": 245923840,
+        "initialHeapUsedBytes": 28648856,
+        "peakHeapUsedBytes": 88659440,
+        "finalHeapUsedBytes": 72715320,
         "admissionAcceptedCount": 1000,
         "admissionRejectedCount": 0,
         "overloadCount": 0,
@@ -265,20 +265,20 @@
         },
         "queueWait": {
           "samples": 1000,
-          "p50Micros": 4324,
-          "p95Micros": 9414,
-          "p99Micros": 12157,
-          "maxMicros": 20705
+          "p50Micros": 4023,
+          "p95Micros": 8870,
+          "p99Micros": 10006,
+          "maxMicros": 16708
         },
         "quoteService": {
           "samples": 1000,
-          "p50Micros": 1932,
-          "p95Micros": 4550,
-          "p99Micros": 5597,
-          "maxMicros": 9488
+          "p50Micros": 1798,
+          "p95Micros": 4167,
+          "p99Micros": 4706,
+          "maxMicros": 10686
         },
-        "eventLoopDelayP95Micros": 13369,
-        "eventLoopDelayMaxMicros": 15860
+        "eventLoopDelayP95Micros": 13009,
+        "eventLoopDelayMaxMicros": 16015
       }
     },
     {
@@ -296,20 +296,20 @@
       "deadlineCompletionRatePpm": 1000000,
       "successfulLatency": {
         "samples": 1000,
-        "p50Micros": 37346,
-        "p95Micros": 51067,
-        "p99Micros": 53625,
-        "maxMicros": 55227
+        "p50Micros": 36695,
+        "p95Micros": 51120,
+        "p99Micros": 53159,
+        "maxMicros": 54783
       },
       "errorResponseLatency": null,
-      "throughputPerSecond": 432.439,
+      "throughputPerSecond": 434.159,
       "server": {
-        "initialRssBytes": 250675200,
-        "peakRssBytes": 262471680,
-        "finalRssBytes": 262471680,
-        "initialHeapUsedBytes": 34146472,
-        "peakHeapUsedBytes": 100711688,
-        "finalHeapUsedBytes": 47419840,
+        "initialRssBytes": 246415360,
+        "peakRssBytes": 261816320,
+        "finalRssBytes": 261816320,
+        "initialHeapUsedBytes": 31565688,
+        "peakHeapUsedBytes": 98790824,
+        "finalHeapUsedBytes": 45487544,
         "admissionAcceptedCount": 1000,
         "admissionRejectedCount": 0,
         "overloadCount": 0,
@@ -325,20 +325,20 @@
         },
         "queueWait": {
           "samples": 1000,
-          "p50Micros": 31946,
-          "p95Micros": 45038,
-          "p99Micros": 47867,
-          "maxMicros": 49725
+          "p50Micros": 31690,
+          "p95Micros": 45216,
+          "p99Micros": 47062,
+          "maxMicros": 49106
         },
         "quoteService": {
           "samples": 1000,
-          "p50Micros": 1846,
-          "p95Micros": 4196,
-          "p99Micros": 4681,
-          "maxMicros": 6188
+          "p50Micros": 1830,
+          "p95Micros": 4140,
+          "p99Micros": 4860,
+          "maxMicros": 6167
         },
-        "eventLoopDelayP95Micros": 13246,
-        "eventLoopDelayMaxMicros": 15139
+        "eventLoopDelayP95Micros": 13124,
+        "eventLoopDelayMaxMicros": 15557
       }
     },
     {
@@ -356,20 +356,20 @@
       "deadlineCompletionRatePpm": 1000000,
       "successfulLatency": {
         "samples": 1000,
-        "p50Micros": 3571,
-        "p95Micros": 6213,
-        "p99Micros": 7459,
-        "maxMicros": 10444
+        "p50Micros": 3414,
+        "p95Micros": 5947,
+        "p99Micros": 6564,
+        "maxMicros": 7922
       },
       "errorResponseLatency": null,
-      "throughputPerSecond": 252.397,
+      "throughputPerSecond": 265.572,
       "server": {
-        "initialRssBytes": 225513472,
-        "peakRssBytes": 296292352,
-        "finalRssBytes": 296292352,
-        "initialHeapUsedBytes": 14508528,
-        "peakHeapUsedBytes": 22578624,
-        "finalHeapUsedBytes": 21342480,
+        "initialRssBytes": 226742272,
+        "peakRssBytes": 297521152,
+        "finalRssBytes": 297521152,
+        "initialHeapUsedBytes": 14503752,
+        "peakHeapUsedBytes": 22567712,
+        "finalHeapUsedBytes": 20131920,
         "admissionAcceptedCount": 1000,
         "admissionRejectedCount": 0,
         "overloadCount": 0,
@@ -385,20 +385,20 @@
         },
         "queueWait": {
           "samples": 1000,
-          "p50Micros": 7,
-          "p95Micros": 17,
-          "p99Micros": 43,
-          "maxMicros": 69
+          "p50Micros": 6,
+          "p95Micros": 12,
+          "p99Micros": 36,
+          "maxMicros": 80
         },
         "quoteService": {
           "samples": 1000,
-          "p50Micros": 1928,
-          "p95Micros": 4383,
-          "p99Micros": 5500,
-          "maxMicros": 7458
+          "p50Micros": 1835,
+          "p95Micros": 4227,
+          "p99Micros": 4725,
+          "maxMicros": 6189
         },
         "eventLoopDelayP95Micros": 10805,
-        "eventLoopDelayMaxMicros": 11067
+        "eventLoopDelayMaxMicros": 11158
       }
     },
     {
@@ -416,20 +416,20 @@
       "deadlineCompletionRatePpm": 1000000,
       "successfulLatency": {
         "samples": 1000,
-        "p50Micros": 4562,
-        "p95Micros": 8339,
-        "p99Micros": 11477,
-        "maxMicros": 14669
+        "p50Micros": 4504,
+        "p95Micros": 8367,
+        "p99Micros": 11037,
+        "maxMicros": 14779
       },
       "errorResponseLatency": null,
-      "throughputPerSecond": 780.134,
+      "throughputPerSecond": 790.567,
       "server": {
-        "initialRssBytes": 296620032,
-        "peakRssBytes": 394268672,
-        "finalRssBytes": 394268672,
-        "initialHeapUsedBytes": 22737200,
-        "peakHeapUsedBytes": 34735792,
-        "finalHeapUsedBytes": 27907128,
+        "initialRssBytes": 297521152,
+        "peakRssBytes": 391073792,
+        "finalRssBytes": 391073792,
+        "initialHeapUsedBytes": 21532520,
+        "peakHeapUsedBytes": 34949112,
+        "finalHeapUsedBytes": 26725024,
         "admissionAcceptedCount": 1000,
         "admissionRejectedCount": 0,
         "overloadCount": 0,
@@ -446,19 +446,19 @@
         "queueWait": {
           "samples": 1000,
           "p50Micros": 7,
-          "p95Micros": 91,
-          "p99Micros": 195,
-          "maxMicros": 382
+          "p95Micros": 144,
+          "p99Micros": 241,
+          "maxMicros": 401
         },
         "quoteService": {
           "samples": 1000,
-          "p50Micros": 2719,
-          "p95Micros": 6411,
-          "p99Micros": 9466,
-          "maxMicros": 13251
+          "p50Micros": 2730,
+          "p95Micros": 6206,
+          "p99Micros": 9183,
+          "maxMicros": 12896
         },
-        "eventLoopDelayP95Micros": 10756,
-        "eventLoopDelayMaxMicros": 11092
+        "eventLoopDelayP95Micros": 10789,
+        "eventLoopDelayMaxMicros": 11125
       }
     },
     {
@@ -476,20 +476,20 @@
       "deadlineCompletionRatePpm": 1000000,
       "successfulLatency": {
         "samples": 1000,
-        "p50Micros": 13592,
-        "p95Micros": 20161,
-        "p99Micros": 25417,
-        "maxMicros": 34211
+        "p50Micros": 14918,
+        "p95Micros": 23041,
+        "p99Micros": 29845,
+        "maxMicros": 34274
       },
       "errorResponseLatency": null,
-      "throughputPerSecond": 1143.107,
+      "throughputPerSecond": 1044.326,
       "server": {
-        "initialRssBytes": 395415552,
-        "peakRssBytes": 429166592,
-        "finalRssBytes": 429166592,
-        "initialHeapUsedBytes": 29166616,
-        "peakHeapUsedBytes": 38018040,
-        "finalHeapUsedBytes": 36999920,
+        "initialRssBytes": 391892992,
+        "peakRssBytes": 422367232,
+        "finalRssBytes": 422367232,
+        "initialHeapUsedBytes": 27992768,
+        "peakHeapUsedBytes": 38208288,
+        "finalHeapUsedBytes": 35861768,
         "admissionAcceptedCount": 1000,
         "admissionRejectedCount": 0,
         "overloadCount": 0,
@@ -505,20 +505,20 @@
         },
         "queueWait": {
           "samples": 1000,
-          "p50Micros": 8303,
-          "p95Micros": 12635,
-          "p99Micros": 14167,
-          "maxMicros": 16831
+          "p50Micros": 9233,
+          "p95Micros": 14674,
+          "p99Micros": 17626,
+          "maxMicros": 27553
         },
         "quoteService": {
           "samples": 1000,
-          "p50Micros": 2929,
-          "p95Micros": 6447,
-          "p99Micros": 7066,
-          "maxMicros": 20242
+          "p50Micros": 3149,
+          "p95Micros": 7035,
+          "p99Micros": 8777,
+          "maxMicros": 19191
         },
-        "eventLoopDelayP95Micros": 10666,
-        "eventLoopDelayMaxMicros": 18776
+        "eventLoopDelayP95Micros": 10699,
+        "eventLoopDelayMaxMicros": 16490
       }
     }
   ],
@@ -529,42 +529,42 @@
       "deadlineMs": 25,
       "requests": 200,
       "classifications": {
-        "complete-exact-quote": 40,
-        "validated-deadline-incumbent": 146,
-        "deadline-before-plan": 14,
+        "complete-exact-quote": 38,
+        "validated-deadline-incumbent": 143,
+        "deadline-before-plan": 19,
         "overload": 0,
         "client-timeout": 0,
         "schema-or-internal-failure": 0
       },
-      "exactValidationCount": 186,
+      "exactValidationCount": 181,
       "completeQuoteLatency": {
-        "samples": 40,
-        "p50Micros": 23613,
-        "p95Micros": 27576,
+        "samples": 38,
+        "p50Micros": 24319,
+        "p95Micros": 27452,
         "p99Micros": null,
-        "maxMicros": 33568
+        "maxMicros": 28385
       },
       "deadlineIncumbentLatency": {
-        "samples": 146,
-        "p50Micros": 27267,
-        "p95Micros": 30371,
+        "samples": 143,
+        "p50Micros": 27101,
+        "p95Micros": 28618,
         "p99Micros": null,
-        "maxMicros": 35586
+        "maxMicros": 30539
       },
       "errorResponseLatency": {
-        "samples": 14,
-        "p50Micros": 26983,
-        "p95Micros": 28117,
+        "samples": 19,
+        "p50Micros": 27658,
+        "p95Micros": 30984,
         "p99Micros": null,
-        "maxMicros": 28117
+        "maxMicros": 30984
       },
       "server": {
-        "initialRssBytes": 431624192,
-        "peakRssBytes": 438669312,
-        "finalRssBytes": 438669312,
-        "initialHeapUsedBytes": 38348744,
-        "peakHeapUsedBytes": 40426496,
-        "finalHeapUsedBytes": 34390088,
+        "initialRssBytes": 424497152,
+        "peakRssBytes": 439734272,
+        "finalRssBytes": 439734272,
+        "initialHeapUsedBytes": 37480368,
+        "peakHeapUsedBytes": 40636112,
+        "finalHeapUsedBytes": 33206112,
         "admissionAcceptedCount": 200,
         "admissionRejectedCount": 0,
         "overloadCount": 0,
@@ -572,29 +572,29 @@
         "maximumQueuedWork": 12,
         "structuredCompletionCount": 200,
         "terminationCounts": {
-          "complete": 40,
-          "deadline": 146
+          "complete": 38,
+          "deadline": 143
         },
         "routeCountCounts": {
-          "1": 110,
-          "2": 76
+          "1": 109,
+          "2": 72
         },
         "queueWait": {
           "samples": 200,
-          "p50Micros": 18126,
-          "p95Micros": 24330,
+          "p50Micros": 17658,
+          "p95Micros": 24923,
           "p99Micros": null,
-          "maxMicros": 24678
+          "maxMicros": 26123
         },
         "quoteService": {
-          "samples": 186,
-          "p50Micros": 6706,
-          "p95Micros": 12671,
+          "samples": 181,
+          "p50Micros": 7358,
+          "p95Micros": 11419,
           "p99Micros": null,
-          "maxMicros": 19219
+          "maxMicros": 24268
         },
-        "eventLoopDelayP95Micros": 10699,
-        "eventLoopDelayMaxMicros": 11190
+        "eventLoopDelayP95Micros": 11059,
+        "eventLoopDelayMaxMicros": 12018
       }
     },
     {
@@ -603,8 +603,8 @@
       "deadlineMs": 50,
       "requests": 200,
       "classifications": {
-        "complete-exact-quote": 158,
-        "validated-deadline-incumbent": 42,
+        "complete-exact-quote": 152,
+        "validated-deadline-incumbent": 48,
         "deadline-before-plan": 0,
         "overload": 0,
         "client-timeout": 0,
@@ -612,27 +612,27 @@
       },
       "exactValidationCount": 200,
       "completeQuoteLatency": {
-        "samples": 158,
-        "p50Micros": 42637,
-        "p95Micros": 50991,
+        "samples": 152,
+        "p50Micros": 41138,
+        "p95Micros": 51076,
         "p99Micros": null,
-        "maxMicros": 53463
+        "maxMicros": 53034
       },
       "deadlineIncumbentLatency": {
-        "samples": 42,
-        "p50Micros": 52015,
-        "p95Micros": 53362,
+        "samples": 48,
+        "p50Micros": 52034,
+        "p95Micros": 53039,
         "p99Micros": null,
-        "maxMicros": 54814
+        "maxMicros": 53380
       },
       "errorResponseLatency": null,
       "server": {
-        "initialRssBytes": 501420032,
-        "peakRssBytes": 605253632,
-        "finalRssBytes": 605253632,
-        "initialHeapUsedBytes": 35698592,
-        "peakHeapUsedBytes": 40689360,
-        "finalHeapUsedBytes": 40689360,
+        "initialRssBytes": 508284928,
+        "peakRssBytes": 606224384,
+        "finalRssBytes": 606224384,
+        "initialHeapUsedBytes": 34511584,
+        "peakHeapUsedBytes": 39512936,
+        "finalHeapUsedBytes": 39512936,
         "admissionAcceptedCount": 200,
         "admissionRejectedCount": 0,
         "overloadCount": 0,
@@ -640,29 +640,29 @@
         "maximumQueuedWork": 12,
         "structuredCompletionCount": 200,
         "terminationCounts": {
-          "complete": 158,
-          "deadline": 42
+          "complete": 152,
+          "deadline": 48
         },
         "routeCountCounts": {
-          "1": 48,
-          "2": 152
+          "1": 44,
+          "2": 156
         },
         "queueWait": {
           "samples": 200,
-          "p50Micros": 31306,
-          "p95Micros": 40078,
+          "p50Micros": 31254,
+          "p95Micros": 39132,
           "p99Micros": null,
-          "maxMicros": 45138
+          "maxMicros": 43748
         },
         "quoteService": {
           "samples": 200,
-          "p50Micros": 10905,
-          "p95Micros": 18081,
+          "p50Micros": 10986,
+          "p95Micros": 15824,
           "p99Micros": null,
-          "maxMicros": 21727
+          "maxMicros": 22443
         },
-        "eventLoopDelayP95Micros": 10592,
-        "eventLoopDelayMaxMicros": 11264
+        "eventLoopDelayP95Micros": 10871,
+        "eventLoopDelayMaxMicros": 11067
       }
     },
     {
@@ -681,20 +681,20 @@
       "exactValidationCount": 200,
       "completeQuoteLatency": {
         "samples": 200,
-        "p50Micros": 46732,
-        "p95Micros": 71305,
+        "p50Micros": 45745,
+        "p95Micros": 68632,
         "p99Micros": null,
-        "maxMicros": 80878
+        "maxMicros": 78618
       },
       "deadlineIncumbentLatency": null,
       "errorResponseLatency": null,
       "server": {
-        "initialRssBytes": 605253632,
-        "peakRssBytes": 612622336,
-        "finalRssBytes": 612622336,
-        "initialHeapUsedBytes": 41981832,
-        "peakHeapUsedBytes": 47033424,
-        "finalHeapUsedBytes": 47033424,
+        "initialRssBytes": 610811904,
+        "peakRssBytes": 619528192,
+        "finalRssBytes": 619528192,
+        "initialHeapUsedBytes": 40813736,
+        "peakHeapUsedBytes": 45809976,
+        "finalHeapUsedBytes": 45809976,
         "admissionAcceptedCount": 200,
         "admissionRejectedCount": 0,
         "overloadCount": 0,
@@ -710,20 +710,20 @@
         },
         "queueWait": {
           "samples": 200,
-          "p50Micros": 31898,
-          "p95Micros": 49911,
+          "p50Micros": 32022,
+          "p95Micros": 47429,
           "p99Micros": null,
-          "maxMicros": 54213
+          "maxMicros": 53312
         },
         "quoteService": {
           "samples": 200,
-          "p50Micros": 10756,
-          "p95Micros": 24163,
+          "p50Micros": 10629,
+          "p95Micros": 23721,
           "p99Micros": null,
-          "maxMicros": 29579
+          "maxMicros": 26776
         },
-        "eventLoopDelayP95Micros": 10740,
-        "eventLoopDelayMaxMicros": 11141
+        "eventLoopDelayP95Micros": 10805,
+        "eventLoopDelayMaxMicros": 10961
       }
     }
   ],
@@ -739,12 +739,12 @@
     "clientTimeoutCount": 0,
     "schemaOrInternalFailureCount": 0,
     "server": {
-      "initialRssBytes": 612622336,
-      "peakRssBytes": 613441536,
-      "finalRssBytes": 603217920,
-      "initialHeapUsedBytes": 47075240,
-      "peakHeapUsedBytes": 48316800,
-      "finalHeapUsedBytes": 48316800,
+      "initialRssBytes": 619692032,
+      "peakRssBytes": 619855872,
+      "finalRssBytes": 613486592,
+      "initialHeapUsedBytes": 45852448,
+      "peakHeapUsedBytes": 47090560,
+      "finalHeapUsedBytes": 47090560,
       "admissionAcceptedCount": 36,
       "admissionRejectedCount": 16,
       "overloadCount": 16,
@@ -759,20 +759,20 @@
       },
       "queueWait": {
         "samples": 36,
-        "p50Micros": 65614,
-        "p95Micros": 141898,
+        "p50Micros": 61315,
+        "p95Micros": 137974,
         "p99Micros": null,
-        "maxMicros": 143405
+        "maxMicros": 138462
       },
       "quoteService": {
         "samples": 36,
-        "p50Micros": 18099,
-        "p95Micros": 19628,
+        "p50Micros": 17852,
+        "p95Micros": 20527,
         "p99Micros": null,
-        "maxMicros": 19633
+        "maxMicros": 21340
       },
-      "eventLoopDelayP95Micros": 10535,
-      "eventLoopDelayMaxMicros": 11059
+      "eventLoopDelayP95Micros": 10813,
+      "eventLoopDelayMaxMicros": 11215
     }
   },
   "workerDecision": {
@@ -782,12 +782,12 @@
     "gate": {
       "semanticAndSchemaRegressionFree": true,
       "tailLatencyMetric": "p95",
-      "tailLatencyImprovementPpm": 605204,
-      "eventLoopMaxImprovementPpm": -240241,
+      "tailLatencyImprovementPpm": 549276,
+      "eventLoopMaxImprovementPpm": -59974,
       "tailOrEventLoopPassed": true,
-      "concurrency16ThroughputRatioPpm": 2643394,
+      "concurrency16ThroughputRatioPpm": 2405399,
       "throughputPassed": true,
-      "concurrency1P50OverheadMicros": 54,
+      "concurrency1P50OverheadMicros": 22,
       "concurrency1OverheadPassed": true,
       "noLostRequests": true,
       "memoryReported": true

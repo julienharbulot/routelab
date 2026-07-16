@@ -1,13 +1,13 @@
 # RouteLab status
 
-**State:** REL-002 service-and-metrics evidence candidate; review pending
+**State:** REL-003 release candidate; cumulative gate pending
 
-Implemented: one-invocation service comparison, strict worker quote validation, deadline/overload lanes, categorical effort chart, structured counters, and proposal-level convergence.
+Implemented: public omitted `min_deadline_ms` default, strict solver event, official-example-derived fixture, packed NEAR import proof, final reports, and portfolio narrative.
 
-Evidence source: `a12db43ea0495d18cdcbfb66d7fd8e8dd6a224f4`; digest `sha256:a7ecadf66fa5b4fca088827d616071a984d28807b105c7f8aafb2c0d07b8adb7` over 90 named paths.
+Evidence source: `79642a2c88f07800344252e0990d0f433ab22c63`; digest `sha256:36e5cfb6625c9f9c4be1288c8f23595f4179b7d71db57a1dec188b5d32e00499` over 90 named paths.
 
-Result: workers passed the frozen gate at c16, reducing p95 from 51.07 to 20.16 ms and raising throughput from 432.4 to 1,143.1/s while peak RSS rose from 250.3 to 409.3 MiB.
+Result: workers passed the frozen c16 gate at 51.12→23.04 ms p95 and 434.2→1,044.3/s, while peak RSS rose from 249.7 to 402.8 MiB.
 
-Next: run the complete REL-002 gate and read-only review before beginning REL-003.
+Next: run the clean-clone/cumulative gate, read-only release review, and exact-SHA CI.
 
 Out of scope: live data, signing, custody, settlement, PRIME, ML, gas-aware routing, and concentrated liquidity.
